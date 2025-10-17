@@ -1,0 +1,5 @@
+// Release configuration settings
+API_BASE_URL = https://untampered-jong-harshly.ngrok-free.dev/api/v1
+CABLE_URL = wss://untampered-jong-harshly.ngrok-free.dev/cable
+
+
