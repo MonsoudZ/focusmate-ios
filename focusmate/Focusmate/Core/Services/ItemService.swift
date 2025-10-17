@@ -148,6 +148,7 @@ final class ItemService {
     }
     
     func deleteItem(id: Int) async throws {
+        // DELETE requests often return empty responses, handle with EmptyResponse
         _ = try await apiClient.request("DELETE", "tasks/\(id)", body: nil as String?) as EmptyResponse
     }
     
@@ -155,7 +156,9 @@ final class ItemService {
     
     func completeItem(id: Int, completed: Bool, completionNotes: String?) async throws -> Item {
         let request = CompleteItemRequest(completed: completed, completionNotes: completionNotes)
+        print("🔍 ItemService: Completing task \(id) with completed=\(completed)")
         let item: Item = try await apiClient.request("POST", "tasks/\(id)/complete", body: request)
+        print("🔍 ItemService: Received completion response - completed_at: \(item.completed_at ?? "nil")")
         return item
     }
     
@@ -203,5 +206,4 @@ final class ItemService {
         let items: [Item]
     }
     
-    struct EmptyResponse: Codable {}
 }

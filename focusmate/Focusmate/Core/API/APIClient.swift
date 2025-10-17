@@ -67,7 +67,26 @@ final class APIClient {
                 throw APIError.badStatus(http.statusCode)
             }
             do { 
-                return try APIClient.railsAPI.decode(T.self, from: data)
+                // Handle empty responses (common for DELETE requests)
+                if data.isEmpty {
+                    // For empty responses, we can't decode to a specific type
+                    // This is expected for DELETE requests that return 204 No Content
+                    if T.self == EmptyResponse.self {
+                        return EmptyResponse() as! T
+                    } else {
+                        // If we're expecting a specific type but got empty data, that's an error
+                        print("🧩 APIClient: Expected \(T.self) but got empty response")
+                        throw APIError.decoding
+                    }
+                }
+                
+                let result = try APIClient.railsAPI.decode(T.self, from: data)
+                // Debug completion responses
+                if url.absoluteString.contains("/complete") {
+                    let bodyPreview = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+                    print("🔍 APIClient: Completion response body: \(bodyPreview)")
+                }
+                return result
             }
             catch {
                 let bodyPreview = String(data: data, encoding: .utf8) ?? "<non-utf8>"

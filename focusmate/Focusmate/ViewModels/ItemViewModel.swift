@@ -102,7 +102,57 @@ final class ItemViewModel: ObservableObject {
                 completionNotes: completionNotes
             )
             if let index = items.firstIndex(where: { $0.id == id }) {
-                items[index] = updatedItem
+                // Temporary workaround: If Rails API doesn't set completed_at, set it locally
+                if completed && updatedItem.completed_at == nil {
+                    print("🔧 ItemViewModel: Rails API didn't set completed_at, setting locally")
+                    var localItem = updatedItem
+                    // Create a new Item with completed_at set to current time
+                    let currentTime = Date().ISO8601Format()
+                    localItem = Item(
+                        id: localItem.id,
+                        list_id: localItem.list_id,
+                        title: localItem.title,
+                        description: localItem.description,
+                        due_at: localItem.due_at,
+                        completed_at: currentTime, // Set completion time
+                        priority: localItem.priority,
+                        can_be_snoozed: localItem.can_be_snoozed,
+                        notification_interval_minutes: localItem.notification_interval_minutes,
+                        requires_explanation_if_missed: localItem.requires_explanation_if_missed,
+                        overdue: localItem.overdue,
+                        minutes_overdue: localItem.minutes_overdue,
+                        requires_explanation: localItem.requires_explanation,
+                        is_recurring: localItem.is_recurring,
+                        recurrence_pattern: localItem.recurrence_pattern,
+                        recurrence_interval: localItem.recurrence_interval,
+                        recurrence_days: localItem.recurrence_days,
+                        location_based: localItem.location_based,
+                        location_name: localItem.location_name,
+                        location_latitude: localItem.location_latitude,
+                        location_longitude: localItem.location_longitude,
+                        location_radius_meters: localItem.location_radius_meters,
+                        notify_on_arrival: localItem.notify_on_arrival,
+                        notify_on_departure: localItem.notify_on_departure,
+                        missed_reason: localItem.missed_reason,
+                        missed_reason_submitted_at: localItem.missed_reason_submitted_at,
+                        missed_reason_reviewed_at: localItem.missed_reason_reviewed_at,
+                        creator: localItem.creator,
+                        created_by_coach: localItem.created_by_coach,
+                        can_edit: localItem.can_edit,
+                        can_delete: localItem.can_delete,
+                        can_complete: localItem.can_complete,
+                        escalation: localItem.escalation,
+                        has_subtasks: localItem.has_subtasks,
+                        subtasks_count: localItem.subtasks_count,
+                        subtasks_completed_count: localItem.subtasks_completed_count,
+                        subtask_completion_percentage: localItem.subtask_completion_percentage,
+                        created_at: localItem.created_at,
+                        updated_at: localItem.updated_at
+                    )
+                    items[index] = localItem
+                } else {
+                    items[index] = updatedItem
+                }
             }
             print("✅ ItemViewModel: Completed item: \(updatedItem.title)")
             print("🔍 ItemViewModel: completed_at: \(updatedItem.completed_at ?? "nil")")

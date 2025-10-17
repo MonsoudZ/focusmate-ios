@@ -35,6 +35,13 @@ struct ListsView: View {
                         NavigationLink(destination: ListDetailView(list: list, itemService: ItemService(apiClient: state.auth.api))) {
                             ListRowView(list: list)
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button("Delete", role: .destructive) {
+                                Task {
+                                    await deleteList(list)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -90,6 +97,20 @@ struct ListsView: View {
         }
         
         isLoading = false
+    }
+    
+    private func deleteList(_ list: ListDTO) async {
+        do {
+            let listService = ListService(apiClient: state.auth.api)
+            try await listService.deleteList(id: list.id)
+            
+            // Remove from local array
+            lists.removeAll { $0.id == list.id }
+            print("✅ ListsView: Deleted list \(list.name) (ID: \(list.id))")
+        } catch {
+            self.error = ErrorHandler.shared.handle(error)
+            print("❌ ListsView: Failed to delete list: \(error)")
+        }
     }
 }
 

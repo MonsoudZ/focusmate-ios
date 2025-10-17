@@ -7,6 +7,10 @@ struct ListDetailView: View {
     
     @State private var showingCreateItem = false
     @State private var showingEditList = false
+    @State private var showingDeleteConfirmation = false
+    @State private var showingShareList = false
+    @State private var shares: [ListShare] = []
+    @Environment(\.dismiss) private var dismiss
     
     init(list: ListDTO, itemService: ItemService) {
         self.list = list
@@ -32,14 +36,27 @@ struct ListDetailView: View {
                     
                     Spacer()
                     
-                    Button("Edit") {
-                        showingEditList = true
+                    HStack(spacing: 8) {
+                        Button("Share") {
+                            showingShareList = true
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button("Edit") {
+                            showingEditList = true
+                        }
+                        .buttonStyle(.bordered)
                     }
-                    .buttonStyle(.bordered)
                 }
                 
                 HStack {
                     Label("\(list.tasksCount) tasks", systemImage: "list.bullet")
+                    
+                    if !shares.isEmpty {
+                        Label("\(shares.count) shared", systemImage: "person.2")
+                            .foregroundColor(.blue)
+                    }
+                    
                     Spacer()
                     if list.overdueTasksCount > 0 {
                         Label("\(list.overdueTasksCount) overdue", systemImage: "exclamationmark.triangle")
@@ -100,6 +117,12 @@ struct ListDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Delete List", role: .destructive) {
+                    showingDeleteConfirmation = true
+                }
+            }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     showingCreateItem = true
@@ -114,8 +137,22 @@ struct ListDetailView: View {
         .sheet(isPresented: $showingEditList) {
             EditListView(list: list, listService: ListService(apiClient: appState.auth.api))
         }
+        .sheet(isPresented: $showingShareList) {
+            ShareListView(list: list, listService: ListService(apiClient: appState.auth.api))
+        }
         .task {
             await itemViewModel.loadItems(listId: list.id)
+            await loadShares()
+        }
+        .alert("Delete List", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                Task {
+                    await deleteList()
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete '\(list.name)'? This action cannot be undone.")
         }
         .alert("Error", isPresented: .constant(itemViewModel.error != nil)) {
             Button("OK") {
@@ -125,6 +162,28 @@ struct ListDetailView: View {
             if let error = itemViewModel.error {
                 Text(error.errorDescription ?? "An error occurred")
             }
+        }
+    }
+    
+    private func deleteList() async {
+        do {
+            let listService = ListService(apiClient: appState.auth.api)
+            try await listService.deleteList(id: list.id)
+            print("✅ ListDetailView: Deleted list \(list.name) (ID: \(list.id))")
+            dismiss() // Navigate back to lists view
+        } catch {
+            print("❌ ListDetailView: Failed to delete list: \(error)")
+            // You could add error handling here if needed
+        }
+    }
+    
+    private func loadShares() async {
+        do {
+            let listService = ListService(apiClient: appState.auth.api)
+            shares = try await listService.fetchShares(listId: list.id)
+            print("✅ ListDetailView: Loaded \(shares.count) shares for list \(list.id)")
+        } catch {
+            print("❌ ListDetailView: Failed to load shares: \(error)")
         }
     }
 }

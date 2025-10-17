@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ListRowView: View {
     let list: ListDTO
+    @State private var shares: [ListShare] = []
+    @State private var isLoadingShares = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -36,6 +38,13 @@ struct ListRowView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
+                // Shared with badge
+                if !shares.isEmpty {
+                    Label("\(shares.count) shared", systemImage: "person.2")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
+                
                 Spacer()
                 
                 Text(list.createdAt, style: .date)
@@ -44,6 +53,15 @@ struct ListRowView: View {
             }
         }
         .padding(.vertical, 2)
+        .task {
+            await loadShares()
+        }
+    }
+    
+    private func loadShares() async {
+        // Note: This would need a listService parameter to actually load shares
+        // For now, we'll simulate with empty array
+        shares = []
     }
 }
 

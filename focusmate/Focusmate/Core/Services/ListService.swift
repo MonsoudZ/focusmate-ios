@@ -46,6 +46,20 @@ final class ListService {
         _ = try await apiClient.request("DELETE", "lists/\(id)", body: nil as String?) as EmptyResponse
     }
     
+    // MARK: - List Sharing
+    
+    func shareList(id: Int, request: ShareListRequest) async throws -> ShareListResponse {
+        return try await apiClient.request("POST", "lists/\(id)/share", body: request)
+    }
+    
+    func fetchShares(listId: Int) async throws -> [ListShare] {
+        return try await apiClient.request("GET", "lists/\(listId)/shares", body: nil as String?)
+    }
+    
+    func removeShare(listId: Int, shareId: Int) async throws {
+        _ = try await apiClient.request("DELETE", "lists/\(listId)/shares/\(shareId)", body: nil as String?) as EmptyResponse
+    }
+    
     // MARK: - Request/Response Models
     
     struct EmptyResponse: Codable {}

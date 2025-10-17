@@ -337,3 +337,63 @@ struct UpdateItemRequest: Codable {
         case dueDate = "due_at"
     }
 }
+
+// MARK: - List Sharing Models
+struct ListShare: Codable, Identifiable {
+    let id: Int
+    let list_id: Int
+    let user_id: Int
+    let role: String // "viewer", "editor", "admin"
+    let created_at: String
+    let updated_at: String
+    let user: UserDTO?
+    
+    var roleDisplayName: String {
+        switch role {
+        case "viewer": return "Viewer"
+        case "editor": return "Editor"
+        case "admin": return "Admin"
+        default: return role.capitalized
+        }
+    }
+    
+    var roleColor: Color {
+        switch role {
+        case "viewer": return .blue
+        case "editor": return .orange
+        case "admin": return .red
+        default: return .gray
+        }
+    }
+}
+
+struct ShareListRequest: Codable {
+    let email: String
+    let role: String
+}
+
+struct ShareListResponse: Codable {
+    let id: Int
+    let list_id: Int
+    let email: String
+    let role: String
+    let status: String
+    let invitation_token: String
+    let user: UserDTO?
+    let permissions: SharePermissions
+    let invited_at: String
+    let accepted_at: String?
+    let created_at: String
+    let updated_at: String
+}
+
+struct SharePermissions: Codable {
+    let can_view: Bool
+    let can_edit: Bool
+    let can_add_items: Bool
+    let can_delete_items: Bool
+    let receive_notifications: Bool
+}
+
+// MARK: - Empty Response
+struct EmptyResponse: Codable {}
