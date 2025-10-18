@@ -1,10 +1,49 @@
 import Foundation
+import SwiftData
 
 final class ItemService {
     private let apiClient: APIClient
+    private let swiftDataManager: SwiftDataManager
+    private let deltaSyncService: DeltaSyncService
     
-    init(apiClient: APIClient) {
+    init(apiClient: APIClient, swiftDataManager: SwiftDataManager, deltaSyncService: DeltaSyncService) {
         self.apiClient = apiClient
+        self.swiftDataManager = swiftDataManager
+        self.deltaSyncService = deltaSyncService
+    }
+    
+    // MARK: - SwiftData Item Management
+    
+    func fetchItemsFromLocal(listId: Int) -> [Item] {
+        let fetchDescriptor = FetchDescriptor<Item>(
+            predicate: #Predicate { $0.listId == listId }
+        )
+        
+        do {
+            return try swiftDataManager.context.fetch(fetchDescriptor)
+        } catch {
+            print("❌ ItemService: Failed to fetch items from local storage: \(error)")
+            return []
+        }
+    }
+    
+    func fetchAllItemsFromLocal() -> [Item] {
+        let fetchDescriptor = FetchDescriptor<Item>()
+        
+        do {
+            return try swiftDataManager.context.fetch(fetchDescriptor)
+        } catch {
+            print("❌ ItemService: Failed to fetch all items from local storage: \(error)")
+            return []
+        }
+    }
+    
+    func syncItemsForList(listId: Int) async throws {
+        try await deltaSyncService.syncItems(for: listId)
+    }
+    
+    func syncAllItems() async throws {
+        try await deltaSyncService.syncItems()
     }
     
     // MARK: - Item Management
@@ -64,11 +103,12 @@ final class ItemService {
         return item
     }
     
-    func createItem(listId: Int, name: String, description: String?, dueDate: Date?) async throws -> Item {
+    func createItem(listId: Int, name: String, description: String?, dueDate: Date?, isVisible: Bool = true) async throws -> Item {
         let request = CreateItemRequest(
             name: name,
             description: description,
-            dueDate: dueDate
+            dueDate: dueDate,
+            isVisible: isVisible
         )
         
         do {
@@ -121,6 +161,7 @@ final class ItemService {
                     can_edit: true,
                     can_delete: true,
                     can_complete: true,
+                    is_visible: isVisible,
                     escalation: nil,
                     has_subtasks: false,
                     subtasks_count: 0,
@@ -136,12 +177,13 @@ final class ItemService {
         }
     }
     
-    func updateItem(id: Int, name: String?, description: String?, completed: Bool?, dueDate: Date?) async throws -> Item {
+    func updateItem(id: Int, name: String?, description: String?, completed: Bool?, dueDate: Date?, isVisible: Bool? = nil) async throws -> Item {
         let request = UpdateItemRequest(
             name: name,
             description: description,
             completed: completed,
-            dueDate: dueDate
+            dueDate: dueDate,
+            isVisible: isVisible
         )
         let item: Item = try await apiClient.request("PUT", "tasks/\(id)", body: request)
         return item
@@ -182,6 +224,13 @@ final class ItemService {
         let description: String?
         let completed: Bool?
         let dueDate: Date?
+        let isVisible: Bool?
+        
+        enum CodingKeys: String, CodingKey {
+            case name, description, completed
+            case dueDate = "due_at"
+            case isVisible = "is_visible"
+        }
     }
     
     struct CompleteItemRequest: Codable {

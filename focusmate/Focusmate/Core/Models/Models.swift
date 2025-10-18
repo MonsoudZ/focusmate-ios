@@ -114,6 +114,9 @@ struct Item: Codable, Identifiable {
     let can_delete: Bool
     let can_complete: Bool
     
+    // Visibility
+    let is_visible: Bool
+    
     // Escalation
     let escalation: Escalation?
     
@@ -319,10 +322,12 @@ struct CreateItemRequest: Codable {
     let name: String
     let description: String?
     let dueDate: Date?
+    let isVisible: Bool?
     
     enum CodingKeys: String, CodingKey {
         case name, description
         case dueDate = "due_at"
+        case isVisible = "is_visible"
     }
 }
 
@@ -331,10 +336,12 @@ struct UpdateItemRequest: Codable {
     let description: String?
     let completed: Bool?
     let dueDate: Date?
+    let isVisible: Bool?
     
     enum CodingKeys: String, CodingKey {
         case name, description, completed
         case dueDate = "due_at"
+        case isVisible = "is_visible"
     }
 }
 

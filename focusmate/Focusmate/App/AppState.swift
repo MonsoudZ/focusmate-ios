@@ -15,6 +15,11 @@ final class AppState: ObservableObject {
     private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
     private(set) lazy var escalationService = EscalationService(apiClient: auth.api)
     
+    // SwiftData Services
+    private(set) lazy var swiftDataManager = SwiftDataManager.shared
+    private(set) lazy var deltaSyncService = DeltaSyncService(apiClient: auth.api, swiftDataManager: swiftDataManager)
+    private(set) lazy var itemService = ItemService(apiClient: auth.api, swiftDataManager: swiftDataManager, deltaSyncService: deltaSyncService)
+    
     // WebSocket for real-time updates
     @Published var webSocketManager = WebSocketManager()
     

@@ -1,15 +1,30 @@
 import SwiftUI
 import UserNotifications
+import SwiftData
 
 @main
 struct FocusmateApp: App {
     @StateObject var state = AppState()
+    @StateObject var swiftDataManager = SwiftDataManager.shared
+    @StateObject var deltaSyncService: DeltaSyncService
+    
+    init() {
+        let _swiftDataManager = SwiftDataManager.shared
+        let _deltaSyncService = DeltaSyncService(
+            apiClient: APIClient(tokenProvider: { AppState().auth.jwt }),
+            swiftDataManager: _swiftDataManager
+        )
+        self._deltaSyncService = StateObject(wrappedValue: _deltaSyncService)
+    }
     
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(state)
                 .environmentObject(state.auth)
+                .environmentObject(swiftDataManager)
+                .environmentObject(deltaSyncService)
+                .modelContainer(swiftDataManager.modelContainer)
                 .onAppear {
                     setupPushNotifications()
                 }
@@ -46,6 +61,18 @@ struct RootView: View {
                     .tabItem {
                         Image(systemName: "exclamationmark.triangle")
                         Text("Blocking")
+                    }
+                
+                SwiftDataTestView()
+                    .tabItem {
+                        Image(systemName: "wrench.and.screwdriver")
+                        Text("Test")
+                    }
+                
+                VisibilityTestView()
+                    .tabItem {
+                        Image(systemName: "eye")
+                        Text("Visibility")
                     }
             }
             .task { 

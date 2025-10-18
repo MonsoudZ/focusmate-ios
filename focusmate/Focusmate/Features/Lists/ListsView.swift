@@ -1,7 +1,10 @@
 import SwiftUI
+import SwiftData
 
 struct ListsView: View {
     @EnvironmentObject var state: AppState
+    @EnvironmentObject var swiftDataManager: SwiftDataManager
+    @EnvironmentObject var deltaSyncService: DeltaSyncService
     @State private var showingCreateList = false
     @State private var lists: [ListDTO] = []
     @State private var isLoading = false
@@ -46,6 +49,9 @@ struct ListsView: View {
                 }
             }
             .navigationTitle("Lists")
+            .safeAreaInset(edge: .bottom) {
+                SyncStatusView()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Sign Out") { 

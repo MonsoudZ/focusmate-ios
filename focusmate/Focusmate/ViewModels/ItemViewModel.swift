@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftData
 
 @MainActor
 final class ItemViewModel: ObservableObject {
@@ -7,13 +8,41 @@ final class ItemViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var error: FocusmateError?
     @Published var selectedItem: Item?
+    @Published var isOnline = false
+    @Published var lastSyncTime: Date?
     
     private let itemService: ItemService
+    private let swiftDataManager: SwiftDataManager
+    private let deltaSyncService: DeltaSyncService
     private var cancellables = Set<AnyCancellable>()
     
-    init(itemService: ItemService) {
+    init(itemService: ItemService, swiftDataManager: SwiftDataManager, deltaSyncService: DeltaSyncService) {
         self.itemService = itemService
+        self.swiftDataManager = swiftDataManager
+        self.deltaSyncService = deltaSyncService
         setupTaskUpdateListener()
+        updateSyncStatus()
+    }
+    
+    private func updateSyncStatus() {
+        isOnline = swiftDataManager.syncStatus.isOnline
+        lastSyncTime = swiftDataManager.syncStatus.lastSuccessfulSync
+    }
+    
+    func performFullSync() async {
+        isLoading = true
+        error = nil
+        
+        do {
+            try await deltaSyncService.syncAll()
+            updateSyncStatus()
+            print("✅ ItemViewModel: Full sync completed")
+        } catch {
+            self.error = ErrorHandler.shared.handle(error)
+            print("❌ ItemViewModel: Full sync failed: \(error)")
+        }
+        
+        isLoading = false
     }
     
     func loadItems(listId: Int) async {
@@ -21,17 +50,29 @@ final class ItemViewModel: ObservableObject {
         error = nil
         
         do {
-            items = try await itemService.fetchItems(listId: listId)
-            print("✅ ItemViewModel: Loaded \(items.count) items for list \(listId)")
+            // First, try to load from local SwiftData storage
+            items = itemService.fetchItemsFromLocal(listId: listId)
+            print("✅ ItemViewModel: Loaded \(items.count) items from local storage for list \(listId)")
+            
+            // Then attempt to sync with server
+            try await itemService.syncItemsForList(listId: listId)
+            
+            // Reload from local storage after sync
+            items = itemService.fetchItemsFromLocal(listId: listId)
+            print("✅ ItemViewModel: Synced and reloaded \(items.count) items for list \(listId)")
+            
         } catch {
-            self.error = ErrorHandler.shared.handle(error)
-            print("❌ ItemViewModel: Failed to load items: \(error)")
+            // If sync fails, still show local data
+            print("⚠️ ItemViewModel: Sync failed, showing local data: \(error)")
+            if items.isEmpty {
+                self.error = ErrorHandler.shared.handle(error)
+            }
         }
         
         isLoading = false
     }
     
-    func createItem(listId: Int, name: String, description: String?, dueDate: Date?) async {
+    func createItem(listId: Int, name: String, description: String?, dueDate: Date?, isVisible: Bool = true) async {
         isLoading = true
         error = nil
         
@@ -40,7 +81,8 @@ final class ItemViewModel: ObservableObject {
                 listId: listId,
                 name: name,
                 description: description,
-                dueDate: dueDate
+                dueDate: dueDate,
+                isVisible: isVisible
             )
             items.append(newItem)
             print("✅ ItemViewModel: Created item: \(newItem.title)")
@@ -52,7 +94,7 @@ final class ItemViewModel: ObservableObject {
         isLoading = false
     }
     
-    func updateItem(id: Int, name: String?, description: String?, completed: Bool?, dueDate: Date?) async {
+    func updateItem(id: Int, name: String?, description: String?, completed: Bool?, dueDate: Date?, isVisible: Bool? = nil) async {
         isLoading = true
         error = nil
         
@@ -62,7 +104,8 @@ final class ItemViewModel: ObservableObject {
                 name: name,
                 description: description,
                 completed: completed,
-                dueDate: dueDate
+                dueDate: dueDate,
+                isVisible: isVisible
             )
             if let index = items.firstIndex(where: { $0.id == id }) {
                 items[index] = updatedItem

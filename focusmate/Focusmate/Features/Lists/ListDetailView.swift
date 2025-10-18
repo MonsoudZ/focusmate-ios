@@ -1,8 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct ListDetailView: View {
     let list: ListDTO
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var swiftDataManager: SwiftDataManager
+    @EnvironmentObject var deltaSyncService: DeltaSyncService
     @StateObject private var itemViewModel: ItemViewModel
     
     @State private var showingCreateItem = false
@@ -14,7 +17,14 @@ struct ListDetailView: View {
     
     init(list: ListDTO, itemService: ItemService) {
         self.list = list
-        self._itemViewModel = StateObject(wrappedValue: ItemViewModel(itemService: itemService))
+        self._itemViewModel = StateObject(wrappedValue: ItemViewModel(
+            itemService: itemService,
+            swiftDataManager: SwiftDataManager.shared,
+            deltaSyncService: DeltaSyncService(
+                apiClient: APIClient(tokenProvider: { AppState().auth.jwt }),
+                swiftDataManager: SwiftDataManager.shared
+            )
+        ))
     }
     
     var body: some View {

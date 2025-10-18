@@ -10,6 +10,7 @@ struct CreateItemView: View {
     @State private var description = ""
     @State private var dueDate = Date()
     @State private var hasDueDate = false
+    @State private var isVisible = true
     
     init(listId: Int, itemService: ItemService) {
         self.listId = listId
@@ -33,6 +34,11 @@ struct CreateItemView: View {
                     if hasDueDate {
                         DatePicker("Due Date", selection: $dueDate, displayedComponents: [.date, .hourAndMinute])
                     }
+                }
+                
+                Section(header: Text("Visibility")) {
+                    Toggle("Visible to others", isOn: $isVisible)
+                        .help("When enabled, this task will be visible to other users who have access to this list")
                 }
             }
             .navigationTitle("New Item")
@@ -70,7 +76,8 @@ struct CreateItemView: View {
             listId: listId,
             name: name,
             description: description.isEmpty ? nil : description,
-            dueDate: hasDueDate ? dueDate : nil
+            dueDate: hasDueDate ? dueDate : nil,
+            isVisible: isVisible
         )
         
         if itemViewModel.error == nil {

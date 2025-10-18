@@ -10,6 +10,7 @@ struct TaskActionSheet: View {
     @State private var showingEscalation = false
     @State private var completionNotes = ""
     @State private var showingCompletionForm = false
+    @State private var showingEditForm = false
     
     var body: some View {
         NavigationView {
@@ -111,6 +112,19 @@ struct TaskActionSheet: View {
                     
                     // Secondary Actions
                     VStack(spacing: 8) {
+                        Button(action: { showingEditForm = true }) {
+                            HStack {
+                                Image(systemName: "pencil")
+                                Text("Edit Task")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.orange)
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        .disabled(!item.can_edit)
+                        
                         Button(action: { showingExplanation = true }) {
                             HStack {
                                 Image(systemName: "text.bubble")
@@ -148,6 +162,16 @@ struct TaskActionSheet: View {
                         dismiss()
                     }
                 }
+            }
+            .sheet(isPresented: $showingEditForm) {
+                EditItemView(item: item, itemService: ItemService(
+                    apiClient: APIClient(tokenProvider: { AppState().auth.jwt }),
+                    swiftDataManager: SwiftDataManager.shared,
+                    deltaSyncService: DeltaSyncService(
+                        apiClient: APIClient(tokenProvider: { AppState().auth.jwt }),
+                        swiftDataManager: SwiftDataManager.shared
+                    )
+                ))
             }
             .sheet(isPresented: $showingReassign) {
                 ReassignView(item: item, itemViewModel: itemViewModel)
