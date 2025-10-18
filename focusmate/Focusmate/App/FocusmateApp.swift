@@ -1,12 +1,27 @@
 import SwiftUI
+import UserNotifications
 
 @main
 struct FocusmateApp: App {
     @StateObject var state = AppState()
+    
     var body: some Scene {
         WindowGroup {
-            RootView().environmentObject(state).environmentObject(state.auth)
+            RootView()
+                .environmentObject(state)
+                .environmentObject(state.auth)
+                .onAppear {
+                    setupPushNotifications()
+                }
         }
+    }
+    
+    private func setupPushNotifications() {
+        // Set up notification delegate
+        UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+        
+        // Register for remote notifications
+        UIApplication.shared.registerForRemoteNotifications()
     }
 }
 

@@ -10,8 +10,8 @@ final class DeviceService {
     
     // MARK: - Device Management
     
-    func registerDevice() async throws -> DeviceRegistrationResponse {
-        let deviceInfo = DeviceInfo()
+    func registerDevice(pushToken: String? = nil) async throws -> DeviceRegistrationResponse {
+        let deviceInfo = DeviceInfo(pushToken: pushToken)
         return try await apiClient.request("POST", "devices", body: deviceInfo)
     }
     
@@ -28,13 +28,15 @@ final class DeviceService {
         let model: String
         let systemVersion: String
         let appVersion: String
+        let pushToken: String?
         
-        init() {
+        init(pushToken: String? = nil) {
             self.platform = "iOS"
             self.version = UIDevice.current.systemVersion
             self.model = UIDevice.current.model
             self.systemVersion = UIDevice.current.systemVersion
             self.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+            self.pushToken = pushToken
         }
     }
     
