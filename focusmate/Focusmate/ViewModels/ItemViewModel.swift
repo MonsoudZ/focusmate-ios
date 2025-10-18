@@ -13,6 +13,7 @@ final class ItemViewModel: ObservableObject {
     
     init(itemService: ItemService) {
         self.itemService = itemService
+        setupTaskUpdateListener()
     }
     
     func loadItems(listId: Int) async {
@@ -207,5 +208,53 @@ final class ItemViewModel: ObservableObject {
     
     func clearError() {
         error = nil
+    }
+    
+    // MARK: - Real-time Task Updates
+    
+    private func setupTaskUpdateListener() {
+        NotificationCenter.default.addObserver(
+            forName: .mergeTaskUpdate,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleTaskUpdate(notification)
+        }
+    }
+    
+    private func handleTaskUpdate(_ notification: Notification) {
+        guard let updatedTask = notification.userInfo?["updatedTask"] as? Item else {
+            print("🔌 ItemViewModel: Invalid task update data")
+            return
+        }
+        
+        print("🔌 ItemViewModel: Received task update for item \(updatedTask.id)")
+        
+        // Find and merge the updated task
+        if let index = items.firstIndex(where: { $0.id == updatedTask.id }) {
+            let oldTask = items[index]
+            items[index] = updatedTask
+            
+            print("✅ ItemViewModel: Merged task update for '\(updatedTask.title)'")
+            print("🔍 ItemViewModel: Status changed from \(oldTask.isCompleted) to \(updatedTask.isCompleted)")
+            
+            // Log specific changes
+            if oldTask.title != updatedTask.title {
+                print("🔍 ItemViewModel: Title changed from '\(oldTask.title)' to '\(updatedTask.title)'")
+            }
+            if oldTask.completed_at != updatedTask.completed_at {
+                print("🔍 ItemViewModel: Completion status changed")
+            }
+            if oldTask.description != updatedTask.description {
+                print("🔍 ItemViewModel: Description updated")
+            }
+        } else {
+            // Task doesn't exist in current list, might be from another list
+            print("🔌 ItemViewModel: Task \(updatedTask.id) not found in current list")
+        }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }
