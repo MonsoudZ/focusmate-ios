@@ -74,6 +74,12 @@ struct RootView: View {
                         Image(systemName: "eye")
                         Text("Visibility")
                     }
+                
+                ErrorHandlingTestView()
+                    .tabItem {
+                        Image(systemName: "exclamationmark.triangle")
+                        Text("Errors")
+                    }
             }
             .task { 
                 print("📋 ListsView loading...")

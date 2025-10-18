@@ -55,16 +55,27 @@ final class APIClient {
         do {
             let (data, resp) = try await session.data(for: req)
             guard let http = resp as? HTTPURLResponse else { throw APIError.badURL }
+            
+            // Parse error response if present
+            let errorResponse = parseErrorResponse(data: data, statusCode: http.statusCode)
+            
             switch http.statusCode {
             case 200...299:
                 break
             case 401:
                 print("🚫 APIClient: 401 Unauthorized for \(method) \(url.absoluteString)")
                 throw APIError.unauthorized
+            case 429:
+                let retryAfter = extractRetryAfter(from: http.allHeaderFields)
+                print("⏰ APIClient: 429 Rate Limited for \(method) \(url.absoluteString), retry after: \(retryAfter)s")
+                throw APIError.rateLimited(retryAfter)
+            case 500...599:
+                print("🔥 APIClient: Server error \(http.statusCode) for \(method) \(url.absoluteString)")
+                throw APIError.serverError(http.statusCode, errorResponse?.message, errorResponse?.details)
             default:
                 let bodyPreview = String(data: data, encoding: .utf8) ?? "<non-utf8>"
                 print("⚠️ APIClient: bad status \(http.statusCode) for \(method) \(url.absoluteString) body=\(bodyPreview)")
-                throw APIError.badStatus(http.statusCode)
+                throw APIError.badStatus(http.statusCode, errorResponse?.message, errorResponse?.details)
             }
             do { 
                 // Handle empty responses (common for DELETE requests)
@@ -99,6 +110,39 @@ final class APIClient {
             if let apiError = error as? APIError { throw apiError }
             throw APIError.network(error)
         }
+    }
+    
+    // MARK: - Error Response Parsing
+    
+    private func parseErrorResponse(data: Data, statusCode: Int) -> ErrorResponse? {
+        guard !data.isEmpty, statusCode >= 400 else { return nil }
+        
+        do {
+            let errorResponse = try APIClient.railsAPI.decode(ErrorResponse.self, from: data)
+            return errorResponse
+        } catch {
+            // If we can't parse as structured error, try to extract basic info
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                let message = json["message"] as? String ?? json["error"] as? String
+                let code = json["code"] as? String ?? "HTTP_\(statusCode)"
+                return ErrorResponse(
+                    code: code,
+                    message: message ?? "HTTP \(statusCode) error",
+                    details: json,
+                    timestamp: nil,
+                    requestId: nil
+                )
+            }
+            return nil
+        }
+    }
+    
+    private func extractRetryAfter(from headers: [AnyHashable: Any]) -> Int {
+        if let retryAfter = headers["Retry-After"] as? String,
+           let seconds = Int(retryAfter) {
+            return seconds
+        }
+        return 60 // Default retry after 60 seconds
     }
 }
 
