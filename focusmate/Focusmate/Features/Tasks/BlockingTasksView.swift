@@ -11,7 +11,7 @@ struct BlockingTasksView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
+            VStack {
                 if escalationViewModel.isLoading {
                     ProgressView("Loading blocking tasks...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -32,11 +32,16 @@ struct BlockingTasksView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    List(escalationViewModel.blockingTasks) { task in
-                        BlockingTaskRowView(task: task) {
-                            selectedTask = task
-                            showingEscalationForm = true
+                    ScrollView {
+                        LazyVStack(spacing: 8) {
+                            ForEach(escalationViewModel.blockingTasks, id: \.id) { task in
+                                BlockingTaskRowView(task: task) {
+                                    selectedTask = task
+                                    showingEscalationForm = true
+                                }
+                            }
                         }
+                        .padding()
                     }
                 }
             }

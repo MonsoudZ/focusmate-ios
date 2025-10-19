@@ -15,7 +15,14 @@ struct CreateItemView: View {
     init(listId: Int, itemService: ItemService) {
         self.listId = listId
         self.itemService = itemService
-        self._itemViewModel = StateObject(wrappedValue: ItemViewModel(itemService: itemService))
+        self._itemViewModel = StateObject(wrappedValue: ItemViewModel(
+            itemService: itemService,
+            swiftDataManager: SwiftDataManager.shared,
+            deltaSyncService: DeltaSyncService(
+                apiClient: APIClient(tokenProvider: { AppState().auth.jwt }),
+                swiftDataManager: SwiftDataManager.shared
+            )
+        ))
     }
     
     var body: some View {

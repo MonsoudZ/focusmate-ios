@@ -100,8 +100,9 @@ struct ListDetailView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
-                    ForEach(itemViewModel.items) { item in
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(itemViewModel.items) { item in
                         NavigationLink(destination: TaskActionSheet(item: item, itemViewModel: itemViewModel)) {
                             ItemRowView(item: item) {
                                 Task {
@@ -121,7 +122,9 @@ struct ListDetailView: View {
                                 await itemViewModel.deleteItem(id: item.id)
                             }
                         }
+                        }
                     }
+                    .padding()
                 }
             }
         }
@@ -142,7 +145,17 @@ struct ListDetailView: View {
             }
         }
         .sheet(isPresented: $showingCreateItem) {
-            CreateItemView(listId: list.id, itemService: ItemService(apiClient: appState.auth.api))
+            CreateItemView(
+                listId: list.id, 
+                itemService: ItemService(
+                    apiClient: appState.auth.api,
+                    swiftDataManager: SwiftDataManager.shared,
+                    deltaSyncService: DeltaSyncService(
+                        apiClient: appState.auth.api,
+                        swiftDataManager: SwiftDataManager.shared
+                    )
+                )
+            )
         }
         .sheet(isPresented: $showingEditList) {
             EditListView(list: list, listService: ListService(apiClient: appState.auth.api))

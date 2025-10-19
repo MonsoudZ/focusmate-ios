@@ -29,9 +29,23 @@
 		99C4FB402E9E05B2003F8E91 /* focusmateUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = focusmateUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		99C4FC422EA59034003F8E91 /* Exceptions for "focusmate" folder in "focusmate" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Debug-Info.plist",
+				"Release-Info.plist",
+			);
+			target = 99C4FB282E9E05B1003F8E91 /* focusmate */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		99C4FB2B2E9E05B1003F8E91 /* focusmate */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				99C4FC422EA59034003F8E91 /* Exceptions for "focusmate" folder in "focusmate" target */,
+			);
 			path = focusmate;
 			sourceTree = "<group>";
 		};

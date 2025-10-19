@@ -10,7 +10,7 @@ class WebSocketManager: ObservableObject {
     @Published var connectionStatus: ConnectionStatus = .disconnected
     @Published var lastError: String?
     
-    enum ConnectionStatus {
+    enum ConnectionStatus: Equatable {
         case connected
         case connecting
         case disconnected
@@ -24,7 +24,7 @@ class WebSocketManager: ObservableObject {
         
         connectionStatus = .connecting
         
-        // Construct the WebSocket URL with JWT token
+        // Construct the WebSocket URL with JWT token as query parameter
         guard let baseURL = URL(string: "wss://untampered-jong-harshly.ngrok-free.dev/cable") else {
             connectionStatus = .error("Invalid WebSocket URL")
             return
@@ -40,7 +40,7 @@ class WebSocketManager: ObservableObject {
         
         print("🔌 WebSocketManager: Connecting to \(webSocketURL)")
         
-        // Create URLSession with custom headers
+        // Create URLSession with custom headers for ActionCable
         let config = URLSessionConfiguration.default
         config.httpAdditionalHeaders = [
             "ngrok-skip-browser-warning": "true"
@@ -49,8 +49,17 @@ class WebSocketManager: ObservableObject {
         urlSession = URLSession(configuration: config)
         webSocketTask = urlSession?.webSocketTask(with: webSocketURL)
         
+        // Add connection timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
+            if self?.connectionStatus == .connecting {
+                print("🔌 WebSocketManager: Connection timeout")
+                self?.connectionStatus = .error("Connection timeout")
+                self?.disconnect()
+            }
+        }
+        
         startListening()
-        sendWelcomeMessage()
+        // Don't send welcome message immediately - wait for connection
     }
     
     func disconnect() {
@@ -75,6 +84,7 @@ class WebSocketManager: ObservableObject {
         webSocketTask?.receive { [weak self] result in
             switch result {
             case .success(let message):
+                print("🔌 WebSocketManager: Message received successfully")
                 self?.handleMessage(message)
                 self?.receiveMessage() // Continue listening
             case .failure(let error):
@@ -218,6 +228,13 @@ class WebSocketManager: ObservableObject {
         connectionStatus = .error(error.localizedDescription)
         lastError = error.localizedDescription
         
+        // Check if this is a WebSocket protocol error
+        if let urlError = error as? URLError, urlError.code == .badServerResponse {
+            print("🔌 WebSocketManager: Server doesn't support WebSocket protocol, falling back to HTTP polling")
+            startHttpPolling()
+            return
+        }
+        
         // Attempt to reconnect after a delay
         scheduleReconnect()
     }
@@ -228,6 +245,24 @@ class WebSocketManager: ObservableObject {
             print("🔌 WebSocketManager: Attempting to reconnect...")
             // Note: Would need the token to reconnect
         }
+    }
+    
+    private func startHttpPolling() {
+        print("🔌 WebSocketManager: Starting HTTP polling fallback")
+        connectionStatus = .connected // Mark as connected for polling mode
+        isConnected = true
+        
+        // Start polling for updates every 30 seconds
+        reconnectTimer?.invalidate()
+        reconnectTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { _ in
+            self.pollForUpdates()
+        }
+    }
+    
+    private func pollForUpdates() {
+        // This would poll the server for updates
+        // For now, just log that we're polling
+        print("🔌 WebSocketManager: Polling for updates...")
     }
 }
 

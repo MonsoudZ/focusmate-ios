@@ -10,19 +10,17 @@ final class ListService {
     // MARK: - List Management
     
     func fetchLists() async throws -> [ListDTO] {
-        // GET /lists returns array directly
-        let lists: [ListDTO] = try await apiClient.request("GET", "lists", body: nil as String?)
+        // GET /lists returns object with lists array
+        let response: ListsResponse = try await apiClient.request("GET", "lists", body: nil as String?)
+        let lists = response.lists
         print("🔍 ListService: Fetched \(lists.count) lists from Rails API")
         print("🔍 ListService: List IDs: \(lists.map { $0.id })")
         
-        // Filter out lists that the user doesn't have access to
-        // For now, we'll filter out lists with IDs > 10 as a temporary fix
-        // TODO: This should be handled by the Rails API permissions
-        let accessibleLists = lists.filter { $0.id <= 10 }
-        print("🔍 ListService: Filtered to \(accessibleLists.count) accessible lists")
-        print("🔍 ListService: Accessible List IDs: \(accessibleLists.map { $0.id })")
+        // Return all lists - the API should handle permissions
+        print("🔍 ListService: Returning \(lists.count) lists")
+        print("🔍 ListService: List IDs: \(lists.map { $0.id })")
         
-        return accessibleLists
+        return lists
     }
     
     func fetchList(id: Int) async throws -> ListDTO {
@@ -63,4 +61,9 @@ final class ListService {
     // MARK: - Request/Response Models
     
     struct EmptyResponse: Codable {}
+    
+    struct ListsResponse: Codable {
+        let lists: [ListDTO]
+        let tombstones: [String]?
+    }
 }

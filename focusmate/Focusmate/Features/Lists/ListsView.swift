@@ -13,7 +13,7 @@ struct ListsView: View {
     var body: some View {
         let _ = print("📋 ListsView body rendered")
         NavigationStack {
-            Group {
+            VStack {
                 if isLoading {
                     ProgressView("Loading lists...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -34,17 +34,32 @@ struct ListsView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    List(lists) { list in
-                        NavigationLink(destination: ListDetailView(list: list, itemService: ItemService(apiClient: state.auth.api))) {
-                            ListRowView(list: list)
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button("Delete", role: .destructive) {
-                                Task {
-                                    await deleteList(list)
+                    ScrollView {
+                        LazyVStack(spacing: 8) {
+                            ForEach(lists, id: \.id) { list in
+                                NavigationLink(destination: ListDetailView(
+                                    list: list, 
+                                    itemService: ItemService(
+                                        apiClient: state.auth.api,
+                                        swiftDataManager: SwiftDataManager.shared,
+                                        deltaSyncService: DeltaSyncService(
+                                            apiClient: state.auth.api,
+                                            swiftDataManager: SwiftDataManager.shared
+                                        )
+                                    )
+                                )) {
+                                    ListRowView(list: list)
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button("Delete", role: .destructive) {
+                                        Task {
+                                            await deleteList(list)
+                                        }
+                                    }
                                 }
                             }
                         }
+                        .padding()
                     }
                 }
             }

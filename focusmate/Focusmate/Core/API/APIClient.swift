@@ -8,6 +8,14 @@ final class APIClient {
         self.tokenProvider = tokenProvider
     }
     
+    func getToken() -> String? {
+        return tokenProvider()
+    }
+    
+    func getSession() -> URLSession {
+        return session
+    }
+    
     // MARK: - JSON Decoder Configuration
     static let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
@@ -125,10 +133,22 @@ final class APIClient {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 let message = json["message"] as? String ?? json["error"] as? String
                 let code = json["code"] as? String ?? "HTTP_\(statusCode)"
+                
+                // Convert [String: Any] to [String: String]
+                let stringDetails = json.compactMapValues { value in
+                    if let stringValue = value as? String {
+                        return stringValue
+                    } else if let numberValue = value as? NSNumber {
+                        return numberValue.stringValue
+                    } else {
+                        return String(describing: value)
+                    }
+                }
+                
                 return ErrorResponse(
                     code: code,
                     message: message ?? "HTTP \(statusCode) error",
-                    details: json,
+                    details: stringDetails.isEmpty ? nil : stringDetails,
                     timestamp: nil,
                     requestId: nil
                 )

@@ -15,20 +15,21 @@ final class ItemService {
     // MARK: - SwiftData Item Management
     
     func fetchItemsFromLocal(listId: Int) -> [Item] {
-        let fetchDescriptor = FetchDescriptor<Item>(
+        let fetchDescriptor = FetchDescriptor<TaskItem>(
             predicate: #Predicate { $0.listId == listId }
         )
         
         do {
-            return try swiftDataManager.context.fetch(fetchDescriptor)
+            let taskItems = try swiftDataManager.context.fetch(fetchDescriptor)
+            return taskItems.map { convertTaskItemToItem($0) }
         } catch {
             print("❌ ItemService: Failed to fetch items from local storage: \(error)")
             return []
         }
     }
     
-    func fetchAllItemsFromLocal() -> [Item] {
-        let fetchDescriptor = FetchDescriptor<Item>()
+    func fetchAllItemsFromLocal() -> [TaskItem] {
+        let fetchDescriptor = FetchDescriptor<TaskItem>()
         
         do {
             return try swiftDataManager.context.fetch(fetchDescriptor)
@@ -54,23 +55,23 @@ final class ItemService {
             let items: [Item] = try await apiClient.request("GET", "lists/\(listId)/tasks", body: nil as String?)
             return items
         } catch let error as APIError {
-            if case .badStatus(404) = error {
+            if case .badStatus(404, _, _) = error {
                 print("🔄 ItemService: Primary route failed, trying fallback routes...")
                 
-                // Try multiple fallback patterns (prioritize "tasks" since Rails uses "tasks" table)
+                // Try multiple fallback patterns with proper query parameters
                 let fallbackRoutes = [
-                    "tasks?list_id=\(listId)",
-                    "items?list_id=\(listId)",
-                    "tasks",
-                    "items"
+                    ("tasks", ["list_id": String(listId)]),
+                    ("items", ["list_id": String(listId)]),
+                    ("tasks", [:]),
+                    ("items", [:])
                 ]
                 
-                for route in fallbackRoutes {
-                    print("🔄 ItemService: Trying route: \(route)")
+                for (route, queryParams) in fallbackRoutes {
+                    print("🔄 ItemService: Trying route: \(route) with params: \(queryParams)")
                     
                     // Try wrapped response first
                     do {
-                        let wrapped: ItemsResponse = try await apiClient.request("GET", route, body: nil as String?)
+                        let wrapped: ItemsResponse = try await apiClient.request("GET", route, body: nil as String?, queryParameters: queryParams)
                         print("✅ ItemService: Found items via wrapped route: \(route)")
                         return wrapped.items
                     } catch {
@@ -78,7 +79,7 @@ final class ItemService {
                         
                         // Try unwrapped array response
                         do {
-                            let items: [Item] = try await apiClient.request("GET", route, body: nil as String?)
+                            let items: [Item] = try await apiClient.request("GET", route, body: nil as String?, queryParameters: queryParams)
                             print("✅ ItemService: Found items via direct array route: \(route)")
                             return items
                         } catch {
@@ -115,7 +116,7 @@ final class ItemService {
             let item: Item = try await apiClient.request("POST", "lists/\(listId)/tasks", body: request)
             return item
         } catch let error as APIError {
-            if case .badStatus(404) = error {
+            if case .badStatus(404, _, _) = error {
                 print("⚠️ ItemService: Tasks endpoint not available, creating mock item")
                 // Create a mock item for now until the API is ready
                 // Create a mock item with all required fields
@@ -253,6 +254,68 @@ final class ItemService {
     
     struct ItemsResponse: Codable {
         let items: [Item]
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func convertTaskItemToItem(_ taskItem: TaskItem) -> Item {
+        return Item(
+            id: taskItem.id,
+            list_id: taskItem.listId,
+            title: taskItem.title,
+            description: taskItem.itemDescription,
+            due_at: taskItem.dueAt?.ISO8601Format(),
+            completed_at: taskItem.completedAt?.ISO8601Format(),
+            priority: taskItem.priority,
+            can_be_snoozed: taskItem.canBeSnoozed,
+            notification_interval_minutes: taskItem.notificationIntervalMinutes,
+            requires_explanation_if_missed: taskItem.requiresExplanationIfMissed,
+            overdue: taskItem.overdue,
+            minutes_overdue: taskItem.minutesOverdue,
+            requires_explanation: taskItem.requiresExplanation,
+            is_recurring: taskItem.isRecurring,
+            recurrence_pattern: taskItem.recurrencePattern,
+            recurrence_interval: taskItem.recurrenceInterval,
+            recurrence_days: taskItem.recurrenceDays,
+            location_based: taskItem.locationBased,
+            location_name: taskItem.locationName,
+            location_latitude: taskItem.locationLatitude,
+            location_longitude: taskItem.locationLongitude,
+            location_radius_meters: taskItem.locationRadiusMeters,
+            notify_on_arrival: taskItem.notifyOnArrival,
+            notify_on_departure: taskItem.notifyOnDeparture,
+            missed_reason: taskItem.missedReason,
+            missed_reason_submitted_at: taskItem.missedReasonSubmittedAt?.ISO8601Format(),
+            missed_reason_reviewed_at: taskItem.missedReasonReviewedAt?.ISO8601Format(),
+            creator: UserDTO(
+                id: taskItem.creator?.id ?? 0,
+                email: taskItem.creator?.email ?? "",
+                name: taskItem.creator?.name ?? "",
+                role: taskItem.creator?.role ?? "",
+                timezone: taskItem.creator?.timezone,
+                created_at: taskItem.creator?.createdAt?.ISO8601Format()
+            ),
+            created_by_coach: taskItem.createdByCoach,
+            can_edit: taskItem.canEdit,
+            can_delete: taskItem.canDelete,
+            can_complete: taskItem.canComplete,
+            is_visible: taskItem.isVisible,
+            escalation: taskItem.escalation != nil ? Escalation(
+                id: taskItem.escalation!.id,
+                level: taskItem.escalation!.level,
+                notification_count: taskItem.escalation!.notificationCount,
+                blocking_app: taskItem.escalation!.blockingApp,
+                coaches_notified: taskItem.escalation!.coachesNotified,
+                became_overdue_at: taskItem.escalation!.becameOverdueAt?.ISO8601Format(),
+                last_notification_at: taskItem.escalation!.lastNotificationAt?.ISO8601Format()
+            ) : nil,
+            has_subtasks: taskItem.hasSubtasks,
+            subtasks_count: taskItem.subtasksCount,
+            subtasks_completed_count: taskItem.subtasksCompletedCount,
+            subtask_completion_percentage: taskItem.subtaskCompletionPercentage,
+            created_at: taskItem.createdAt.ISO8601Format(),
+            updated_at: taskItem.updatedAt.ISO8601Format()
+        )
     }
     
 }

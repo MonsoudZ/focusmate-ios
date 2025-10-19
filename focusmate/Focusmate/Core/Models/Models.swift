@@ -162,6 +162,22 @@ struct Item: Codable, Identifiable {
         let formatter = ISO8601DateFormatter()
         return formatter.date(from: due_at)
     }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, title, description, priority
+        case list_id, due_at, completed_at
+        case can_be_snoozed, notification_interval_minutes, requires_explanation_if_missed
+        case overdue, minutes_overdue, requires_explanation
+        case is_recurring, recurrence_pattern, recurrence_interval, recurrence_days
+        case location_based, location_name, location_latitude, location_longitude, location_radius_meters
+        case notify_on_arrival, notify_on_departure
+        case missed_reason, missed_reason_submitted_at, missed_reason_reviewed_at
+        case creator, created_by_coach
+        case can_edit, can_delete, can_complete
+        case is_visible = "visibility"
+        case escalation, has_subtasks, subtasks_count, subtasks_completed_count, subtask_completion_percentage
+        case created_at, updated_at
+    }
 }
 
 // MARK: - Escalation Models

@@ -68,7 +68,7 @@ struct ErrorHandlingTestView: View {
             .navigationTitle("Error Handling Test")
             .navigationBarTitleDisplayMode(.inline)
             .alert("Error Alert Test", isPresented: $showingErrorAlert) {
-                if let error = currentError {
+                if currentError != nil {
                     Button("OK") {
                         currentError = nil
                     }

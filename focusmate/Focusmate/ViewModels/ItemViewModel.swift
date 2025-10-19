@@ -185,6 +185,7 @@ final class ItemViewModel: ObservableObject {
                         can_edit: localItem.can_edit,
                         can_delete: localItem.can_delete,
                         can_complete: localItem.can_complete,
+                        is_visible: localItem.is_visible,
                         escalation: localItem.escalation,
                         has_subtasks: localItem.has_subtasks,
                         subtasks_count: localItem.subtasks_count,

@@ -83,11 +83,13 @@ final class AppState: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            self?.handleTaskUpdate(notification)
+            Task { @MainActor in
+                await self?.handleTaskUpdate(notification)
+            }
         }
     }
     
-    private func handleTaskUpdate(_ notification: Notification) {
+    private func handleTaskUpdate(_ notification: Notification) async {
         guard let taskData = notification.userInfo?["task"] as? [String: Any] else {
             print("🔌 AppState: Invalid task update data")
             return
@@ -122,7 +124,9 @@ final class AppState: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            self?.handlePushTokenReceived(notification)
+            Task { @MainActor in
+                await self?.handlePushTokenReceived(notification)
+            }
         }
         
         // Listen for notification taps
@@ -131,11 +135,13 @@ final class AppState: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            self?.handleNotificationTap(notification)
+            Task { @MainActor in
+                await self?.handleNotificationTap(notification)
+            }
         }
     }
     
-    private func handlePushTokenReceived(_ notification: Notification) {
+    private func handlePushTokenReceived(_ notification: Notification) async {
         guard let token = notification.userInfo?["token"] as? String else { return }
         
         print("🔔 AppState: Push token received, updating device registration")
@@ -152,7 +158,7 @@ final class AppState: ObservableObject {
         }
     }
     
-    private func handleNotificationTap(_ notification: Notification) {
+    private func handleNotificationTap(_ notification: Notification) async {
         guard let taskId = notification.userInfo?["task_id"] as? Int,
               let listId = notification.userInfo?["list_id"] as? Int else {
             print("❌ AppState: Invalid notification data")
@@ -172,7 +178,14 @@ final class AppState: ObservableObject {
                     currentList = list
                     
                     // Load the specific task
-                    let itemService = ItemService(apiClient: auth.api)
+                    let itemService = ItemService(
+                        apiClient: auth.api,
+                        swiftDataManager: SwiftDataManager.shared,
+                        deltaSyncService: DeltaSyncService(
+                            apiClient: auth.api,
+                            swiftDataManager: SwiftDataManager.shared
+                        )
+                    )
                     let items = try await itemService.fetchItems(listId: listId)
                     if let task = items.first(where: { $0.id == taskId }) {
                         selectedItem = task

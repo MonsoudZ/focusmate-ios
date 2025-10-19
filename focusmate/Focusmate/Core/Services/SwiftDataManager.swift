@@ -1,24 +1,26 @@
 import Foundation
 import SwiftData
 import SwiftUI
+import Combine
 
 @MainActor
 final class SwiftDataManager: ObservableObject {
     static let shared = SwiftDataManager()
     
-    private var modelContainer: ModelContainer
+    var modelContainer: ModelContainer
     private var modelContext: ModelContext
     
     @Published var syncStatus: SyncStatus
+    @Published var isInitialized = false
     
     private init() {
         // Create the model container with all our SwiftData models
         let schema = Schema([
             User.self,
             List.self,
-            CoachShare.self,
-            Item.self,
-            Escalation.self,
+            TaskCoachShare.self,
+            TaskItem.self,
+            TaskEscalation.self,
             SyncMetadata.self,
             SyncStatus.self
         ])
@@ -112,9 +114,9 @@ final class SwiftDataManager: ObservableObject {
         // Delete all entities
         let userDescriptor = FetchDescriptor<User>()
         let listDescriptor = FetchDescriptor<List>()
-        let itemDescriptor = FetchDescriptor<Item>()
-        let escalationDescriptor = FetchDescriptor<Escalation>()
-        let coachShareDescriptor = FetchDescriptor<CoachShare>()
+        let itemDescriptor = FetchDescriptor<TaskItem>()
+        let escalationDescriptor = FetchDescriptor<TaskEscalation>()
+        let coachShareDescriptor = FetchDescriptor<TaskCoachShare>()
         let metadataDescriptor = FetchDescriptor<SyncMetadata>()
         
         do {
@@ -162,11 +164,11 @@ final class SwiftDataManager: ObservableObject {
                 user.lastSyncAt = now
             } else if let list = entity as? List {
                 list.lastSyncAt = now
-            } else if let item = entity as? Item {
+            } else if let item = entity as? TaskItem {
                 item.lastSyncAt = now
-            } else if let escalation = entity as? Escalation {
+            } else if let escalation = entity as? TaskEscalation {
                 escalation.lastSyncAt = now
-            } else if let coachShare = entity as? CoachShare {
+            } else if let coachShare = entity as? TaskCoachShare {
                 coachShare.lastSyncAt = now
             }
         }

@@ -37,7 +37,7 @@ final class User {
 final class List {
     @Attribute(.unique) var id: Int
     var name: String
-    var description: String?
+    var itemDescription: String?
     var role: String
     var tasksCount: Int
     var overdueTasksCount: Int
@@ -47,13 +47,13 @@ final class List {
     
     // Relationships
     @Relationship(deleteRule: .cascade) var owner: User?
-    @Relationship(deleteRule: .cascade) var sharedWithCoaches: [CoachShare] = []
-    @Relationship(deleteRule: .cascade) var items: [Item] = []
+    @Relationship(deleteRule: .cascade) var sharedWithCoaches: [TaskCoachShare] = []
+    @Relationship(deleteRule: .cascade) var items: [TaskItem] = []
     
     init(id: Int, name: String, description: String?, role: String, tasksCount: Int, overdueTasksCount: Int, createdAt: Date, updatedAt: Date) {
         self.id = id
         self.name = name
-        self.description = description
+        self.itemDescription = description
         self.role = role
         self.tasksCount = tasksCount
         self.overdueTasksCount = overdueTasksCount
@@ -64,7 +64,7 @@ final class List {
 }
 
 @Model
-final class CoachShare {
+final class TaskCoachShare {
     @Attribute(.unique) var id: Int
     var permissions: [String]
     var lastSyncAt: Date?
@@ -81,11 +81,11 @@ final class CoachShare {
 }
 
 @Model
-final class Item {
+final class TaskItem {
     @Attribute(.unique) var id: Int
     var listId: Int
     var title: String
-    var description: String?
+    var itemDescription: String?
     var dueAt: Date?
     var completedAt: Date?
     var priority: Int
@@ -143,13 +143,13 @@ final class Item {
     // Relationships
     @Relationship(deleteRule: .nullify) var creator: User?
     @Relationship(deleteRule: .nullify) var list: List?
-    @Relationship(deleteRule: .cascade) var escalation: Escalation?
+    @Relationship(deleteRule: .cascade) var escalation: TaskEscalation?
     
     init(id: Int, listId: Int, title: String, description: String?, dueAt: Date?, completedAt: Date?, priority: Int, canBeSnoozed: Bool, notificationIntervalMinutes: Int, requiresExplanationIfMissed: Bool, overdue: Bool, minutesOverdue: Int, requiresExplanation: Bool, isRecurring: Bool, recurrencePattern: String?, recurrenceInterval: Int, recurrenceDays: [Int]?, locationBased: Bool, locationName: String?, locationLatitude: Double?, locationLongitude: Double?, locationRadiusMeters: Int, notifyOnArrival: Bool, notifyOnDeparture: Bool, missedReason: String?, missedReasonSubmittedAt: Date?, missedReasonReviewedAt: Date?, createdByCoach: Bool, canEdit: Bool, canDelete: Bool, canComplete: Bool, isVisible: Bool, hasSubtasks: Bool, subtasksCount: Int, subtasksCompletedCount: Int, subtaskCompletionPercentage: Int, createdAt: Date, updatedAt: Date) {
         self.id = id
         self.listId = listId
         self.title = title
-        self.description = description
+        self.itemDescription = description
         self.dueAt = dueAt
         self.completedAt = completedAt
         self.priority = priority
@@ -216,7 +216,7 @@ final class Item {
 }
 
 @Model
-final class Escalation {
+final class TaskEscalation {
     @Attribute(.unique) var id: Int
     var level: String
     var notificationCount: Int
@@ -227,7 +227,7 @@ final class Escalation {
     var lastSyncAt: Date?
     
     // Relationships
-    @Relationship(deleteRule: .nullify) var item: Item?
+    @Relationship(deleteRule: .nullify) var item: TaskItem?
     
     init(id: Int, level: String, notificationCount: Int, blockingApp: Bool, coachesNotified: Bool, becameOverdueAt: Date?, lastNotificationAt: Date?) {
         self.id = id

@@ -1,8 +1,11 @@
 import Foundation
 import SwiftData
+import Combine
 
 @MainActor
 final class DeltaSyncService: ObservableObject {
+    @Published var isSyncing = false
+    @Published var lastSyncTime: Date?
     private let apiClient: APIClient
     private let swiftDataManager: SwiftDataManager
     
@@ -21,6 +24,7 @@ final class DeltaSyncService: ObservableObject {
         
         // Convert DTOs to SwiftData models and save
         let context = swiftDataManager.context
+        var swiftDataUsers: [User] = []
         
         for userDTO in users {
             // Check if user already exists
@@ -40,6 +44,7 @@ final class DeltaSyncService: ObservableObject {
                 if let createdAt = userDTO.created_at {
                     existing.createdAt = ISO8601DateFormatter().date(from: createdAt)
                 }
+                swiftDataUsers.append(existing)
             } else {
                 // Create new user
                 let user = User(
@@ -51,10 +56,11 @@ final class DeltaSyncService: ObservableObject {
                     createdAt: userDTO.created_at != nil ? ISO8601DateFormatter().date(from: userDTO.created_at!) : nil
                 )
                 context.insert(user)
+                swiftDataUsers.append(user)
             }
         }
         
-        swiftDataManager.markEntitiesAsSynced(users.map { _ in User() }, entityType: "users")
+        swiftDataManager.markEntitiesAsSynced(swiftDataUsers, entityType: "users")
         print("✅ DeltaSyncService: User sync completed")
     }
     
@@ -65,6 +71,7 @@ final class DeltaSyncService: ObservableObject {
         let lists: [ListDTO] = try await apiClient.request("GET", "lists", body: nil as String?, queryParameters: parameters)
         
         let context = swiftDataManager.context
+        var swiftDataLists: [List] = []
         
         for listDTO in lists {
             // Check if list already exists
@@ -78,11 +85,12 @@ final class DeltaSyncService: ObservableObject {
             if let existing = existingList {
                 // Update existing list
                 existing.name = listDTO.name
-                existing.description = listDTO.description
+                existing.itemDescription = listDTO.description
                 existing.role = listDTO.role
                 existing.tasksCount = listDTO.tasksCount
                 existing.overdueTasksCount = listDTO.overdueTasksCount
                 existing.updatedAt = listDTO.updatedAt
+                swiftDataLists.append(existing)
             } else {
                 // Create new list
                 let list = List(
@@ -105,10 +113,11 @@ final class DeltaSyncService: ObservableObject {
                 }
                 
                 context.insert(list)
+                swiftDataLists.append(list)
             }
         }
         
-        swiftDataManager.markEntitiesAsSynced(lists.map { _ in List() }, entityType: "lists")
+        swiftDataManager.markEntitiesAsSynced(swiftDataLists, entityType: "lists")
         print("✅ DeltaSyncService: List sync completed")
     }
     
@@ -118,17 +127,37 @@ final class DeltaSyncService: ObservableObject {
         let parameters = swiftDataManager.getDeltaSyncParameters(for: "items")
         var queryParams = parameters
         
+        let items: [Item]
+        
         if let listId = listId {
-            queryParams["list_id"] = String(listId)
+            // Try nested endpoint first: lists/{listId}/tasks
+            do {
+                print("🔄 DeltaSyncService: Trying GET lists/\(listId)/tasks")
+                items = try await apiClient.request("GET", "lists/\(listId)/tasks", body: nil as String?, queryParameters: parameters)
+                print("✅ DeltaSyncService: Fetched \(items.count) items from nested endpoint for list \(listId)")
+            } catch let error {
+                print("❌ DeltaSyncService: Nested endpoint failed with error: \(error)")
+                print("🔄 DeltaSyncService: Trying tasks endpoint with query params")
+                queryParams["list_id"] = String(listId)
+                do {
+                    items = try await apiClient.request("GET", "tasks", body: nil as String?, queryParameters: queryParams)
+                    print("✅ DeltaSyncService: Fetched \(items.count) items from tasks endpoint")
+                } catch let fallbackError {
+                    print("❌ DeltaSyncService: Tasks endpoint also failed: \(fallbackError)")
+                    // Return empty array instead of throwing to allow app to continue
+                    items = []
+                }
+            }
+        } else {
+            items = try await apiClient.request("GET", "tasks", body: nil as String?, queryParameters: queryParams)
         }
         
-        let items: [Item] = try await apiClient.request("GET", "tasks", body: nil as String?, queryParameters: queryParams)
-        
         let context = swiftDataManager.context
+        var swiftDataItems: [TaskItem] = []
         
         for itemDTO in items {
             // Check if item already exists
-            let fetchDescriptor = FetchDescriptor<Item>(
+            let fetchDescriptor = FetchDescriptor<TaskItem>(
                 predicate: #Predicate { $0.id == itemDTO.id }
             )
             
@@ -138,14 +167,16 @@ final class DeltaSyncService: ObservableObject {
             if let existing = existingItem {
                 // Update existing item
                 updateItemFromDTO(existing, from: itemDTO)
+                swiftDataItems.append(existing)
             } else {
                 // Create new item
                 let item = createItemFromDTO(itemDTO, context: context)
                 context.insert(item)
+                swiftDataItems.append(item)
             }
         }
         
-        swiftDataManager.markEntitiesAsSynced(items.map { _ in Item() }, entityType: "items")
+        swiftDataManager.markEntitiesAsSynced(swiftDataItems, entityType: "items")
         print("✅ DeltaSyncService: Item sync completed")
     }
     
@@ -170,8 +201,8 @@ final class DeltaSyncService: ObservableObject {
     
     // MARK: - Helper Methods
     
-    private func createItemFromDTO(_ dto: Item, context: ModelContext) -> Item {
-        let item = Item(
+    private func createItemFromDTO(_ dto: Item, context: ModelContext) -> TaskItem {
+                let item = TaskItem(
             id: dto.id,
             listId: dto.list_id,
             title: dto.title,
@@ -229,7 +260,7 @@ final class DeltaSyncService: ObservableObject {
         
         // Handle escalation if present
         if let escalationDTO = dto.escalation {
-            let escalation = Escalation(
+            let escalation = TaskEscalation(
                 id: escalationDTO.id,
                 level: escalationDTO.level,
                 notificationCount: escalationDTO.notification_count,
@@ -245,9 +276,9 @@ final class DeltaSyncService: ObservableObject {
         return item
     }
     
-    private func updateItemFromDTO(_ item: Item, from dto: Item) {
+    private func updateItemFromDTO(_ item: TaskItem, from dto: Item) {
         item.title = dto.title
-        item.description = dto.description
+        item.itemDescription = dto.description
         item.dueAt = dto.dueDate
         item.completedAt = dto.completed_at != nil ? ISO8601DateFormatter().date(from: dto.completed_at!) : nil
         item.priority = dto.priority
@@ -313,12 +344,12 @@ extension APIClient {
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         req.setValue("ngrok-skip-browser-warning", forHTTPHeaderField: "ngrok-skip-browser-warning")
         
-        if let jwt = tokenProvider() {
+        if let jwt = getToken() {
             req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
         }
         
         do {
-            let (data, resp) = try await session.data(for: req)
+            let (data, resp) = try await getSession().data(for: req)
             guard let http = resp as? HTTPURLResponse else { throw APIError.badURL }
             switch http.statusCode {
             case 200...299:
@@ -328,7 +359,7 @@ extension APIClient {
             default:
                 let bodyPreview = String(data: data, encoding: .utf8) ?? "<non-utf8>"
                 print("⚠️ APIClient: bad status \(http.statusCode) for \(method) \(url.absoluteString) body=\(bodyPreview)")
-                throw APIError.badStatus(http.statusCode)
+                throw APIError.badStatus(http.statusCode, nil, nil)
             }
             
             if data.isEmpty {

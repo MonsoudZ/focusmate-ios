@@ -17,7 +17,7 @@ enum APIError: Error {
 struct ErrorResponse: Codable {
     let code: String
     let message: String
-    let details: [String: Any]?
+    let details: [String: String]?
     let timestamp: String?
     let requestId: String?
     
@@ -26,11 +26,19 @@ struct ErrorResponse: Codable {
         case requestId = "request_id"
     }
     
+    init(code: String, message: String, details: [String: String]? = nil, timestamp: String? = nil, requestId: String? = nil) {
+        self.code = code
+        self.message = message
+        self.details = details
+        self.timestamp = timestamp
+        self.requestId = requestId
+    }
+    
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         code = try container.decode(String.self, forKey: .code)
         message = try container.decode(String.self, forKey: .message)
-        details = try container.decodeIfPresent([String: Any].self, forKey: .details)
+        details = try container.decodeIfPresent([String: String].self, forKey: .details)
         timestamp = try container.decodeIfPresent(String.self, forKey: .timestamp)
         requestId = try container.decodeIfPresent(String.self, forKey: .requestId)
     }

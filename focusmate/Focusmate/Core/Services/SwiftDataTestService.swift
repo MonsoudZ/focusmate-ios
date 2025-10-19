@@ -42,7 +42,7 @@ final class SwiftDataTestService {
         context.insert(testList)
         
         // Test creating an item
-        let testItem = Item(
+        let testItem = TaskItem(
             id: 999,
             listId: 999,
             title: "Test Item",
@@ -105,7 +105,7 @@ final class SwiftDataTestService {
             let lists = try context.fetch(listFetchDescriptor)
             print("✅ SwiftDataTestService: Found \(lists.count) test lists")
             
-            let itemFetchDescriptor = FetchDescriptor<Item>(
+            let itemFetchDescriptor = FetchDescriptor<TaskItem>(
                 predicate: #Predicate { $0.id == 999 }
             )
             let items = try context.fetch(itemFetchDescriptor)

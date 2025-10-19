@@ -3,7 +3,7 @@ import SwiftUI
 import Combine
 
 // MARK: - Enhanced Error Types
-enum FocusmateError: LocalizedError, Equatable {
+enum FocusmateError: LocalizedError {
     case network(Error)
     case unauthorized(String?)
     case badRequest(String, String?)
