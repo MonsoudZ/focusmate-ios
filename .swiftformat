@@ -1,0 +1,6 @@
+--swiftversion 5.10
+--stripunusedargs "closure-only"
+--indent 2
+--maxwidth 120
+--self insert
+--disable redundantReturn,wrapArguments

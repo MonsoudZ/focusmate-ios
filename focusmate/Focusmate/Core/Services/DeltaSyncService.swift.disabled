@@ -1,0 +1,369 @@
+import Combine
+import Foundation
+import SwiftData
+
+@MainActor
+final class DeltaSyncService: ObservableObject {
+  @Published var isSyncing = false
+  @Published var lastSyncTime: Date?
+  private let apiClient: APIClient
+  private let swiftDataManager: SwiftDataManager
+
+  init(apiClient: APIClient, swiftDataManager: SwiftDataManager) {
+    self.apiClient = apiClient
+    self.swiftDataManager = swiftDataManager
+  }
+
+  // MARK: - Delta Sync Methods
+
+  func syncUsers() async throws {
+    print("🔄 DeltaSyncService: Starting user sync...")
+
+    let parameters = self.swiftDataManager.getDeltaSyncParameters(for: "users")
+    let users: [UserDTO] = try await apiClient.request(
+      "GET",
+      "users",
+      body: nil as String?,
+      queryParameters: parameters
+    )
+
+    // Convert DTOs to SwiftData models and save
+    let context = self.swiftDataManager.context
+    var swiftDataUsers: [User] = []
+
+    for userDTO in users {
+      // Check if user already exists
+      let fetchDescriptor = FetchDescriptor<User>(
+        predicate: #Predicate { $0.id == Int(userDTO.id) ?? 0 }
+      )
+
+      let existingUsers = try? context.fetch(fetchDescriptor)
+      let existingUser = existingUsers?.first
+
+      if let existing = existingUser {
+        // Update existing user
+        existing.email = userDTO.email
+        existing.name = userDTO.name ?? ""
+        existing.role = "client" // Default role for clean API
+        existing.timezone = "UTC" // Default timezone
+        swiftDataUsers.append(existing)
+      } else {
+        // Create new user
+        let user = User(
+          id: Int(userDTO.id) ?? 0,
+          email: userDTO.email,
+          name: userDTO.name ?? "",
+          role: "client", // Default role for clean API
+          timezone: "UTC", // Default timezone
+          createdAt: nil
+        )
+        context.insert(user)
+        swiftDataUsers.append(user)
+      }
+    }
+
+    self.swiftDataManager.markEntitiesAsSynced(swiftDataUsers, entityType: "users")
+    print("✅ DeltaSyncService: User sync completed")
+  }
+
+  func syncLists() async throws {
+    print("🔄 DeltaSyncService: Starting list sync...")
+
+    let parameters = self.swiftDataManager.getDeltaSyncParameters(for: "lists")
+    let lists: [ListDTO] = try await apiClient.request(
+      "GET",
+      "lists",
+      body: nil as String?,
+      queryParameters: parameters
+    )
+
+    let context = self.swiftDataManager.context
+    var swiftDataLists: [List] = []
+
+    for listDTO in lists {
+      // Check if list already exists
+      let fetchDescriptor = FetchDescriptor<List>(
+        predicate: #Predicate { $0.id == Int(listDTO.id) ?? 0 }
+      )
+
+      let existingLists = try? context.fetch(fetchDescriptor)
+      let existingList = existingLists?.first
+
+      if let existing = existingList {
+        // Update existing list
+        existing.name = listDTO.title
+        existing.itemDescription = nil // Clean API doesn't have description
+        existing.role = "owner" // Default role
+        existing.tasksCount = 0 // Default count
+        existing.overdueTasksCount = 0 // Default count
+        existing.updatedAt = listDTO.updated_at != nil ? ISO8601DateFormatter().date(from: listDTO.updated_at!) : Date()
+        swiftDataLists.append(existing)
+      } else {
+        // Create new list
+        let list = List(
+          id: Int(listDTO.id) ?? 0,
+          name: listDTO.title,
+          description: nil, // Clean API doesn't have description
+          role: "owner", // Default role
+          tasksCount: 0, // Default count
+          overdueTasksCount: 0, // Default count
+          createdAt: Date(),
+          updatedAt: listDTO.updated_at != nil ? ISO8601DateFormatter().date(from: listDTO.updated_at!) : Date()
+        )
+
+        // Set owner relationship - use first available user or create default
+        let userFetchDescriptor = FetchDescriptor<User>()
+        if let owner = try? context.fetch(userFetchDescriptor).first {
+          list.owner = owner
+        }
+
+        context.insert(list)
+        swiftDataLists.append(list)
+      }
+    }
+
+    self.swiftDataManager.markEntitiesAsSynced(swiftDataLists, entityType: "lists")
+    print("✅ DeltaSyncService: List sync completed")
+  }
+
+  func syncItems(for listId: Int? = nil) async throws {
+    print("🔄 DeltaSyncService: Starting item sync...")
+
+    let parameters = self.swiftDataManager.getDeltaSyncParameters(for: "items")
+    var queryParams = parameters
+
+    var items: [TaskDTO] = []
+
+    if let listId {
+      // Try multiple endpoints in order of preference
+      let endpoints = [
+        ("lists/\(listId)/tasks", parameters),
+        ("tasks/all_tasks", queryParams.merging(["list_id": String(listId)]) { _, new in new }),
+        ("tasks", queryParams.merging(["list_id": String(listId)]) { _, new in new }),
+        ("items", queryParams.merging(["list_id": String(listId)]) { _, new in new }),
+      ]
+
+      for (endpoint, params) in endpoints {
+        print("🔄 DeltaSyncService: Trying GET \(endpoint)")
+        items = await self.tryDecodeItemsResponse(endpoint: endpoint, params: params)
+        if !items.isEmpty {
+          print("✅ DeltaSyncService: Fetched \(items.count) items from \(endpoint)")
+          break // Success, exit the loop
+        } else {
+          print("❌ DeltaSyncService: \(endpoint) returned no items")
+          continue // Try next endpoint
+        }
+      }
+
+      if items.isEmpty {
+        print("⚠️ DeltaSyncService: All endpoints failed, returning empty array")
+      }
+    } else {
+      // Try multiple endpoints for all tasks
+      let endpoints = [
+        ("tasks/all_tasks", queryParams),
+        ("tasks", queryParams),
+        ("items", queryParams),
+      ]
+
+      for (endpoint, params) in endpoints {
+        print("🔄 DeltaSyncService: Trying GET \(endpoint)")
+        items = await self.tryDecodeItemsResponse(endpoint: endpoint, params: params)
+        if !items.isEmpty {
+          print("✅ DeltaSyncService: Fetched \(items.count) items from \(endpoint)")
+          break // Success, exit the loop
+        } else {
+          print("❌ DeltaSyncService: \(endpoint) returned no items")
+          continue // Try next endpoint
+        }
+      }
+
+      if items.isEmpty {
+        print("⚠️ DeltaSyncService: All endpoints failed, returning empty array")
+      }
+    }
+
+    let context = self.swiftDataManager.context
+    var swiftDataItems: [TaskItem] = []
+
+    for itemDTO in items {
+      // Check if item already exists
+      let fetchDescriptor = FetchDescriptor<TaskItem>(
+        predicate: #Predicate { $0.id == itemDTO.id }
+      )
+
+      let existingItems = try? context.fetch(fetchDescriptor)
+      let existingItem = existingItems?.first
+
+      if let existing = existingItem {
+        // Update existing item
+        self.updateItemFromDTO(existing, from: itemDTO)
+        swiftDataItems.append(existing)
+      } else {
+        // Create new item
+        let item = self.createItemFromDTO(itemDTO, context: context)
+        context.insert(item)
+        swiftDataItems.append(item)
+      }
+    }
+
+    self.swiftDataManager.markEntitiesAsSynced(swiftDataItems, entityType: "items")
+    print("✅ DeltaSyncService: Item sync completed")
+  }
+
+  private func tryDecodeItemsResponse(endpoint: String, params: [String: String]) async -> [TaskDTO] {
+    // Try multiple response formats
+    do {
+      // Try wrapped response first: {"data": [...]}
+      let wrappedResponse: Page<TaskDTO> = try await apiClient.request(
+        "GET",
+        endpoint,
+        body: nil as String?,
+        queryParameters: params
+      )
+      print("✅ DeltaSyncService: Decoded wrapped response from \(endpoint)")
+      return wrappedResponse.data
+    } catch {
+      print("⚠️ DeltaSyncService: Wrapped response failed for \(endpoint), trying direct array")
+
+      do {
+        // Try direct array: [...]
+        let directArray: [TaskDTO] = try await apiClient.request(
+          "GET",
+          endpoint,
+          body: nil as String?,
+          queryParameters: params
+        )
+        print("✅ DeltaSyncService: Decoded direct array from \(endpoint)")
+        return directArray
+      } catch {
+        print("⚠️ DeltaSyncService: Direct array failed for \(endpoint), trying raw dictionary parsing")
+
+        do {
+          // Try to get the raw response data and parse it manually
+          let responseData = try await apiClient.getRawResponse(endpoint: endpoint, params: params)
+          if let jsonObject = try JSONSerialization.jsonObject(with: responseData) as? [String: Any] {
+            print("🔍 DeltaSyncService: Raw response keys: \(Array(jsonObject.keys))")
+
+            // Look for common array keys in the response
+            if let itemsArray = jsonObject["items"] as? [[String: Any]] {
+              let items = itemsArray.compactMap { itemDict in
+                try? JSONDecoder().decode(Item.self, from: JSONSerialization.data(withJSONObject: itemDict))
+              }
+              print("✅ DeltaSyncService: Extracted \(items.count) items from raw dictionary")
+              return items
+            } else if let tasksArray = jsonObject["tasks"] as? [[String: Any]] {
+              let items = tasksArray.compactMap { itemDict in
+                try? JSONDecoder().decode(Item.self, from: JSONSerialization.data(withJSONObject: itemDict))
+              }
+              print("✅ DeltaSyncService: Extracted \(items.count) items from tasks array")
+              return items
+            } else {
+              print("❌ DeltaSyncService: No recognizable array in raw response")
+              return []
+            }
+          } else {
+            print("❌ DeltaSyncService: Response is not a dictionary")
+            return []
+          }
+        } catch {
+          print("❌ DeltaSyncService: All response formats failed for \(endpoint): \(error)")
+          return []
+        }
+      }
+    }
+  }
+
+  func syncAll() async throws {
+    print("🔄 DeltaSyncService: Starting full sync...")
+
+    self.swiftDataManager.updateSyncStatus(isOnline: true, syncInProgress: true)
+
+    do {
+      try await self.syncUsers()
+      try await self.syncLists()
+      try await self.syncItems()
+
+      self.swiftDataManager.updateSyncStatus(isOnline: true, syncInProgress: false, pendingChanges: 0)
+      print("✅ DeltaSyncService: Full sync completed successfully")
+    } catch {
+      self.swiftDataManager.updateSyncStatus(isOnline: false, syncInProgress: false)
+      print("❌ DeltaSyncService: Full sync failed: \(error)")
+      throw error
+    }
+  }
+
+  // MARK: - Helper Methods
+
+  private func createItemFromDTO(_ dto: TaskDTO, context: ModelContext) -> TaskItem {
+    let item = TaskItem(
+      id: Int(dto.id) ?? 0,
+      listId: Int(dto.list_id) ?? 0,
+      title: dto.title,
+      description: dto.notes ?? "",
+      dueAt: nil, // Clean API doesn't have due date
+      completedAt: dto.completed_at != nil ? ISO8601DateFormatter().date(from: dto.completed_at!) : nil,
+      priority: "medium", // Default priority
+      canBeSnoozed: false, // Default
+      notificationIntervalMinutes: 0, // Default
+      requiresExplanationIfMissed: false, // Default
+      overdue: false, // Default
+      minutesOverdue: 0, // Default
+      requiresExplanation: false, // Default
+      isRecurring: false, // Default
+      recurrencePattern: nil, // Default
+      recurrenceInterval: 0, // Default
+      recurrenceDays: nil, // Default
+      locationBased: false, // Default
+      locationName: nil, // Default
+      locationLatitude: nil, // Default
+      locationLongitude: nil, // Default
+      locationRadiusMeters: 0, // Default
+      notifyOnArrival: false, // Default
+      notifyOnDeparture: false, // Default
+      missedReason: nil, // Default
+      missedReasonSubmittedAt: nil, // Default
+      missedReasonReviewedAt: nil, // Default
+      createdByCoach: false, // Default
+      canEdit: true, // Default
+      canDelete: true, // Default
+      canComplete: true, // Default
+      isVisible: dto.visibility == "private", // Map visibility
+      hasSubtasks: false, // Default
+      subtasksCount: 0, // Default
+      subtasksCompletedCount: 0, // Default
+      subtaskCompletionPercentage: 0.0, // Default
+      createdAt: Date(), // Default
+      updatedAt: dto.updated_at != nil ? ISO8601DateFormatter().date(from: dto.updated_at!) : Date()
+    )
+
+    // Set relationships - use first available user as creator
+    let creatorFetchDescriptor = FetchDescriptor<User>()
+    if let creator = try? context.fetch(creatorFetchDescriptor).first {
+      item.creator = creator
+    }
+
+    let listFetchDescriptor = FetchDescriptor<List>(
+      predicate: #Predicate { $0.id == Int(dto.list_id) ?? 0 }
+    )
+    if let list = try? context.fetch(listFetchDescriptor).first {
+      item.list = list
+    }
+
+    // Clean API doesn't have escalation data
+
+    return item
+  }
+
+  private func updateItemFromDTO(_ item: TaskItem, from dto: TaskDTO) {
+    item.title = dto.title
+    item.itemDescription = dto.notes ?? ""
+    item.completedAt = dto.completed_at != nil ? ISO8601DateFormatter().date(from: dto.completed_at!) : nil
+    item.isVisible = dto.visibility == "private"
+    item.updatedAt = dto.updated_at != nil ? ISO8601DateFormatter().date(from: dto.updated_at!) : Date()
+  }
+}
+
+// MARK: - APIClient Extension for Query Parameters
+
+// Note: Query parameter support is now built into the main APIClient.request method

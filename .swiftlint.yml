@@ -1,0 +1,12 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+opt_in_rules:
+  - force_unwrapping
+  - explicit_acl
+  - redundant_optional_initialization
+  - explicit_self
+included:
+  - focusmate/Focusmate
+  - ios/Generated
+reporter: xcode

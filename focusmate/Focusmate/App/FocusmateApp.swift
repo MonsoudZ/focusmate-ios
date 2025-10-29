@@ -1,92 +1,116 @@
+import SwiftData
 import SwiftUI
 import UserNotifications
-import SwiftData
+#if canImport(Sentry)
+import Sentry
+#endif
 
 @main
 struct FocusmateApp: App {
-    @StateObject var state = AppState()
-    @StateObject var swiftDataManager = SwiftDataManager.shared
-    @StateObject var deltaSyncService: DeltaSyncService
+  @StateObject var state = AppState()
+  @StateObject var swiftDataManager = SwiftDataManager.shared
+  @StateObject var deltaSyncService: DeltaSyncService
+
+  init() {
+    // Initialize Sentry if available (added via Xcode SPM)
+    configureSentryIfAvailable()
     
-    init() {
-        let _swiftDataManager = SwiftDataManager.shared
-        let _deltaSyncService = DeltaSyncService(
-            apiClient: APIClient(tokenProvider: { AppState().auth.jwt }),
-            swiftDataManager: _swiftDataManager
-        )
-        self._deltaSyncService = StateObject(wrappedValue: _deltaSyncService)
-    }
-    
-    var body: some Scene {
-        WindowGroup {
-            RootView()
-                .environmentObject(state)
-                .environmentObject(state.auth)
-                .environmentObject(swiftDataManager)
-                .environmentObject(deltaSyncService)
-                .modelContainer(swiftDataManager.modelContainer)
-                .onAppear {
-                    setupPushNotifications()
-                }
+    let _swiftDataManager = SwiftDataManager.shared
+    let _authSession = AuthSession()
+    let _apiClient = NewAPIClient(auth: _authSession)
+    let _deltaSyncService = DeltaSyncService(
+      apiClient: _apiClient,
+      swiftDataManager: _swiftDataManager,
+      authSession: _authSession
+    )
+    self._deltaSyncService = StateObject(wrappedValue: _deltaSyncService)
+  }
+
+  var body: some Scene {
+    WindowGroup {
+      RootView()
+        .environmentObject(self.state)
+        .environmentObject(self.state.auth)
+        .environmentObject(self.swiftDataManager)
+        .environmentObject(self.deltaSyncService)
+        .modelContainer(self.swiftDataManager.modelContainer)
+        .onAppear {
+          self.setupPushNotifications()
         }
     }
-    
-    private func setupPushNotifications() {
-        // Set up notification delegate
-        UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
-        
-        // Register for remote notifications
-        UIApplication.shared.registerForRemoteNotifications()
-    }
+  }
+
+  private func setupPushNotifications() {
+    // Set up notification delegate
+    UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+
+    // Register for remote notifications
+    UIApplication.shared.registerForRemoteNotifications()
+  }
 }
 
 struct RootView: View {
-    @EnvironmentObject var state: AppState
-    @EnvironmentObject var auth: AuthStore
-    
-    var body: some View {
-        let _ = print("🔄 RootView: jwt=\(auth.jwt != nil ? "SET" : "NIL"), currentUser=\(auth.currentUser?.email ?? "nil")")
-        
-        if auth.jwt == nil {
-            SignInView()
-        } else {
-            TabView {
-                ListsView()
-                    .tabItem {
-                        Image(systemName: "list.bullet")
-                        Text("Lists")
-                    }
-                
-                BlockingTasksView()
-                    .tabItem {
-                        Image(systemName: "exclamationmark.triangle")
-                        Text("Blocking")
-                    }
-                
-                SwiftDataTestView()
-                    .tabItem {
-                        Image(systemName: "wrench.and.screwdriver")
-                        Text("Test")
-                    }
-                
-                VisibilityTestView()
-                    .tabItem {
-                        Image(systemName: "eye")
-                        Text("Visibility")
-                    }
-                
-                ErrorHandlingTestView()
-                    .tabItem {
-                        Image(systemName: "exclamationmark.triangle")
-                        Text("Errors")
-                    }
-            }
-            .task { 
-                print("📋 ListsView loading...")
-                await auth.loadProfile() 
-            }
-        }
+  @EnvironmentObject var state: AppState
+  @EnvironmentObject var auth: AuthStore
+
+  var body: some View {
+    if self.auth.jwt == nil {
+      SignInView()
+    } else {
+      TabView {
+        ListsView()
+          .tabItem {
+            Image(systemName: "list.bullet")
+            Text("Lists")
+          }
+
+        BlockingTasksView()
+          .tabItem {
+            Image(systemName: "exclamationmark.triangle")
+            Text("Blocking")
+          }
+
+        SwiftDataTestView()
+          .tabItem {
+            Image(systemName: "wrench.and.screwdriver")
+            Text("Test")
+          }
+
+        VisibilityTestView()
+          .tabItem {
+            Image(systemName: "eye")
+            Text("Visibility")
+          }
+
+        ErrorHandlingTestView()
+          .tabItem {
+            Image(systemName: "exclamationmark.triangle")
+            Text("Errors")
+          }
+      }
+      .task {
+        print("📋 ListsView loading...")
+        await self.auth.loadProfile()
+      }
     }
+  }
 }
 
+// MARK: - Sentry wiring (conditional)
 
+private func configureSentryIfAvailable() {
+  #if canImport(Sentry)
+  guard let dsn = Bundle.main.object(forInfoDictionaryKey: "SENTRY_DSN") as? String, !dsn.isEmpty else { return }
+  SentrySDK.start { o in
+    o.dsn = dsn
+    o.enableAutoSessionTracking = true
+    o.enableNetworkTracking = true
+    o.tracesSampleRate = 0.2
+  }
+  #if DEBUG
+  SentrySDK.capture(message: "iOS Sentry wired (staging)")
+  #endif
+  #else
+  // Sentry not linked yet; no-op
+  #endif
+}

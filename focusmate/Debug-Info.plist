@@ -6,6 +6,8 @@
 	<string>https://untampered-jong-harshly.ngrok-free.dev/api/v1</string>
 	<key>CABLE_URL</key>
 	<string>wss://untampered-jong-harshly.ngrok-free.dev/cable</string>
+	<key>SENTRY_DSN</key>
+	<string>https://your-sentry-dsn@sentry.io/project-id</string>
 	<key>CFBundleDisplayName</key>
 	<string>Focusmate</string>
 	<key>CFBundleExecutable</key>
