@@ -41,7 +41,8 @@ final class ListService {
   }
 
   func deleteList(id: Int) async throws {
-    _ = try await self.apiClient.request("DELETE", "lists/\(id)", body: nil as String?) as EmptyResponse
+    // Use AnyResponse to accept whatever Rails returns (could be deleted object, message, or empty)
+    _ = try await self.apiClient.request("DELETE", "lists/\(id)", body: nil as String?) as AnyResponse
   }
 
   // MARK: - List Sharing
@@ -65,6 +66,56 @@ final class ListService {
   // MARK: - Request/Response Models
 
   struct EmptyResponse: Codable {}
+
+  // Response type that accepts any JSON structure - useful for DELETE endpoints
+  struct AnyResponse: Codable {
+    private let _storage: [String: AnyCodable]?
+
+    init(from decoder: Decoder) throws {
+      // Try to decode as dictionary, if that fails, just succeed anyway
+      _storage = try? [String: AnyCodable](from: decoder)
+    }
+
+    init() {
+      _storage = nil
+    }
+  }
+
+  // Helper to decode any JSON value
+  private struct AnyCodable: Codable {
+    let value: Any
+
+    init(from decoder: Decoder) throws {
+      let container = try decoder.singleValueContainer()
+      if let int = try? container.decode(Int.self) {
+        value = int
+      } else if let string = try? container.decode(String.self) {
+        value = string
+      } else if let bool = try? container.decode(Bool.self) {
+        value = bool
+      } else if let dict = try? container.decode([String: AnyCodable].self) {
+        value = dict
+      } else if let array = try? container.decode([AnyCodable].self) {
+        value = array
+      } else {
+        value = ""
+      }
+    }
+
+    func encode(to encoder: Encoder) throws {
+      var container = encoder.singleValueContainer()
+      switch value {
+      case let int as Int:
+        try container.encode(int)
+      case let string as String:
+        try container.encode(string)
+      case let bool as Bool:
+        try container.encode(bool)
+      default:
+        try container.encode("")
+      }
+    }
+  }
 
   struct ListsResponse: Codable {
     let lists: [ListDTO]
