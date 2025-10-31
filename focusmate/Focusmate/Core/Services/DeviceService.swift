@@ -47,10 +47,15 @@ final class DeviceService {
         return response
       }
     } catch let apiError as APIError {
-      print("❌ DeviceService: Device registration failed: \(apiError)")
+      // Suppress error logging for 422 validation errors (expected in development)
+      if case .badStatus(422, _, _) = apiError {
+        print("ℹ️ DeviceService: Device registration skipped - validation failed")
+      } else {
+        print("⚠️ DeviceService: Device registration failed: \(apiError)")
+      }
       throw apiError
     } catch {
-      print("❌ DeviceService: Device registration failed with unknown error: \(error)")
+      print("⚠️ DeviceService: Device registration failed: \(error)")
       throw APIError.network(error)
     }
   }
@@ -64,26 +69,26 @@ final class DeviceService {
 
   struct DeviceInfo: Codable {
     let platform: String
-    let version: String
-    let model: String
-    let systemVersion: String
-    let appVersion: String
-    let pushToken: String?
+    let device_name: String
+    let os_version: String
+    let app_version: String
+    let bundle_id: String
+    let locale: String
+    let apns_token: String?
 
     enum CodingKeys: String, CodingKey {
-      case platform, version, model
-      case systemVersion = "system_version"
-      case appVersion = "app_version"
-      case pushToken = "apns_token" // Map to apns_token for Rails API
+      case platform, device_name, os_version, app_version
+      case bundle_id, locale, apns_token
     }
 
     init(pushToken: String? = nil) {
       self.platform = "ios" // Use lowercase "ios" as required by Rails API
-      self.version = UIDevice.current.systemVersion
-      self.model = UIDevice.current.model
-      self.systemVersion = UIDevice.current.systemVersion
-      self.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-      self.pushToken = pushToken
+      self.device_name = UIDevice.current.model
+      self.os_version = UIDevice.current.systemVersion
+      self.app_version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+      self.bundle_id = Bundle.main.bundleIdentifier ?? "dev.local.chace.focusmate"
+      self.locale = Locale.current.identifier
+      self.apns_token = pushToken
     }
   }
 
@@ -94,14 +99,21 @@ final class DeviceService {
   struct Device: Codable {
     let id: Int
     let platform: String
-    let version: String
-    let model: String
-    let systemVersion: String
-    let appVersion: String
-    let pushToken: String?
-    let isActive: Bool
-    let createdAt: Date
-    let updatedAt: Date
+    let device_name: String
+    let os_version: String
+    let app_version: String
+    let bundle_id: String
+    let locale: String
+    let apns_token: String?
+    let is_active: Bool
+    let created_at: String
+    let updated_at: String
+
+    enum CodingKeys: String, CodingKey {
+      case id, platform, device_name, os_version, app_version
+      case bundle_id, locale, apns_token, is_active
+      case created_at, updated_at
+    }
   }
 
   struct DeviceTokenUpdateRequest: Codable {

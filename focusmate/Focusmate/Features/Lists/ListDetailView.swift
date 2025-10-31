@@ -146,12 +146,20 @@ struct ListDetailView: View {
     }
     .sheet(isPresented: self.$showingCreateItem) {
       CreateItemView(
-        listId: Int(self.list.id) ?? 0,
+        listId: self.list.id,
         itemService: ItemService(
           apiClient: self.appState.auth.api,
           swiftDataManager: SwiftDataManager.shared
         )
       )
+    }
+    .onChange(of: self.showingCreateItem) { oldValue, newValue in
+      // Reload items when create sheet is dismissed
+      if oldValue == true && newValue == false {
+        Task {
+          await self.itemViewModel.loadItems(listId: self.list.id)
+        }
+      }
     }
     .sheet(isPresented: self.$showingEditList) {
       EditListView(list: self.list, listService: ListService(apiClient: self.appState.auth.api))
@@ -160,7 +168,7 @@ struct ListDetailView: View {
       ShareListView(list: self.list, listService: ListService(apiClient: self.appState.auth.api))
     }
     .task {
-      await self.itemViewModel.loadItems(listId: Int(self.list.id) ?? 0)
+      await self.itemViewModel.loadItems(listId: self.list.id)
       await self.loadShares()
     }
     .alert("Delete List", isPresented: self.$showingDeleteConfirmation) {
@@ -187,7 +195,7 @@ struct ListDetailView: View {
   private func deleteList() async {
     do {
       let listService = ListService(apiClient: appState.auth.api)
-      try await listService.deleteList(id: Int(self.list.id) ?? 0)
+      try await listService.deleteList(id: self.list.id)
       print("✅ ListDetailView: Deleted list \(self.list.title) (ID: \(self.list.id))")
       self.dismiss() // Navigate back to lists view
     } catch {
@@ -199,7 +207,7 @@ struct ListDetailView: View {
   private func loadShares() async {
     do {
       let listService = ListService(apiClient: appState.auth.api)
-      self.shares = try await listService.fetchShares(listId: Int(self.list.id) ?? 0)
+      self.shares = try await listService.fetchShares(listId: self.list.id)
       print("✅ ListDetailView: Loaded \(self.shares.count) shares for list \(self.list.id)")
     } catch {
       print("❌ ListDetailView: Failed to load shares: \(error)")

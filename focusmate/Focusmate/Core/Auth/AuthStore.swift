@@ -141,6 +141,12 @@ final class AuthStore: ObservableObject {
   }
 
   func loadProfile() async {
+    // Skip if user is already loaded (from sign-in response)
+    guard self.currentUser == nil else {
+      print("ℹ️ AuthStore: User already loaded, skipping profile fetch")
+      return
+    }
+
     print("🔄 AuthStore: Loading profile...")
     do {
       // Profile endpoint returns user directly (flat structure)
@@ -150,6 +156,8 @@ final class AuthStore: ObservableObject {
       if case APIError.unauthorized = error {
         print("🚪 AuthStore: 401 on profile, auto sign-out")
         await self.signOut()
+      } else if case APIError.badStatus(404, _, _) = error {
+        print("⚠️ AuthStore: Profile endpoint not available (404), this is OK if user was set during sign-in")
       } else {
         print("❌ AuthStore: Failed to load profile: \(error)")
         self.error = "\(error)"

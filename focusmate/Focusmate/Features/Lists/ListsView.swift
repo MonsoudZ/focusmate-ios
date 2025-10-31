@@ -83,6 +83,14 @@ struct ListsView: View {
       .sheet(isPresented: self.$showingCreateList) {
         CreateListView(listService: ListService(apiClient: self.state.auth.api))
       }
+      .onChange(of: self.showingCreateList) { oldValue, newValue in
+        // Reload lists when create sheet is dismissed
+        if oldValue == true && newValue == false {
+          Task {
+            await self.loadLists()
+          }
+        }
+      }
       .task {
         await self.loadLists()
       }
@@ -106,13 +114,10 @@ struct ListsView: View {
     self.error = nil
 
     do {
-      // Use new API layer
-      let authSession = AuthSession()
-      let apiClient = NewAPIClient(auth: authSession)
-      let listsRepo = ListsRepo(api: apiClient)
-      let page: Page<ListDTO> = try await listsRepo.index()
-      
-      self.lists = page.data
+      // Use existing API client with token from AuthStore
+      let listService = ListService(apiClient: state.auth.api)
+      self.lists = try await listService.fetchLists()
+
       print("✅ ListsView: Loaded \(self.lists.count) lists from API")
       print("📋 ListsView: List IDs: \(self.lists.map(\.id))")
     } catch {
@@ -125,11 +130,9 @@ struct ListsView: View {
 
   private func deleteList(_ list: ListDTO) async {
     do {
-      // Use new API layer
-      let authSession = AuthSession()
-      let apiClient = NewAPIClient(auth: authSession)
-      let listsRepo = ListsRepo(api: apiClient)
-      try await listsRepo.destroy(id: list.id)
+      // Use existing API client with token from AuthStore
+      let listService = ListService(apiClient: state.auth.api)
+      try await listService.deleteList(id: list.id)
 
       // Remove from local array
       self.lists.removeAll { $0.id == list.id }

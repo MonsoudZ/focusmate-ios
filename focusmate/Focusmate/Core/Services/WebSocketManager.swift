@@ -30,7 +30,8 @@ class WebSocketManager: ObservableObject {
     self.connectionStatus = .connecting
 
     // Construct the WebSocket URL with JWT token as query parameter
-    guard let baseURL = URL(string: "wss://untampered-jong-harshly.ngrok-free.dev/cable") else {
+    // Use ws:// for localhost (not wss://)
+    guard let baseURL = URL(string: "ws://localhost:3000/cable") else {
       self.connectionStatus = .error("Invalid WebSocket URL")
       return
     }

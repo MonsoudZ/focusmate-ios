@@ -19,13 +19,8 @@ final class ListViewModel: ObservableObject {
     self.error = nil
 
     do {
-      // Use the new API layer
-      let authSession = AuthSession()
-      let apiClient = NewAPIClient(auth: authSession)
-      let listsRepo = ListsRepo(api: apiClient)
-      let page: Page<ListDTO> = try await listsRepo.index()
-      
-      self.lists = page.data
+      // Use the injected authenticated listService
+      self.lists = try await listService.fetchLists()
       print("✅ ListViewModel: Loaded \(self.lists.count) lists from API")
     } catch {
       self.error = ErrorHandler.shared.handle(error)
@@ -40,12 +35,9 @@ final class ListViewModel: ObservableObject {
     self.error = nil
 
     do {
-      // Use the new API layer
-      let authSession = AuthSession()
-      let apiClient = NewAPIClient(auth: authSession)
-      let listsRepo = ListsRepo(api: apiClient)
-      let newList = try await listsRepo.create(title: name, visibility: "private")
-      
+      // Use the injected authenticated listService
+      let newList = try await listService.createList(name: name, description: description)
+
       self.lists.append(newList)
       print("✅ ListViewModel: Created list: \(newList.title)")
     } catch {
@@ -62,7 +54,7 @@ final class ListViewModel: ObservableObject {
 
     do {
       let updatedList = try await listService.updateList(id: id, name: name, description: description)
-      if let index = lists.firstIndex(where: { $0.id == String(id) }) {
+      if let index = lists.firstIndex(where: { $0.id == id }) {
         self.lists[index] = updatedList
       }
       print("✅ ListViewModel: Updated list: \(updatedList.title)")
@@ -80,7 +72,7 @@ final class ListViewModel: ObservableObject {
 
     do {
       try await self.listService.deleteList(id: id)
-      self.lists.removeAll { $0.id == String(id) }
+      self.lists.removeAll { $0.id == id }
       print("✅ ListViewModel: Deleted list with id: \(id)")
     } catch {
       self.error = ErrorHandler.shared.handle(error)

@@ -149,23 +149,13 @@ final class InternalNetworking: NetworkingProtocol {
         let message = json["message"] as? String ?? json["error"] as? String
         let code = json["code"] as? String ?? "HTTP_\(statusCode)"
 
-        // Convert [String: Any] to [String: String]
-        let stringDetails = json.compactMapValues { value in
-          if let stringValue = value as? String {
-            return stringValue
-          } else if let numberValue = value as? NSNumber {
-            return numberValue.stringValue
-          } else {
-            return String(describing: value)
-          }
-        }
-
         return ErrorResponse(
           code: code,
           message: message ?? "HTTP \(statusCode) error",
-          details: stringDetails.isEmpty ? nil : stringDetails,
-          timestamp: nil,
-          requestId: nil
+          details: nil,
+          timestamp: json["timestamp"] as? String,
+          status: statusCode,
+          requestId: json["request_id"] as? String
         )
       }
       return nil

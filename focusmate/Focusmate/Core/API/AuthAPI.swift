@@ -12,7 +12,7 @@ final class AuthAPI {
         // Mock mode for testing
         if API.isMockMode {
             print("🧪 Mock mode: Simulating successful sign in")
-            let mockUser = UserDTO(id: "1", email: email, name: "Test User")
+            let mockUser = UserDTO(id: 1, email: email, name: "Test User", role: "client", timezone: "UTC")
             await session.set(token: "mock-jwt-token")
             return mockUser
         }
@@ -30,7 +30,7 @@ final class AuthAPI {
         // Mock mode for testing
         if API.isMockMode {
             print("🧪 Mock mode: Simulating successful sign up")
-            let mockUser = UserDTO(id: "1", email: email, name: name)
+            let mockUser = UserDTO(id: 1, email: email, name: name, role: "client", timezone: "UTC")
             await session.set(token: "mock-jwt-token")
             return mockUser
         }

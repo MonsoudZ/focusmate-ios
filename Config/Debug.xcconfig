@@ -1,6 +1,12 @@
 // Debug configuration settings
-// API endpoints for development (replace <sub> with your ngrok subdomain)
-API_BASE_URL = https://untampered-jong-harshly.ngrok-free.dev/api/v1
-CABLE_URL = wss://untampered-jong-harshly.ngrok-free.dev/cable
+// API endpoints for development
+// For iOS Simulator: use localhost:3000
+// For physical device: use your machine's IP address (e.g., 192.168.1.x:3000)
+API_BASE_URL = http://localhost:3000/api/v1
+CABLE_URL = ws://localhost:3000/cable
+
+// Uncomment for ngrok testing (replace with your ngrok URL)
+// API_BASE_URL = https://untampered-jong-harshly.ngrok-free.dev/api/v1
+// CABLE_URL = wss://untampered-jong-harshly.ngrok-free.dev/cable
 
 

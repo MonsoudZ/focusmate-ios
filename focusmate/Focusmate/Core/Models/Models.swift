@@ -4,16 +4,18 @@ import SwiftUI
 // MARK: - User Model
 
 struct UserDTO: Codable, Identifiable, Hashable {
-  let id: String
+  let id: Int
   let email: String
-  let name: String?
+  let name: String
+  let role: String
+  let timezone: String?
 
   var isCoach: Bool {
-    false // Simplified for clean API
+    role == "coach"
   }
 
   var isClient: Bool {
-    true // Simplified for clean API
+    role == "client" || role == "user"
   }
 }
 
@@ -51,11 +53,17 @@ struct ItemsResponse: Codable {
 // MARK: - List Model
 
 struct ListDTO: Codable, Identifiable {
-  let id: String
-  let title: String
+  let id: Int
+  let name: String
+  let description: String?
   let visibility: String
-  let updated_at: String?
+  let user_id: Int
   let deleted_at: String?
+  let created_at: String
+  let updated_at: String
+
+  // Computed property for backward compatibility
+  var title: String { name }
 }
 
 // MARK: - Coach Sharing Info

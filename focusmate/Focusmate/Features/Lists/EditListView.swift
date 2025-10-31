@@ -58,7 +58,7 @@ struct EditListView: View {
 
   private func updateList() async {
     await self.listViewModel.updateList(
-      id: Int(self.list.id) ?? 0,
+      id: self.list.id,
       name: self.name,
       description: self.description.isEmpty ? nil : self.description
     )

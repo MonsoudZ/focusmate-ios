@@ -29,13 +29,13 @@ final class ListService {
   }
 
   func createList(name: String, description: String?) async throws -> ListDTO {
-    let request = CreateListRequest(list: .init(title: name, visibility: "private"))
+    let request = CreateListRequest(list: .init(name: name, description: description, visibility: "private"))
     // POST /lists returns single object directly
     return try await self.apiClient.request("POST", "lists", body: request)
   }
 
   func updateList(id: Int, name: String?, description: String?) async throws -> ListDTO {
-    let request = UpdateListRequest(list: .init(title: name, visibility: nil))
+    let request = UpdateListRequest(list: .init(name: name, description: description, visibility: nil))
     // PUT /lists/:id returns single object directly
     return try await self.apiClient.request("PUT", "lists/\(id)", body: request)
   }

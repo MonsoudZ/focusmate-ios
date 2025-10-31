@@ -110,19 +110,25 @@ struct ReassignView: View {
 
     self.availableUsers = [
       UserDTO(
-        id: "1",
+        id: 1,
         email: "coach@example.com",
-        name: "Sarah Johnson"
+        name: "Sarah Johnson",
+        role: "coach",
+        timezone: "UTC"
       ),
       UserDTO(
-        id: "2",
+        id: 2,
         email: "teammate@example.com",
-        name: "Mike Chen"
+        name: "Mike Chen",
+        role: "client",
+        timezone: "UTC"
       ),
       UserDTO(
-        id: "3",
+        id: 3,
         email: "manager@example.com",
-        name: "Alex Rodriguez"
+        name: "Alex Rodriguez",
+        role: "coach",
+        timezone: "UTC"
       ),
     ]
 

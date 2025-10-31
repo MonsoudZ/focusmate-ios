@@ -39,14 +39,14 @@ final class DeltaSyncService: ObservableObject {
         // Convert DTOs to SwiftData models and save
         for listDTO in page.data {
             let list = List(
-                id: Int(listDTO.id) ?? 0,
+                id: listDTO.id,
                 name: listDTO.title,
-                description: "",
+                description: listDTO.description ?? "",
                 role: "owner", // Default role
                 tasksCount: 0, // Will be updated when items are synced
                 overdueTasksCount: 0, // Will be updated when items are synced
                 createdAt: Date(),
-                updatedAt: listDTO.updated_at.flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
+                updatedAt: ISO8601DateFormatter().date(from: listDTO.updated_at) ?? Date()
             )
             
             try swiftDataManager.context.insert(list)
@@ -63,7 +63,7 @@ final class DeltaSyncService: ObservableObject {
         
         if let listId = listId {
             // Sync items for specific list
-            let page: Page<TaskDTO> = try await tasksRepo.index(listId: String(listId))
+            let page: Page<TaskDTO> = try await tasksRepo.index(listId: listId)
             await processTaskDTOs(page.data, listId: listId)
         } else {
             // Sync all items (this would need to be implemented based on API)
@@ -76,7 +76,7 @@ final class DeltaSyncService: ObservableObject {
     private func processTaskDTOs(_ taskDTOs: [TaskDTO], listId: Int) async {
         for taskDTO in taskDTOs {
             let item = TaskItem(
-                id: Int(taskDTO.id) ?? 0,
+                id: taskDTO.id,
                 listId: listId,
                 title: taskDTO.title,
                 description: taskDTO.notes,

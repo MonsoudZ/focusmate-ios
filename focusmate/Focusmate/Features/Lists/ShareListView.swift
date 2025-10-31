@@ -171,13 +171,13 @@ struct ShareListView: View {
 
     do {
       let request = ShareListRequest(email: email, role: selectedRole)
-      let response: ShareListResponse = try await listService.shareList(id: Int(self.list.id) ?? 0, request: request)
+      let response: ShareListResponse = try await listService.shareList(id: self.list.id, request: request)
 
       // Convert ShareListResponse to ListShare for display
       let newShare = ListShare(
         id: response.id,
         list_id: response.list_id,
-        user_id: Int(response.user?.id ?? "0") ?? 0,
+        user_id: response.user?.id ?? 0,
         role: response.role,
         created_at: response.created_at,
         updated_at: response.updated_at,
@@ -202,7 +202,7 @@ struct ShareListView: View {
 
   private func loadShares() async {
     do {
-      self.shares = try await self.listService.fetchShares(listId: Int(self.list.id) ?? 0)
+      self.shares = try await self.listService.fetchShares(listId: self.list.id)
       print("✅ ShareListView: Loaded \(self.shares.count) shares")
     } catch {
       print("❌ ShareListView: Failed to load shares: \(error)")

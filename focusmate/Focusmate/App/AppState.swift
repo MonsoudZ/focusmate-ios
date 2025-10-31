@@ -74,20 +74,19 @@ final class AppState: ObservableObject {
         print("✅ AppState: Device registered successfully with ID: \(response.device.id)")
       }
     } catch let apiError as APIError {
-      print("❌ AppState: Device registration failed with API error: \(apiError)")
+      // Device registration is optional - suppress errors in development
       switch apiError {
       case let .badStatus(422, message, _):
-        print("❌ AppState: Device registration validation failed: \(message ?? "Unknown validation error")")
-        print("❌ AppState: This might be due to missing APNS token - device registration will be retried later")
+        print("ℹ️ AppState: Device registration skipped - validation failed (expected in development)")
       case .badStatus(401, _, _):
-        print("❌ AppState: Device registration unauthorized - user may need to re-authenticate")
+        print("ℹ️ AppState: Device registration skipped - unauthorized")
       case .badStatus(500, _, _):
-        print("❌ AppState: Server error during device registration")
+        print("ℹ️ AppState: Device registration skipped - server error")
       default:
-        print("❌ AppState: Device registration failed: \(apiError)")
+        print("ℹ️ AppState: Device registration skipped: \(apiError)")
       }
     } catch {
-      print("❌ AppState: Device registration failed with unknown error: \(error)")
+      print("ℹ️ AppState: Device registration skipped: \(error)")
     }
   }
 
@@ -204,7 +203,7 @@ final class AppState: ObservableObject {
       let listService = ListService(apiClient: auth.api)
       do {
         let lists = try await listService.fetchLists()
-        if let list = lists.first(where: { $0.id == String(listId) }) {
+        if let list = lists.first(where: { $0.id == listId }) {
           self.currentList = list
 
           // Load the specific task

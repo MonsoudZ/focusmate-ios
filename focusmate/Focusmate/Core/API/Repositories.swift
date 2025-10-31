@@ -10,17 +10,17 @@ final class ListsRepo {
     
     func create(title: String, visibility: String = "private") async throws -> ListDTO {
         try await api.request("POST", API.Lists.root,
-                              body: CreateListRequest(list: .init(title: title, visibility: visibility)),
+                              body: CreateListRequest(list: .init(name: title, description: nil, visibility: visibility)),
                               idempotencyKey: UUID().uuidString)
     }
-    
-    func update(id: String, title: String? = nil, visibility: String? = nil) async throws -> ListDTO {
-        try await api.request("PATCH", API.Lists.id(id),
-                              body: UpdateListRequest(list: .init(title: title, visibility: visibility)))
+
+    func update(id: Int, title: String? = nil, visibility: String? = nil) async throws -> ListDTO {
+        try await api.request("PATCH", API.Lists.id(String(id)),
+                              body: UpdateListRequest(list: .init(name: title, description: nil, visibility: visibility)))
     }
-    
-    func destroy(id: String) async throws {
-        _ = try await api.request("DELETE", API.Lists.id(id)) as Empty
+
+    func destroy(id: Int) async throws {
+        _ = try await api.request("DELETE", API.Lists.id(String(id))) as Empty
     }
 }
 
@@ -28,33 +28,33 @@ final class TasksRepo {
     private let api: NewAPIClient
     init(api: NewAPIClient) { self.api = api }
 
-    func index(listId: String, cursor: String? = nil) async throws -> Page<TaskDTO> {
-        try await api.request("GET", API.Lists.tasks(listId),
+    func index(listId: Int, cursor: String? = nil) async throws -> Page<TaskDTO> {
+        try await api.request("GET", API.Lists.tasks(String(listId)),
                               query: cursor.map { [URLQueryItem(name:"cursor", value:$0)] })
     }
-    
-    func create(listId: String, title: String, notes: String? = nil, visibility: String = "private") async throws -> TaskDTO {
-        try await api.request("POST", API.Lists.tasks(listId),
+
+    func create(listId: Int, title: String, notes: String? = nil, visibility: String = "private") async throws -> TaskDTO {
+        try await api.request("POST", API.Lists.tasks(String(listId)),
             body: CreateTaskRequest(task: .init(title: title, notes: notes, visibility: visibility)),
             idempotencyKey: UUID().uuidString)
     }
-    
-    func update(listId: String, id: String, title: String? = nil, notes: String? = nil, visibility: String? = nil) async throws -> TaskDTO {
-        try await api.request("PATCH", API.Lists.task(listId, id), 
+
+    func update(listId: Int, id: Int, title: String? = nil, notes: String? = nil, visibility: String? = nil) async throws -> TaskDTO {
+        try await api.request("PATCH", API.Lists.task(String(listId), String(id)),
                               body: UpdateTaskRequest(task: .init(title: title, notes: notes, visibility: visibility)))
     }
-    
-    func destroy(listId: String, id: String) async throws {
-        _ = try await api.request("DELETE", API.Lists.task(listId, id)) as Empty
+
+    func destroy(listId: Int, id: Int) async throws {
+        _ = try await api.request("DELETE", API.Lists.task(String(listId), String(id))) as Empty
     }
-    
-    func complete(listId: String, id: String, done: Bool) async throws -> TaskDTO {
-        let path = API.Lists.taskAction(listId, id, done ? "complete" : "uncomplete")
+
+    func complete(listId: Int, id: Int, done: Bool) async throws -> TaskDTO {
+        let path = API.Lists.taskAction(String(listId), String(id), done ? "complete" : "uncomplete")
         return try await api.request("PATCH", path)
     }
-    
-    func reassign(listId: String, id: String, assigneeId: String) async throws -> TaskDTO {
-        try await api.request("PATCH", API.Lists.taskAction(listId, id, "reassign"),
+
+    func reassign(listId: Int, id: Int, assigneeId: String) async throws -> TaskDTO {
+        try await api.request("PATCH", API.Lists.taskAction(String(listId), String(id), "reassign"),
                               body: ReassignTaskRequest(task: .init(assignee_id: assigneeId)))
     }
 }

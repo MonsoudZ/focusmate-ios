@@ -133,9 +133,11 @@ struct EditItemView: View {
     missed_reason_submitted_at: nil as String?,
     missed_reason_reviewed_at: nil as String?,
     creator: UserDTO(
-      id: "1",
+      id: 1,
       email: "test@example.com",
-      name: "Test User"
+      name: "Test User",
+      role: "client",
+      timezone: "UTC"
     ),
     created_by_coach: false,
     can_edit: true,

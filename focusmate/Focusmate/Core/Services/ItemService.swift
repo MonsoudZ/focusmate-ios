@@ -156,9 +156,11 @@ final class ItemService {
         // Create a mock item for now until the API is ready
         // Create a mock item with all required fields
         let mockUser = UserDTO(
-          id: "1",
+          id: 1,
           email: "mock@example.com",
-          name: "Mock User"
+          name: "Mock User",
+          role: "client",
+          timezone: "UTC"
         )
 
         return Item(
@@ -338,9 +340,11 @@ final class ItemService {
       missed_reason_submitted_at: taskItem.missedReasonSubmittedAt?.ISO8601Format(),
       missed_reason_reviewed_at: taskItem.missedReasonReviewedAt?.ISO8601Format(),
       creator: UserDTO(
-        id: String(taskItem.creator?.id ?? 0),
+        id: taskItem.creator?.id ?? 0,
         email: taskItem.creator?.email ?? "",
-        name: taskItem.creator?.name ?? ""
+        name: taskItem.creator?.name ?? "",
+        role: taskItem.creator?.role ?? "client",
+        timezone: taskItem.creator?.timezone
       ),
       created_by_coach: taskItem.createdByCoach,
       can_edit: taskItem.canEdit,
