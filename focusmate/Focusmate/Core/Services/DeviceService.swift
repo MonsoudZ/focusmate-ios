@@ -86,7 +86,7 @@ final class DeviceService {
       self.device_name = UIDevice.current.model
       self.os_version = UIDevice.current.systemVersion
       self.app_version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-      self.bundle_id = Bundle.main.bundleIdentifier ?? "dev.local.chace.focusmate"
+      self.bundle_id = Bundle.main.bundleIdentifier ?? "com.focusmate.dev"
       self.locale = Locale.current.identifier
       self.apns_token = pushToken
     }

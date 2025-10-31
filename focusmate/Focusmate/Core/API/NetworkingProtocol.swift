@@ -82,6 +82,8 @@ final class InternalNetworking: NetworkingProtocol {
       if data.isEmpty {
         if T.self == EmptyResponse.self {
           return EmptyResponse() as! T
+        } else if T.self == ListService.AnyResponse.self {
+          return ListService.AnyResponse() as! T
         } else {
           print("🧩 APIClient: Expected \(T.self) but got empty response")
           throw APIError.decoding

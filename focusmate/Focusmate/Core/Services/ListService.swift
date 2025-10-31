@@ -67,18 +67,18 @@ final class ListService {
 
   struct EmptyResponse: Codable {}
 
-  // Response type that accepts any JSON structure - useful for DELETE endpoints
+  // Response type that accepts any JSON structure OR empty response - useful for DELETE endpoints
   struct AnyResponse: Codable {
-    private let _storage: [String: AnyCodable]?
-
     init(from decoder: Decoder) throws {
-      // Try to decode as dictionary, if that fails, just succeed anyway
-      _storage = try? [String: AnyCodable](from: decoder)
+      // Try to decode as dictionary, array, or any value
+      // If all fail, that's OK - the response might be empty
+      if let container = try? decoder.singleValueContainer() {
+        _ = try? container.decode([String: AnyCodable].self)
+      }
+      // Even if decoding fails, init succeeds - we just want to accept the response
     }
 
-    init() {
-      _storage = nil
-    }
+    init() {}
   }
 
   // Helper to decode any JSON value
