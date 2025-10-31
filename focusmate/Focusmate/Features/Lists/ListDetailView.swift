@@ -155,7 +155,9 @@ struct ListDetailView: View {
     }
     .onChange(of: self.showingCreateItem) { oldValue, newValue in
       // Reload items when create sheet is dismissed
+      print("🔄 ListDetailView: showingCreateItem changed from \(oldValue) to \(newValue)")
       if oldValue == true && newValue == false {
+        print("🔄 ListDetailView: Reloading items for list \(self.list.id)")
         Task {
           await self.itemViewModel.loadItems(listId: self.list.id)
         }

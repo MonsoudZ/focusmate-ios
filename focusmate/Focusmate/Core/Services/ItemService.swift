@@ -40,9 +40,36 @@ final class ItemService {
   }
 
   func syncItemsForList(listId: Int) async throws {
-    // TODO: Implement sync when DeltaSyncService is re-enabled
-    // try await self.deltaSyncService.syncItems(for: listId)
-    print("Sync items for list \(listId) requested (placeholder)")
+    // Fetch items from server and save to local storage
+    print("🔄 ItemService: Syncing items for list \(listId)")
+    let items = try await fetchItems(listId: listId)
+
+    // Save items to local SwiftData storage
+    for item in items {
+      let taskItem = convertItemToTaskItem(item)
+
+      // Check if item already exists and update it, otherwise insert
+      let fetchDescriptor = FetchDescriptor<TaskItem>(
+        predicate: #Predicate<TaskItem> { $0.id == item.id }
+      )
+
+      if let existing = try? swiftDataManager.context.fetch(fetchDescriptor).first {
+        // Update existing item
+        existing.title = taskItem.title
+        existing.itemDescription = taskItem.itemDescription
+        existing.dueAt = taskItem.dueAt
+        existing.completedAt = taskItem.completedAt
+        existing.priority = taskItem.priority
+        existing.isVisible = taskItem.isVisible
+        existing.updatedAt = taskItem.updatedAt
+      } else {
+        // Insert new item
+        swiftDataManager.context.insert(taskItem)
+      }
+    }
+
+    try? swiftDataManager.context.save()
+    print("✅ ItemService: Synced \(items.count) items for list \(listId)")
   }
 
   func syncAllItems() async throws {
@@ -309,6 +336,51 @@ final class ItemService {
   }
 
   // MARK: - Helper Methods
+
+  private func convertItemToTaskItem(_ item: Item) -> TaskItem {
+    let formatter = ISO8601DateFormatter()
+
+    return TaskItem(
+      id: item.id,
+      listId: item.list_id,
+      title: item.title,
+      description: item.description,
+      dueAt: item.dueDate, // Already a Date? computed property
+      completedAt: item.completed_at.flatMap { formatter.date(from: $0) },
+      priority: item.priority,
+      canBeSnoozed: item.can_be_snoozed,
+      notificationIntervalMinutes: item.notification_interval_minutes,
+      requiresExplanationIfMissed: item.requires_explanation_if_missed,
+      overdue: item.overdue,
+      minutesOverdue: item.minutes_overdue,
+      requiresExplanation: item.requires_explanation,
+      isRecurring: item.is_recurring,
+      recurrencePattern: item.recurrence_pattern,
+      recurrenceInterval: item.recurrence_interval,
+      recurrenceDays: item.recurrence_days,
+      locationBased: item.location_based,
+      locationName: item.location_name,
+      locationLatitude: item.location_latitude,
+      locationLongitude: item.location_longitude,
+      locationRadiusMeters: item.location_radius_meters,
+      notifyOnArrival: item.notify_on_arrival,
+      notifyOnDeparture: item.notify_on_departure,
+      missedReason: item.missed_reason,
+      missedReasonSubmittedAt: item.missed_reason_submitted_at.flatMap { formatter.date(from: $0) },
+      missedReasonReviewedAt: item.missed_reason_reviewed_at.flatMap { formatter.date(from: $0) },
+      createdByCoach: item.created_by_coach,
+      canEdit: item.can_edit,
+      canDelete: item.can_delete,
+      canComplete: item.can_complete,
+      isVisible: item.is_visible,
+      hasSubtasks: item.has_subtasks,
+      subtasksCount: item.subtasks_count,
+      subtasksCompletedCount: item.subtasks_completed_count,
+      subtaskCompletionPercentage: item.subtask_completion_percentage,
+      createdAt: formatter.date(from: item.created_at) ?? Date(),
+      updatedAt: formatter.date(from: item.updated_at) ?? Date()
+    )
+  }
 
   private func convertTaskItemToItem(_ taskItem: TaskItem) -> Item {
     return Item(
