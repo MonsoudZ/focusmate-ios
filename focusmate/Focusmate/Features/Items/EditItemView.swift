@@ -11,6 +11,10 @@ struct EditItemView: View {
   @State private var dueDate: Date
   @State private var hasDueDate: Bool
   @State private var isVisible: Bool
+  @State private var isRecurring: Bool
+  @State private var recurrencePattern: String
+  @State private var recurrenceInterval: Int
+  @State private var selectedWeekdays: Set<Int>
 
   init(item: Item, itemService: ItemService) {
     self.item = item
@@ -32,6 +36,10 @@ struct EditItemView: View {
     _dueDate = State(initialValue: item.dueDate ?? Date())
     _hasDueDate = State(initialValue: item.dueDate != nil)
     _isVisible = State(initialValue: item.is_visible)
+    _isRecurring = State(initialValue: item.is_recurring)
+    _recurrencePattern = State(initialValue: item.recurrence_pattern ?? "daily")
+    _recurrenceInterval = State(initialValue: item.recurrence_interval)
+    _selectedWeekdays = State(initialValue: Set(item.recurrence_days ?? []))
   }
 
   var body: some View {
@@ -55,6 +63,49 @@ struct EditItemView: View {
         Section(header: Text("Visibility")) {
           Toggle("Visible to others", isOn: self.$isVisible)
             .help("When enabled, this task will be visible to other users who have access to this list")
+        }
+
+        Section(header: Text("Recurring Task")) {
+          Toggle("Repeat this task", isOn: self.$isRecurring)
+
+          if self.isRecurring {
+            Picker("Frequency", selection: self.$recurrencePattern) {
+              Text("Daily").tag("daily")
+              Text("Weekly").tag("weekly")
+              Text("Monthly").tag("monthly")
+            }
+
+            Stepper("Every \(self.recurrenceInterval) \(self.recurrencePattern == "daily" ? "day(s)" : self.recurrencePattern == "weekly" ? "week(s)" : "month(s)")", value: self.$recurrenceInterval, in: 1...30)
+
+            if self.recurrencePattern == "weekly" {
+              VStack(alignment: .leading, spacing: 8) {
+                Text("Repeat on:")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+
+                HStack(spacing: 8) {
+                  ForEach([(0, "Sun"), (1, "Mon"), (2, "Tue"), (3, "Wed"), (4, "Thu"), (5, "Fri"), (6, "Sat")], id: \.0) { day in
+                    Button(action: {
+                      if self.selectedWeekdays.contains(day.0) {
+                        self.selectedWeekdays.remove(day.0)
+                      } else {
+                        self.selectedWeekdays.insert(day.0)
+                      }
+                    }) {
+                      Text(day.1)
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(self.selectedWeekdays.contains(day.0) ? Color.blue : Color.gray.opacity(0.2))
+                        .foregroundColor(self.selectedWeekdays.contains(day.0) ? .white : .primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .buttonStyle(.plain)
+                  }
+                }
+              }
+            }
+          }
         }
       }
       .navigationTitle("Edit Item")
@@ -94,7 +145,11 @@ struct EditItemView: View {
       description: self.description.isEmpty ? nil : self.description,
       completed: nil, // Don't change completion status
       dueDate: self.hasDueDate ? self.dueDate : nil,
-      isVisible: self.isVisible
+      isVisible: self.isVisible,
+      isRecurring: self.isRecurring,
+      recurrencePattern: self.isRecurring ? self.recurrencePattern : nil,
+      recurrenceInterval: self.isRecurring ? self.recurrenceInterval : nil,
+      recurrenceDays: (self.isRecurring && self.recurrencePattern == "weekly") ? Array(self.selectedWeekdays).sorted() : nil
     )
 
     if self.itemViewModel.error == nil {

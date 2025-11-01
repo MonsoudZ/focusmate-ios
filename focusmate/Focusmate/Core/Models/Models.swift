@@ -385,12 +385,20 @@ struct CreateItemRequest: Codable {
   let description: String?
   let dueDate: Date?
   let isVisible: Bool?
+  let isRecurring: Bool?
+  let recurrencePattern: String?
+  let recurrenceInterval: Int?
+  let recurrenceDays: [Int]?
 
   enum CodingKeys: String, CodingKey {
     case name = "title" // Map 'name' to 'title' for Rails API
     case description
     case dueDate = "due_at"
     case isVisible = "is_visible"
+    case isRecurring = "is_recurring"
+    case recurrencePattern = "recurrence_pattern"
+    case recurrenceInterval = "recurrence_interval"
+    case recurrenceDays = "recurrence_days"
   }
 }
 
@@ -400,12 +408,20 @@ struct UpdateItemRequest: Codable {
   let completed: Bool?
   let dueDate: Date?
   let isVisible: Bool?
+  let isRecurring: Bool?
+  let recurrencePattern: String?
+  let recurrenceInterval: Int?
+  let recurrenceDays: [Int]?
 
   enum CodingKeys: String, CodingKey {
     case name = "title" // Map 'name' to 'title' for Rails API
     case description, completed
     case dueDate = "due_at"
     case isVisible = "is_visible"
+    case isRecurring = "is_recurring"
+    case recurrencePattern = "recurrence_pattern"
+    case recurrenceInterval = "recurrence_interval"
+    case recurrenceDays = "recurrence_days"
   }
 }
 

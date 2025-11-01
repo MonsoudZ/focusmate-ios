@@ -163,7 +163,17 @@ final class ItemViewModel: ObservableObject {
     }
   }
 
-  func createItem(listId: Int, name: String, description: String?, dueDate: Date?, isVisible: Bool = true) async {
+  func createItem(
+    listId: Int,
+    name: String,
+    description: String?,
+    dueDate: Date?,
+    isVisible: Bool = true,
+    isRecurring: Bool = false,
+    recurrencePattern: String? = nil,
+    recurrenceInterval: Int? = nil,
+    recurrenceDays: [Int]? = nil
+  ) async {
     self.isLoading = true
     self.error = nil
 
@@ -187,7 +197,11 @@ final class ItemViewModel: ObservableObject {
         name: trimmedName,
         description: description,
         dueDate: dueDate,
-        isVisible: isVisible
+        isVisible: isVisible,
+        isRecurring: isRecurring,
+        recurrencePattern: recurrencePattern,
+        recurrenceInterval: recurrenceInterval,
+        recurrenceDays: recurrenceDays
       )
       self.items.append(newItem)
       print("✅ ItemViewModel: Created item: \(newItem.title)")
@@ -222,7 +236,11 @@ final class ItemViewModel: ObservableObject {
     description: String?,
     completed: Bool?,
     dueDate: Date?,
-    isVisible: Bool? = nil
+    isVisible: Bool? = nil,
+    isRecurring: Bool? = nil,
+    recurrencePattern: String? = nil,
+    recurrenceInterval: Int? = nil,
+    recurrenceDays: [Int]? = nil
   ) async {
     self.isLoading = true
     self.error = nil
@@ -234,7 +252,11 @@ final class ItemViewModel: ObservableObject {
         description: description,
         completed: completed,
         dueDate: dueDate,
-        isVisible: isVisible
+        isVisible: isVisible,
+        isRecurring: isRecurring,
+        recurrencePattern: recurrencePattern,
+        recurrenceInterval: recurrenceInterval,
+        recurrenceDays: recurrenceDays
       )
       if let index = items.firstIndex(where: { $0.id == id }) {
         self.items[index] = updatedItem

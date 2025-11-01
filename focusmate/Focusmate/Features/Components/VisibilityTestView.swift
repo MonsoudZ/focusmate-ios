@@ -64,7 +64,11 @@ struct VisibilityTestView: View {
       name: "Test Task",
       description: "Test Description",
       dueDate: Date(),
-      isVisible: true
+      isVisible: true,
+      isRecurring: nil,
+      recurrencePattern: nil,
+      recurrenceInterval: nil,
+      recurrenceDays: nil
     )
 
     do {
@@ -93,7 +97,11 @@ struct VisibilityTestView: View {
       description: "Updated Description",
       completed: nil,
       dueDate: Date(),
-      isVisible: false
+      isVisible: false,
+      isRecurring: nil,
+      recurrencePattern: nil,
+      recurrenceInterval: nil,
+      recurrenceDays: nil
     )
 
     do {

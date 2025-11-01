@@ -95,13 +95,21 @@ final class ItemService {
     name: String,
     description: String?,
     dueDate: Date?,
-    isVisible: Bool = true
+    isVisible: Bool = true,
+    isRecurring: Bool = false,
+    recurrencePattern: String? = nil,
+    recurrenceInterval: Int? = nil,
+    recurrenceDays: [Int]? = nil
   ) async throws -> Item {
     let request = CreateItemRequest(
       name: name,
       description: description,
       dueDate: dueDate,
-      isVisible: isVisible
+      isVisible: isVisible,
+      isRecurring: isRecurring ? true : nil,
+      recurrencePattern: recurrencePattern,
+      recurrenceInterval: recurrenceInterval,
+      recurrenceDays: recurrenceDays
     )
 
     // Debug: Log the request payload
@@ -125,14 +133,22 @@ final class ItemService {
     description: String?,
     completed: Bool?,
     dueDate: Date?,
-    isVisible: Bool? = nil
+    isVisible: Bool? = nil,
+    isRecurring: Bool? = nil,
+    recurrencePattern: String? = nil,
+    recurrenceInterval: Int? = nil,
+    recurrenceDays: [Int]? = nil
   ) async throws -> Item {
     let request = UpdateItemRequest(
       name: name,
       description: description,
       completed: completed,
       dueDate: dueDate,
-      isVisible: isVisible
+      isVisible: isVisible,
+      isRecurring: isRecurring,
+      recurrencePattern: recurrencePattern,
+      recurrenceInterval: recurrenceInterval,
+      recurrenceDays: recurrenceDays
     )
 
     // Debug: Log the request payload
@@ -204,12 +220,20 @@ final class ItemService {
     let completed: Bool?
     let dueDate: Date?
     let isVisible: Bool?
+    let isRecurring: Bool?
+    let recurrencePattern: String?
+    let recurrenceInterval: Int?
+    let recurrenceDays: [Int]?
 
     enum CodingKeys: String, CodingKey {
       case name = "title" // Map name to title for Rails API
       case description, completed
       case dueDate = "due_at"
       case isVisible = "is_visible"
+      case isRecurring = "is_recurring"
+      case recurrencePattern = "recurrence_pattern"
+      case recurrenceInterval = "recurrence_interval"
+      case recurrenceDays = "recurrence_days"
     }
   }
 

@@ -226,6 +226,43 @@ struct ItemRowView: View {
     return dueDate < Date()
   }
 
+  private var recurrenceDescription: String {
+    guard let pattern = item.recurrence_pattern else { return "" }
+    let interval = item.recurrence_interval
+
+    switch pattern {
+    case "daily":
+      return interval == 1 ? "Daily" : "Every \(interval) days"
+    case "weekly":
+      if interval == 1 {
+        if let days = item.recurrence_days, !days.isEmpty {
+          let dayNames = days.map { dayOfWeekName($0) }.joined(separator: ", ")
+          return "Weekly (\(dayNames))"
+        }
+        return "Weekly"
+      } else {
+        return "Every \(interval) weeks"
+      }
+    case "monthly":
+      return interval == 1 ? "Monthly" : "Every \(interval) months"
+    default:
+      return "Recurring"
+    }
+  }
+
+  private func dayOfWeekName(_ day: Int) -> String {
+    switch day {
+    case 0: return "Sun"
+    case 1: return "Mon"
+    case 2: return "Tue"
+    case 3: return "Wed"
+    case 4: return "Thu"
+    case 5: return "Fri"
+    case 6: return "Sat"
+    default: return ""
+    }
+  }
+
   var body: some View {
     HStack {
       Button {
@@ -262,6 +299,21 @@ struct ItemRowView: View {
             Text(dueDate, style: .date)
               .font(.caption)
               .foregroundColor(self.isOverdue ? .red : .secondary)
+          }
+
+          // Show recurring task badge
+          if self.item.is_recurring {
+            HStack(spacing: 2) {
+              Image(systemName: "repeat")
+                .font(.caption2)
+              Text(self.recurrenceDescription)
+                .font(.caption2)
+            }
+            .foregroundColor(.blue)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.blue.opacity(0.1))
+            .clipShape(Capsule())
           }
 
           // Show completion details for completed tasks
