@@ -6,6 +6,7 @@ struct ListDetailView: View {
   @EnvironmentObject var appState: AppState
   @EnvironmentObject var swiftDataManager: SwiftDataManager
   // @EnvironmentObject var deltaSyncService: DeltaSyncService // Temporarily disabled
+  @StateObject private var refreshCoordinator = RefreshCoordinator.shared
   @StateObject private var itemViewModel: ItemViewModel
 
   @State private var showingCreateItem = false
@@ -35,12 +36,11 @@ struct ListDetailView: View {
               .font(.title2)
               .fontWeight(.bold)
 
-            // ListDTO doesn't have description field
-            // if let description = list.description {
-            //   Text(description)
-            //     .font(.subheadline)
-            //     .foregroundColor(.secondary)
-            // }
+            if let description = list.description, !description.isEmpty {
+              Text(description)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            }
           }
 
           Spacer()
@@ -153,11 +153,9 @@ struct ListDetailView: View {
         )
       )
     }
-    .onChange(of: self.showingCreateItem) { oldValue, newValue in
-      // Reload items when create sheet is dismissed
-      print("🔄 ListDetailView: showingCreateItem changed from \(oldValue) to \(newValue)")
-      if oldValue == true && newValue == false {
-        print("🔄 ListDetailView: Reloading items for list \(self.list.id)")
+    .onReceive(refreshCoordinator.refreshPublisher) { event in
+      // Automatically refresh when items are modified
+      if case .items(let listId) = event, listId == self.list.id {
         Task {
           await self.itemViewModel.loadItems(listId: self.list.id)
         }

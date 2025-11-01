@@ -16,13 +16,12 @@ struct ListRowView: View {
           .foregroundStyle(.secondary)
       }
 
-      // ListDTO doesn't have description field
-      // if let description = list.description {
-      //   Text(description)
-      //     .font(.subheadline)
-      //     .foregroundStyle(.secondary)
-      //     .lineLimit(2)
-      // }
+      if let description = list.description, !description.isEmpty {
+        Text(description)
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+      }
 
       HStack {
         // ListDTO doesn't have these fields - simplified for now

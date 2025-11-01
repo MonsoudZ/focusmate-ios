@@ -219,6 +219,8 @@ struct CreateItemView: View {
     )
 
     if self.itemViewModel.error == nil {
+      // Trigger refresh of items list
+      RefreshCoordinator.shared.triggerRefresh(.items(listId: self.listId))
       self.dismiss()
     }
   }

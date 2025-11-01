@@ -5,6 +5,7 @@ struct ListsView: View {
   @EnvironmentObject var state: AppState
   @EnvironmentObject var swiftDataManager: SwiftDataManager
   // @EnvironmentObject var deltaSyncService: DeltaSyncService // Temporarily disabled
+  @StateObject private var refreshCoordinator = RefreshCoordinator.shared
   @State private var showingCreateList = false
   @State private var lists: [ListDTO] = []
   @State private var isLoading = false
@@ -83,9 +84,9 @@ struct ListsView: View {
       .sheet(isPresented: self.$showingCreateList) {
         CreateListView(listService: ListService(apiClient: self.state.auth.api))
       }
-      .onChange(of: self.showingCreateList) { oldValue, newValue in
-        // Reload lists when create sheet is dismissed
-        if oldValue == true && newValue == false {
+      .onReceive(refreshCoordinator.refreshPublisher) { event in
+        // Automatically refresh when refresh event is triggered
+        if case .lists = event {
           Task {
             await self.loadLists()
           }

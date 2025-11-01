@@ -58,6 +58,8 @@ struct CreateListView: View {
     )
 
     if self.listViewModel.error == nil {
+      // Trigger refresh of lists view
+      RefreshCoordinator.shared.triggerRefresh(.lists)
       self.dismiss()
     }
   }

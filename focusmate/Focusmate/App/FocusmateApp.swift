@@ -70,22 +70,10 @@ struct RootView: View {
             Text("Blocking")
           }
 
-        SwiftDataTestView()
+        SettingsView()
           .tabItem {
-            Image(systemName: "wrench.and.screwdriver")
-            Text("Test")
-          }
-
-        VisibilityTestView()
-          .tabItem {
-            Image(systemName: "eye")
-            Text("Visibility")
-          }
-
-        ErrorHandlingTestView()
-          .tabItem {
-            Image(systemName: "exclamationmark.triangle")
-            Text("Errors")
+            Image(systemName: "gearshape")
+            Text("Settings")
           }
       }
       .task {
