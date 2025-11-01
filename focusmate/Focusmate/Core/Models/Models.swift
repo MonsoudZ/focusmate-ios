@@ -467,9 +467,14 @@ struct ShareListResponse: Codable {
   let role: String
   let status: String
   let invitation_token: String
+  let user_id: Int?
   let user: UserDTO?
-  let permissions: SharePermissions
-  let invited_at: String
+  let can_view: Bool
+  let can_edit: Bool
+  let can_add_items: Bool
+  let can_delete_items: Bool
+  let receive_notifications: Bool
+  let invited_at: String?
   let accepted_at: String?
   let created_at: String
   let updated_at: String

@@ -201,7 +201,7 @@ struct ShareListView: View {
       let newShare = ListShare(
         id: response.id,
         list_id: response.list_id,
-        user_id: response.user?.id ?? 0,
+        user_id: response.user_id ?? 0,
         role: response.role,
         created_at: response.created_at,
         updated_at: response.updated_at,
