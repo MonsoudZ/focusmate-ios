@@ -81,75 +81,9 @@ final class ItemService {
   // MARK: - Item Management
 
   func fetchItems(listId: Int) async throws -> [Item] {
-    do {
-      // Try wrapped response first (Rails returns {tasks: [...], tombstones: [], pagination: {...}})
-      let response: ItemsResponse = try await apiClient.request("GET", "lists/\(listId)/tasks", body: nil as String?)
-      return response.items
-    } catch APIError.decoding {
-      // If wrapped fails, try direct array (backward compatibility)
-      do {
-        let items: [Item] = try await apiClient.request("GET", "lists/\(listId)/tasks", body: nil as String?)
-        return items
-      } catch let error as APIError {
-        throw error
-      }
-    } catch let error as APIError {
-      if case .badStatus(404, _, _) = error {
-        print("🔄 ItemService: Primary route failed, trying fallback routes...")
-
-        // Try multiple fallback patterns with proper query parameters
-        // Prioritize working endpoints first
-        let fallbackRoutes = [
-          ("lists/\(listId)/tasks", [:]),
-          ("tasks", ["list_id": String(listId)]),
-          ("items", ["list_id": String(listId)]),
-          ("tasks/all_tasks", ["list_id": String(listId)]),
-          ("tasks/all_tasks", [:]),
-          ("tasks", [:]),
-          ("items", [:]),
-        ]
-
-        for (route, queryParams) in fallbackRoutes {
-          print("🔄 ItemService: Trying route: \(route) with params: \(queryParams)")
-
-          // Try wrapped response first
-          do {
-            let wrapped: ItemsResponse = try await apiClient.request(
-              "GET",
-              route,
-              body: nil as String?,
-              queryParameters: queryParams
-            )
-            print("✅ ItemService: Found items via wrapped route: \(route)")
-            return wrapped.items
-          } catch {
-            print("🔄 ItemService: Wrapped route failed, trying direct array for: \(route)")
-
-            // Try unwrapped array response
-            do {
-              let items: [Item] = try await apiClient.request(
-                "GET",
-                route,
-                body: nil as String?,
-                queryParameters: queryParams
-              )
-              print("✅ ItemService: Found items via direct array route: \(route)")
-              return items
-            } catch {
-              print("❌ ItemService: Route \(route) failed: \(error)")
-              continue
-            }
-          }
-        }
-
-        // If all routes fail, return empty array as fallback
-        print("⚠️ ItemService: All API routes failed, returning empty array")
-        return []
-      }
-      throw error
-    } catch {
-      throw error
-    }
+    // Rails API returns wrapped response: {tasks: [...], tombstones: [], pagination: {...}}
+    let response: ItemsResponse = try await apiClient.request("GET", "lists/\(listId)/tasks", body: nil as String?)
+    return response.items
   }
 
   func fetchItem(id: Int) async throws -> Item {
@@ -181,70 +115,9 @@ final class ItemService {
       print("❌ ItemService: Failed to encode request: \(error)")
     }
 
-    do {
-      let item: Item = try await apiClient.request("POST", "lists/\(listId)/tasks", body: request)
-      print("✅ ItemService: Successfully created item: \(item.title)")
-      return item
-    } catch let error as APIError {
-      if case .badStatus(404, _, _) = error {
-        print("⚠️ ItemService: Tasks endpoint not available, creating mock item")
-        // Create a mock item for now until the API is ready
-        // Create a mock item with all required fields
-        let mockUser = UserDTO(
-          id: 1,
-          email: "mock@example.com",
-          name: "Mock User",
-          role: "client",
-          timezone: "UTC"
-        )
-
-        return Item(
-          id: Int.random(in: 1000 ... 9999),
-          list_id: listId,
-          title: name,
-          description: description,
-          due_at: dueDate?.ISO8601Format(),
-          completed_at: nil,
-          priority: 2,
-          can_be_snoozed: true,
-          notification_interval_minutes: 10,
-          requires_explanation_if_missed: false,
-          overdue: false,
-          minutes_overdue: 0,
-          requires_explanation: false,
-          is_recurring: false,
-          recurrence_pattern: nil,
-          recurrence_interval: 1,
-          recurrence_days: nil,
-          location_based: false,
-          location_name: nil,
-          location_latitude: nil,
-          location_longitude: nil,
-          location_radius_meters: 100,
-          notify_on_arrival: true,
-          notify_on_departure: false,
-          missed_reason: nil,
-          missed_reason_submitted_at: nil,
-          missed_reason_reviewed_at: nil,
-          creator: mockUser,
-          created_by_coach: false,
-          can_edit: true,
-          can_delete: true,
-          can_complete: true,
-          is_visible: isVisible,
-          escalation: nil,
-          has_subtasks: false,
-          subtasks_count: 0,
-          subtasks_completed_count: 0,
-          subtask_completion_percentage: 0,
-          created_at: Date().ISO8601Format(),
-          updated_at: Date().ISO8601Format()
-        )
-      }
-      throw error
-    } catch {
-      throw error
-    }
+    let item: Item = try await apiClient.request("POST", "lists/\(listId)/tasks", body: request)
+    print("✅ ItemService: Successfully created item: \(item.title)")
+    return item
   }
 
   func updateItem(

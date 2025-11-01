@@ -24,15 +24,18 @@ class WebSocketManager: ObservableObject {
 
   // MARK: - Connection Management
 
+  private var token: String?
+
   func connect(with token: String) {
     guard !self.isConnected else { return }
 
+    self.token = token
     self.connectionStatus = .connecting
 
-    // Construct the WebSocket URL with JWT token as query parameter
-    // Use ws:// for localhost (not wss://)
-    guard let baseURL = URL(string: "ws://localhost:3000/cable") else {
-      self.connectionStatus = .error("Invalid WebSocket URL")
+    // Get WebSocket URL from environment configuration
+    let cableURLString = Bundle.main.object(forInfoDictionaryKey: "CABLE_URL") as? String ?? "ws://localhost:3000/cable"
+    guard let baseURL = URL(string: cableURLString) else {
+      self.connectionStatus = .error("Invalid WebSocket URL: \(cableURLString)")
       return
     }
 

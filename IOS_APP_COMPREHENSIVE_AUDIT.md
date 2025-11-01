@@ -1,698 +1,639 @@
 # iOS App Comprehensive Audit Report
-
-**Date**: October 31, 2025
-**App Name**: Focusmate
-**Platform**: iOS (SwiftUI)
-**Total Swift Files**: 57
-**Total Lines of Code**: ~7,825
-**Test Files**: 3
+**Date:** October 31, 2025
+**Platform:** iOS (Swift/SwiftUI)
+**Status:** Active Development
 
 ---
 
 ## Executive Summary
 
-**Overall Grade: C+ (73/100)**
+This audit identifies critical gaps in the iOS implementation, particularly around placeholder code, disabled services, missing features, and incomplete API integrations. The app has solid foundation for basic CRUD operations but lacks complete implementation of advanced features.
 
-Your iOS app shows **promising architecture** with modern Swift patterns, but has **significant issues** that prevent it from being production-ready. The app demonstrates good use of SwiftUI and modern iOS patterns, but suffers from:
-
-1. ❌ **API contract mismatches** with Rails backend
-2. ❌ **Minimal test coverage** (3 test files for 57 source files)
-3. ⚠️ **Inconsistent error handling**
-4. ⚠️ **Device registration implementation issues**
-5. ✅ **Good security practices** (Keychain usage)
-6. ✅ **Modern SwiftUI architecture**
+**Overall Status:**
+- ✅ Basic Features: ~70% Complete
+- ⚠️ Advanced Features: ~30% Complete
+- ❌ Critical Issues: 8 major items
 
 ---
 
-## Grade Breakdown
+## 1. PLACEHOLDER/TODO IMPLEMENTATIONS
 
-| Category | Grade | Score | Weight |
-|----------|-------|-------|--------|
-| **Architecture & Design** | B | 82/100 | 20% |
-| **API Integration** | D+ | 68/100 | 25% |
-| **Security** | B+ | 87/100 | 15% |
-| **Code Quality** | C+ | 75/100 | 15% |
-| **Testing** | F | 30/100 | 15% |
-| **Error Handling** | C | 72/100 | 10% |
+### 1.1 Critical TODOs
 
-**Weighted Average: C+ (73/100)**
+#### DeltaSyncService Disabled (HIGH PRIORITY)
+**Files Affected:**
+- `/focusmate/Focusmate/Core/Services/ItemService.swift:76`
+- `/focusmate/Focusmate/ViewModels/ItemViewModel.swift:44, 122`
+- `/focusmate/Focusmate/Features/Components/SyncStatusView.swift:58`
+- `/focusmate/Focusmate/Features/Components/SwiftDataTestView.swift:92`
 
----
+**Issue:**
+DeltaSyncService is completely disabled throughout the app. All references are commented out.
 
-## 🏗️ Architecture & Design: B (82/100)
+**Impact:**
+- Full sync functionality not available
+- Placeholder print statements instead of actual sync: `"Full sync completed (placeholder)"`
+- SwiftData synchronization incomplete
+- Offline-first architecture compromised
 
-### ✅ Strengths:
-
-1. **Clean Architecture** ✅
-   - Proper separation: Views → ViewModels → Services → API Client
-   - Service layer pattern implemented correctly
-   - Good use of dependency injection
-
-2. **Modern SwiftUI Patterns** ✅
-   ```swift
-   // AppState.swift - Good use of @MainActor and ObservableObject
-   @MainActor
-   final class AppState: ObservableObject {
-     @Published var auth = AuthStore()
-     @Published var currentList: ListDTO?
-     private(set) lazy var authService = AuthService(apiClient: auth.api)
-   }
-   ```
-
-3. **Singleton Pattern** ✅
-   - KeychainManager uses proper singleton
-   - SwiftDataManager centralized
-
-4. **Protocol-Oriented** ✅
-   ```swift
-   // NetworkingProtocol.swift
-   protocol NetworkingProtocol {
-     func request<T: Decodable>(...) async throws -> T
-   }
-   ```
-
-### ❌ Issues:
-
-1. **God Object - AppState.swift** ⚠️
-   - 278 lines, too many responsibilities
-   - Handles: Auth, WebSocket, Push Notifications, Data Sync, Device Registration
-   - **Recommendation**: Split into separate managers
-
-2. **Duplicate API Clients** ❌
-   - `APIClient.swift`
-   - `NewAPIClient.swift`
-   - **Issue**: Which one is current? Confusing for maintainers
-   - **Location**: `focusmate/Focusmate/Core/API/`
-
-3. **Missing ViewModels** ⚠️
-   - Found: `ItemViewModel`, `EscalationViewModel`, `ListViewModel`
-   - Missing: TaskViewModel, DeviceViewModel
-   - **Impact**: Business logic in views
-
----
-
-## 🔌 API Integration: D+ (68/100)
-
-###  Critical Issues - API Contract Mismatches:
-
-#### 1. **Device Registration - MAJOR MISMATCH** ❌
-
-**iOS sends**:
+**Code Examples:**
 ```swift
-// DeviceService.swift:65-88
-{
-  "platform": "ios",
-  "version": "17.2",  // ❌ Not in Rails schema
-  "model": "iPhone",
-  "system_version": "17.2",
-  "app_version": "1.0.0",
-  "apns_token": "abc123..."
+// ItemService.swift:76
+func syncAllItems() async throws {
+    // TODO: Implement sync when DeltaSyncService is re-enabled
+    // try await self.deltaSyncService.syncItems()
+    print("Sync all items requested (placeholder)")
+}
+
+// ItemViewModel.swift:44
+func performFullSync() async {
+    // TODO: Implement sync when DeltaSyncService is re-enabled
+    // try await self.deltaSyncService.syncAll()
+    print("✅ ItemViewModel: Full sync completed (placeholder)")
 }
 ```
 
-**Rails expects** (from DevicesController.swift:40-63):
-```ruby
-{
-  "platform": "ios",         # ✅ OK
-  "apns_token": "abc123...", # ✅ OK
-  "device_name": "iPhone",   # ❌ iOS sends "model"
-  "os_version": "17.2",      # ✅ OK (mapped from system_version)
-  "app_version": "1.0.0",    # ✅ OK
-  "locale": "en_US",         # ❌ iOS doesn't send
-  "bundle_id": "com.app"     # ❌ iOS doesn't send
+#### Sentry Integration Missing
+**File:** `/focusmate/Focusmate/Core/Services/SentryService.swift`
+
+**All Functions Disabled:**
+- `configure()` - Line 17
+- `setUser()` - Line 33
+- `clearUser()` - Line 40
+- `captureError()` - Line 51
+- `captureMessage()` - Line 58
+
+**Impact:**
+- No error tracking in production
+- No crash reporting
+- No performance monitoring
+- Limited debugging capability
+
+**Code:**
+```swift
+// All functions just have:
+// TODO: Implement when Sentry is added via Xcode project
+```
+
+---
+
+## 2. API INTEGRATION ISSUES
+
+### 2.1 Mock Data Fallbacks
+
+#### ItemService Mock Item Creation
+**File:** `/focusmate/Focusmate/Core/Services/ItemService.swift:190-243`
+
+**Issue:**
+When the tasks endpoint returns 404, the service creates a hardcoded mock item instead of properly handling the error.
+
+**Code:**
+```swift
+catch let error as APIError {
+    if case .badStatus(404, _, _) = error {
+        print("⚠️ ItemService: Tasks endpoint not available, creating mock item")
+        // Create a mock item for now until the API is ready
+        let mockUser = UserDTO(
+            id: 1,
+            email: "mock@example.com",
+            name: "Mock User",
+            role: "client",
+            timezone: "UTC"
+        )
+        return Item(
+            id: Int.random(in: 1000 ... 9999),
+            // ... rest of mock data
+        )
+    }
 }
 ```
 
-**Problem**: Field name mismatches will cause 422 errors!
+**Impact:**
+- Users see fake data instead of real errors
+- Development confusion between real and mock data
+- Production issues masked
 
-**File**: `focusmate/Focusmate/Core/Services/DeviceService.swift:65-88`
+#### Mock Authentication Mode
+**File:** `/focusmate/Focusmate/Core/API/AuthAPI.swift:13-17, 31-35`
 
-#### 2. **List Model Mismatch** ❌
+**Issue:**
+Mock mode enabled via environment variable but always available as fallback.
 
-**iOS ListDTO**:
+**Code:**
 ```swift
-// Models.swift:53-59
-struct ListDTO: Codable {
-  let id: String          // ❌ Should be Int
-  let title: String       // ❌ Rails uses "name"
-  let visibility: String
-  let updated_at: String?
-  let deleted_at: String?
+if API.isMockMode {
+    print("🧪 Mock mode: Simulating successful sign in")
+    let mockUser = UserDTO(id: 1, email: email, name: "Test User", role: "client", timezone: "UTC")
+    await session.set(token: "mock-jwt-token")
+    return mockUser
 }
 ```
 
-**Rails Response** (from ListsController.swift:209-229):
-```ruby
-{
-  "id": 1,                  # Int, not String!
-  "name": "My List",        # "name", not "title"!
-  "description": "...",     # Missing in iOS model
-  "visibility": "private",
-  "user_id": 1,             # Missing in iOS model
-  "created_at": "...",
-  "updated_at": "..."
+### 2.2 API Endpoint Inconsistencies
+
+#### Multiple Fallback Routes
+**File:** `/focusmate/Focusmate/Core/Services/ItemService.swift:102-143`
+
+**Issue:**
+ItemService tries 7 different API routes when the primary fails, indicating uncertainty about correct endpoints.
+
+**Routes Attempted:**
+1. `lists/{id}/tasks`
+2. `tasks?list_id={id}`
+3. `items?list_id={id}`
+4. `tasks/all_tasks?list_id={id}`
+5. `tasks/all_tasks`
+6. `tasks`
+7. `items`
+
+**Impact:**
+- Performance overhead (7 unnecessary requests)
+- Unclear which endpoint is actually correct
+- Suggests Rails API inconsistency
+
+### 2.3 Missing Error Handling
+
+#### Suppressed Device Registration Errors
+**File:** `/focusmate/Focusmate/App/AppState.swift:76-90`
+
+**Issue:**
+All device registration errors are silently suppressed with info-level logging.
+
+**Code:**
+```swift
+catch let apiError as APIError {
+    switch apiError {
+    case let .badStatus(422, message, _):
+        print("ℹ️ AppState: Device registration skipped - validation failed (expected in development)")
+    case .badStatus(401, _, _):
+        print("ℹ️ AppState: Device registration skipped - unauthorized")
+    // etc - all errors suppressed
+    }
 }
 ```
 
-**Impact**: **List fetching will fail with decoding errors!**
+**Impact:**
+- Silent failures in production
+- No visibility into registration issues
+- Push notifications may fail without notice
 
-**File**: `focusmate/Focusmate/Core/Models/Models.swift:53-59`
+---
 
-#### 3. **Task Creation Mismatch** ❌
+## 3. SWIFTDATA/PERSISTENCE ISSUES
 
-**iOS sends**:
+### 3.1 DeltaSyncService Integration Broken
+
+**Status:** COMPLETELY DISABLED
+
+**Files:**
+- Core service: `/focusmate/Focusmate/Core/Services/DeltaSyncService.swift` (EXISTS but UNUSED)
+- ViewModels: All have commented-out references
+- Views: All sync features are placeholders
+
+**Missing Integration:**
+- `syncAll()` - Not called anywhere
+- `syncUsers()` - Implemented but unused
+- `syncLists()` - Implemented but unused
+- `syncItems()` - Implemented but unused
+
+**DeltaSyncService Code Analysis:**
 ```swift
-// ListService.swift:32
-CreateListRequest(list: .init(title: name, visibility: "private"))
-```
-
-**Rails expects**:
-```ruby
-# ListsController.swift:201-206
-{ "list": { "name": "...", ... } }  # Uses "name" not "title"
-```
-
-**Problem**: 422 validation error - "name can't be blank"
-
-**File**: `focusmate/Focusmate/Core/Services/ListService.swift:32`
-
-#### 4. **Device Response Decoding** ❌
-
-**iOS expects**:
-```swift
-// DeviceService.swift:90-92
-struct DeviceRegistrationResponse: Codable {
-  let device: Device  // Wrapped response
+// Service exists and has full implementation:
+func syncAll() async throws {
+    print("🔄 DeltaSyncService: Starting full sync...")
+    try await syncUsers()
+    try await syncLists()
+    try await syncItems()
+    print("✅ DeltaSyncService: Full sync completed")
 }
 ```
 
-**Rails returns directly**:
-```ruby
-# DevicesController.swift:65
-render json: DeviceSerializer.new(device).as_json  # Direct object, not wrapped!
-```
-
-**Workaround in code** (DeviceService.swift:36-48):
+But everywhere else:
 ```swift
-// Try wrapped response first, then fallback to direct
-// ⚠️ Hack to handle API inconsistency
+// private let deltaSyncService: DeltaSyncService // Temporarily disabled
 ```
 
-### ✅ Good Practices:
+### 3.2 Partial SwiftData Implementation
 
-1. **JWT Token Handling** ✅
-   ```swift
-   // NetworkingProtocol.swift:51-53
-   if let jwt = tokenProvider() {
-     req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
-   }
-   ```
+**Working:**
+- ItemService saves items to SwiftData on fetch
+- Local storage reads work
+- Update operations update local cache
 
-2. **Error Response Parsing** ✅
-   ```swift
-   // NetworkingProtocol.swift:140-173
-   private func parseErrorResponse(data: Data, statusCode: Int) -> ErrorResponse?
-   ```
+**Missing:**
+- Background sync worker
+- Conflict resolution
+- Tombstone handling (defined in models but not used)
+- Delta sync (incremental updates)
 
-3. **Rate Limiting Detection** ✅
-   ```swift
-   // NetworkingProtocol.swift:67-70
-   case 429:
-     let retryAfter = self.extractRetryAfter(from: http.allHeaderFields)
-     throw APIError.rateLimited(retryAfter)
-   ```
-
----
-
-## 🔐 Security: B+ (87/100)
-
-### ✅ Strengths:
-
-1. **Proper Keychain Usage** ✅
-   ```swift
-   // KeychainManager.swift:11-30
-   func save(token: String) {
-     let data = token.data(using: .utf8)!
-     let query: [String: Any] = [
-       kSecClass as String: kSecClassGenericPassword,
-       kSecAttrService as String: self.service,
-       kSecAttrAccount as String: self.tokenKey,
-       kSecValueData as String: data
-     ]
-     SecItemDelete(query as CFDictionary)  // Delete old first
-     SecItemAdd(query as CFDictionary, nil)
-   }
-   ```
-
-2. **No Hardcoded Secrets** ✅
-   - JWT tokens stored in Keychain
-   - API URL in xcconfig files
-   - No API keys in code
-
-3. **Secure Field for Passwords** ✅
-   ```swift
-   // SignInView.swift:17-20
-   SecureField("Password", text: self.$password)
-   ```
-
-4. **Token Expiration Handling** ✅
-   - 401 errors caught and handled
-   - User redirected to sign-in
-
-### ❌ Issues:
-
-1. **Force Unwrap in Keychain** ⚠️
-   ```swift
-   // KeychainManager.swift:12
-   let data = token.data(using: .utf8)!  // ❌ Force unwrap
-   ```
-   **Risk**: Crash if token is invalid UTF-8
-   **File**: `focusmate/Focusmate/Core/Auth/KeychainManager.swift:12`
-
-2. **Missing Certificate Pinning** ⚠️
-   - No SSL pinning implemented
-   - Vulnerable to MITM attacks
-   - **Recommendation**: Add certificate pinning for production
-
-3. **Debug Logging Contains Sensitive Data** ⚠️
-   ```swift
-   // DeviceService.swift:15
-   print("📱 DeviceService: Push token: \(pushToken ?? "nil")")  // ⚠️ Logs token
-   ```
-   **Risk**: Push tokens visible in logs
-   **Recommendation**: Remove in production builds
+**Evidence:**
+```swift
+// ItemService.swift - Manual sync only
+func syncItemsForList(listId: Int) async throws {
+    let items = try await fetchItems(listId: listId)
+    for item in items {
+        let taskItem = convertItemToTaskItem(item)
+        // Manual insert/update logic
+    }
+    try? swiftDataManager.context.save()
+}
+```
 
 ---
 
-## 💻 Code Quality: C+ (75/100)
+## 4. UI/NAVIGATION ISSUES
 
-### ✅ Good Practices:
+### 4.1 Sheet Refresh Mechanism
 
-1. **Consistent Naming** ✅
-   - Services end with `Service`
-   - ViewModels end with `ViewModel`
-   - Clear, descriptive names
+**Status:** ⚠️ MANUAL IMPLEMENTATION REQUIRED
 
-2. **Modern Swift Features** ✅
-   - `async/await` throughout
-   - SwiftUI for all views
-   - Combine for reactive programming
+**Pattern Used:**
+Every view with sheets manually implements `onChange` to refresh:
 
-3. **Proper Error Types** ✅
-   ```swift
-   // APIError.swift:3-14
-   enum APIError: Error {
-     case badURL
-     case badStatus(Int, String?, [String: Any]?)
-     case unauthorized
-     case network(Error)
-     case rateLimited(Int)
-   }
-   ```
+**Example (ListDetailView.swift:156-165):**
+```swift
+.onChange(of: self.showingCreateItem) { oldValue, newValue in
+    if oldValue == true && newValue == false {
+        print("🔄 ListDetailView: Reloading items for list \(self.list.id)")
+        Task {
+            await self.itemViewModel.loadItems(listId: self.list.id)
+        }
+    }
+}
+```
 
-### ❌ Issues:
+**Issue:**
+- Repetitive code in every view
+- Easy to forget
+- No automatic refresh mechanism
+- Parent views don't auto-refresh when child modifies data
 
-1. **Excessive Debug Logging** ⚠️
-   - 50+ print statements across codebase
-   - Should use proper logging framework (os_log or SwiftLog)
-   - **Example**: DeviceService.swift has 15+ print statements
+**Affected Views:**
+- `ListsView.swift:86-93` (create list sheet)
+- `ListDetailView.swift:156-165` (create item sheet)
 
-2. **Magic Strings** ⚠️
-   ```swift
-   // Models.swift:181
-   case is_visible = "visibility"  // ⚠️ Inconsistent naming
-   ```
+### 4.2 Missing Navigation
 
-3. **Optional Chaining Abuse** ⚠️
-   ```swift
-   // AppState.swift:207
-   if let list = lists.first(where: { $0.id == String(listId) }) {  // Multiple chained conditions
-   ```
+**Test/Debug Views Not Linked:**
+- `ErrorHandlingTestView.swift` - Exists but no navigation to it
+- `SwiftDataTestView.swift` - Exists but no navigation to it
+- `VisibilityTestView.swift` - Exists but no navigation to it
 
-4. **Long Files** ⚠️
-   - `AppState.swift`: 278 lines
-   - `Models.swift`: 427 lines
-   - `NetworkingProtocol.swift`: 184 lines
-   - **Recommendation**: Split into smaller files
-
-5. **Duplicate Code** ❌
-   ```swift
-   // Multiple EmptyResponse structs across files:
-   // - AuthService.swift:97
-   // - ListService.swift:67
-   // - DeviceService.swift:115
-   ```
-   **Recommendation**: Create shared EmptyResponse type
+**Impact:**
+- Useful debugging tools not accessible
+- Testing features require code changes to access
 
 ---
 
-## 🧪 Testing: F (30/100)
+## 5. FEATURE COMPLETENESS ANALYSIS
 
-### Critical Issue: **Minimal Test Coverage**
+### 5.1 Core Features (CRUD Operations)
 
-**Test Files Found**: 3
-1. `focusmateTests.swift`
-2. `APIClientE2ETests.swift`
-3. `APISmokeTest.swift`
+#### ✅ Items/Tasks - 85% Complete
 
-**Source Files**: 57
+**Working:**
+- ✅ Create items (`ItemService.createItem`)
+- ✅ Read items (`ItemService.fetchItems`)
+- ✅ Update items (`ItemService.updateItem`)
+- ✅ Delete items (`ItemService.deleteItem`)
+- ✅ Complete/uncomplete items (`ItemService.completeItem`)
+- ✅ Visibility toggle (UI and API integration)
 
-**Coverage Ratio**: ~5% (3/57)
+**Issues:**
+- ⚠️ Completion workaround needed (ItemViewModel:275-322) - Rails doesn't set `completed_at`
+- ⚠️ Mock data fallback on 404
+- ⚠️ Local cache not invalidated on errors
 
-### Missing Tests:
+**Code - Completion Workaround:**
+```swift
+// ItemViewModel.swift:275-280
+if completed, updatedItem.completed_at == nil {
+    print("🔧 ItemViewModel: Rails API didn't set completed_at, setting locally")
+    // Manual creation of Item with completed_at timestamp
+    let currentTime = Date().ISO8601Format()
+    // ... 40+ lines to recreate entire Item object
+}
+```
 
-1. ❌ **No Unit Tests** for:
-   - AuthService
-   - ListService
-   - DeviceService
-   - KeychainManager
-   - All ViewModels
+#### ✅ Lists - 90% Complete
 
-2. ❌ **No UI Tests** for:
-   - SignInView
-   - RegisterView
-   - ListsView
-   - Task creation flows
+**Working:**
+- ✅ Create lists (`ListService.createList`)
+- ✅ Read lists (`ListService.fetchLists`)
+- ✅ Update lists (`ListService.updateList`)
+- ✅ Delete lists (`ListService.deleteList`)
+- ✅ Share lists (`ListService.shareList`)
+- ✅ Fetch shares (`ListService.fetchShares`)
+- ✅ Remove shares (`ListService.removeShare`)
 
-3. ❌ **No Integration Tests** for:
-   - Auth flow end-to-end
-   - List CRUD operations
-   - Task completion flow
+**Issues:**
+- ⚠️ ListDTO missing `description` field display (commented out in ListDetailView:38-43)
 
-### Existing Tests:
+### 5.2 Push Notifications - 80% Complete
 
-Looking at the test file names, you have:
-- ✅ API smoke tests (good!)
-- ✅ E2E API tests (good!)
-- ⚠️ But no unit tests for business logic
+**Working:**
+- ✅ Permission requests (`NotificationService.requestPermissions`)
+- ✅ Device registration (`DeviceService.registerDevice`)
+- ✅ Token handling (`NotificationService.setPushToken`)
+- ✅ Local notifications (`NotificationService.scheduleTaskReminder`)
+- ✅ Notification tap handling (`NotificationService.handleNotificationResponse`)
+- ✅ Navigation from notification (`AppState.handleNotificationTap`)
 
-**Recommendation**: Target 70% code coverage minimum
+**Missing:**
+- ❌ Badge count management not actively used
+- ⚠️ All device registration errors silently suppressed
+- ⚠️ No retry mechanism if registration fails
 
----
+### 5.3 WebSocket/Real-time Updates - 60% Complete
 
-## ⚠️ Error Handling: C (72/100)
+**Working:**
+- ✅ Connection management (`WebSocketManager.connect`)
+- ✅ ActionCable protocol handling
+- ✅ Task update notifications
+- ✅ HTTP polling fallback
+- ✅ Reconnection logic
 
-### ✅ Good Practices:
+**Issues:**
+- ⚠️ Hardcoded localhost URL: `ws://localhost:3000/cable`
+- ⚠️ No production WebSocket URL configuration
+- ⚠️ Reconnection requires token but no token stored
+- ❌ HTTP polling triggers full sync (expensive)
 
-1. **Structured Error Types** ✅
-   ```swift
-   // APIError.swift
-   enum APIError: Error {
-     case badStatus(Int, String?, [String: Any]?)
-     case unauthorized
-     case rateLimited(Int)
-   }
-   ```
+**Code Issues:**
+```swift
+// WebSocketManager.swift:34
+guard let baseURL = URL(string: "ws://localhost:3000/cable") else {
+```
 
-2. **Error Recovery** ✅
-   ```swift
-   // DeviceService.swift:42-48
-   do {
-     let response: DeviceRegistrationResponse = try await...
-     return response
-   } catch {
-     let device: Device = try await...  // Fallback
-     return DeviceRegistrationResponse(device: device)
-   }
-   ```
+```swift
+// WebSocketManager.swift:276-278
+self.reconnectTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
+    print("🔌 WebSocketManager: Attempting to reconnect...")
+    // Note: Would need the token to reconnect
+}
+```
 
-3. **User-Facing Error Messages** ✅
-   ```swift
-   // SignInView.swift:40
-   if let err = state.auth.error {
-     Text(err).foregroundColor(.red).font(.footnote)
-   }
-   ```
+### 5.4 Escalations - 100% Complete ✅
 
-### ❌ Issues:
+**File:** `/focusmate/Focusmate/Core/Services/EscalationService.swift`
 
-1. **Inconsistent Error Propagation** ⚠️
-   - Some functions swallow errors
-   - Others propagate them
-   - No consistent pattern
+**Fully Implemented:**
+- ✅ Get blocking tasks (`getBlockingTasks`)
+- ✅ Escalate task (`escalateTask`)
+- ✅ Add explanation (`addExplanation`)
+- ✅ Get explanations (`getExplanations`)
+- ✅ Resolve escalation (`resolveEscalation`)
 
-2. **Generic Error Messages** ⚠️
-   ```swift
-   // AppState.swift:90
-   print("❌ AppState: Device registration failed with unknown error: \(error)")
-   // User sees nothing!
-   ```
+**ViewModel:** `EscalationViewModel.swift` - Fully functional
 
-3. **No Retry Logic** ❌
-   - Network failures aren't retried
-   - No exponential backoff
-   - **Recommendation**: Add retry with backoff
+**Views:**
+- ✅ `BlockingTasksView.swift`
+- ✅ `EscalationFormView.swift`
+- ✅ `ExplanationFormView.swift`
+- ✅ `ReassignView.swift`
+- ✅ `TaskActionSheet.swift`
 
-4. **Silent Failures** ⚠️
-   ```swift
-   // AppState.swift:242-246
-   private func handleWebSocketConnectionFailure() async {
-     print("🔄 AppState: WebSocket connection failed...")
-     // No user notification!
-   }
-   ```
+### 5.5 Advanced Features - NOT IMPLEMENTED
 
----
+#### ❌ Subtasks - 0% Complete
 
-## 📊 Detailed Findings by File
+**Status:** Models exist, NO service layer, NO UI
 
-### Critical Files Requiring Immediate Attention:
+**Evidence:**
+- Item model has subtask fields:
+  - `has_subtasks: Bool`
+  - `subtasks_count: Int`
+  - `subtasks_completed_count: Int`
+  - `subtask_completion_percentage: Int`
 
-#### 1. **DeviceService.swift** - Grade: D (65/100)
-**Location**: `focusmate/Focusmate/Core/Services/DeviceService.swift`
+**Missing:**
+- ❌ No `SubtaskService` (searched, doesn't exist)
+- ❌ No subtask creation API
+- ❌ No subtask UI components
+- ❌ No subtask list view
+- ❌ No progress tracking UI
 
-**Issues**:
-- ❌ Field name mismatch with Rails API (line 66-77)
-- ❌ Sends `version` field not in Rails schema
-- ❌ Missing `locale` and `bundle_id` fields
-- ⚠️ Logs sensitive data (line 15)
-- ✅ Good error handling with fallback (lines 42-48)
+**Search Results:**
+```bash
+# Searched for: SubtaskService|subtaskService
+# Result: No files found
+```
 
-**Action**: Fix field mappings to match Rails API
+#### ❌ Recurring Tasks - 0% Complete
 
-#### 2. **Models.swift** - Grade: D+ (68/100)
-**Location**: `focusmate/Focusmate/Core/Models/Models.swift`
+**Status:** Models exist, NO service layer, NO UI
 
-**Issues**:
-- ❌ ListDTO uses `String` ID instead of `Int` (line 54)
-- ❌ ListDTO uses `title` instead of `name` (line 55)
-- ❌ Missing fields: `description`, `user_id` (lines 53-59)
-- ⚠️ 427 lines - too long
-- ✅ Good use of Codable and CodingKeys
+**Evidence:**
+- Item model has recurrence fields:
+  - `is_recurring: Bool`
+  - `recurrence_pattern: String?`
+  - `recurrence_interval: Int`
+  - `recurrence_days: [Int]?`
 
-**Action**: Update models to match Rails API responses exactly
+**Missing:**
+- ❌ No `RecurringService`
+- ❌ No recurrence configuration UI
+- ❌ No recurrence scheduling logic
+- ❌ No next occurrence calculation
+- ❌ No recurrence edit/delete handling
 
-#### 3. **ListService.swift** - Grade: C (73/100)
-**Location**: `focusmate/Focusmate/Core/Services/ListService.swift`
+#### ❌ Location-Based Tasks - 0% Complete
 
-**Issues**:
-- ❌ Creates list with `title` not `name` (line 32)
-- ✅ Clean service interface
-- ✅ Proper async/await usage
-- ⚠️ Duplicate EmptyResponse struct (line 67)
+**Status:** Models exist, NO service layer, NO UI, NO geofencing
 
-**Action**: Fix CreateListRequest to use `name` field
+**Evidence:**
+- Item model has location fields:
+  - `location_based: Bool`
+  - `location_name: String?`
+  - `location_latitude: Double?`
+  - `location_longitude: Double?`
+  - `location_radius_meters: Int`
+  - `notify_on_arrival: Bool`
+  - `notify_on_departure: Bool`
 
-#### 4. **AppState.swift** - Grade: C+ (77/100)
-**Location**: `focusmate/Focusmate/Core/App/AppState.swift`
-
-**Issues**:
-- ⚠️ 278 lines - God object
-- ⚠️ Too many responsibilities
-- ✅ Good use of @MainActor
-- ✅ Proper async initialization
-- ❌ Silent error handling (lines 242-246)
-
-**Action**: Split into separate managers (AuthManager, DeviceManager, WebSocketManager)
-
-#### 5. **KeychainManager.swift** - Grade: B (82/100)
-**Location**: `focusmate/Focusmate/Core/Auth/KeychainManager.swift`
-
-**Issues**:
-- ❌ Force unwrap (line 12)
-- ✅ Proper singleton pattern
-- ✅ Secure storage
-- ✅ Clean API
-
-**Action**: Remove force unwrap, handle encoding errors gracefully
-
----
-
-## 🎯 Priority Action Items
-
-### 🔥 Critical (Fix Immediately):
-
-1. **Fix API Contract Mismatches** ⚠️ BLOCKING
-   - Update ListDTO: `id` should be `Int`, `title` → `name`
-   - Update DeviceService field mappings
-   - Fix CreateListRequest to use `name` field
-   - **Files**: `Models.swift`, `DeviceService.swift`, `ListService.swift`
-   - **Impact**: App cannot communicate with Rails API
-
-2. **Add Basic Unit Tests** ⚠️ HIGH PRIORITY
-   - Write tests for AuthService (sign in/up/out)
-   - Write tests for ListService (CRUD operations)
-   - Write tests for KeychainManager
-   - **Target**: 40% coverage minimum
-
-3. **Remove Force Unwrap** ⚠️ CRASH RISK
-   - Fix KeychainManager.swift:12
-   - **Impact**: Potential crash
-
-### 📋 High Priority (Fix Soon):
-
-4. **Split AppState** - Refactoring
-   - Create AuthManager
-   - Create DeviceManager
-   - Create WebSocketManager
-   - Reduce AppState to coordinator only
-
-5. **Remove Duplicate Code**
-   - Create shared EmptyResponse
-   - Consolidate error handling
-   - Reduce duplicate API client code
-
-6. **Add Retry Logic**
-   - Implement exponential backoff
-   - Retry failed network requests
-   - Handle rate limiting properly
-
-### 📌 Medium Priority (Nice to Have):
-
-7. **Improve Logging**
-   - Replace print() with os_log
-   - Add log levels
-   - Remove sensitive data from logs
-
-8. **Add Certificate Pinning**
-   - Implement SSL pinning
-   - Protect against MITM
-
-9. **UI/UX Polish**
-   - Add loading indicators
-   - Improve error messages
-   - Add empty states
+**Missing:**
+- ❌ No `LocationService`
+- ❌ No geofencing implementation
+- ❌ No map/location picker UI
+- ❌ No location permissions handling
+- ❌ No CoreLocation integration
+- ❌ No arrival/departure notifications
 
 ---
 
-## 📈 Comparison with Industry Standards
+## 6. CRITICAL ISSUES SUMMARY
 
-| Metric | Your App | Industry Standard | Status |
-|--------|----------|-------------------|--------|
-| Test Coverage | ~5% | 70-80% | ❌ Far Below |
-| Lines per File | ~137 avg | <200 | ⚠️ Some files too long |
-| Architecture | Clean | MVVM/MV | ✅ Good |
-| Async Code | async/await | async/await | ✅ Modern |
-| API Integration | Broken | Working | ❌ Critical Issues |
-| Security | Good | Excellent | ✅ Good |
-| Error Handling | Inconsistent | Comprehensive | ⚠️ Needs Work |
+### Priority 1 (Blocking Production)
 
----
+1. **DeltaSyncService Disabled**
+   - Impact: No offline sync, no data consistency
+   - Files: 6+ files with TODOs
+   - Fix: Re-enable and integrate DeltaSyncService
 
-## 🎓 Recommendations for Production Readiness
+2. **Mock Data in Production Code**
+   - Impact: Users may see fake data
+   - Files: ItemService.swift:190-243, AuthAPI.swift
+   - Fix: Remove mock fallbacks, implement proper error handling
 
-### Must Have (Before Production):
+3. **API Endpoint Confusion**
+   - Impact: Performance issues, unclear correct endpoints
+   - Files: ItemService.swift:102-143
+   - Fix: Confirm correct endpoints with backend team, remove fallbacks
 
-1. ✅ **Fix all API contract mismatches**
-2. ✅ **Add unit tests (minimum 40% coverage)**
-3. ✅ **Remove force unwraps**
-4. ✅ **Test on real device with push notifications**
-5. ✅ **Add certificate pinning**
+4. **WebSocket Localhost Hardcoding**
+   - Impact: Won't work in production
+   - Files: WebSocketManager.swift:34
+   - Fix: Add production WebSocket URL configuration
 
-### Should Have:
+### Priority 2 (Feature Incomplete)
 
-6. ⚠️ **Improve error handling consistency**
-7. ⚠️ **Add retry logic**
-8. ⚠️ **Reduce code duplication**
-9. ⚠️ **Split God objects**
+5. **Subtasks Not Implemented**
+   - Impact: Core feature missing
+   - Fix: Implement SubtaskService + UI
 
-### Nice to Have:
+6. **Recurring Tasks Not Implemented**
+   - Impact: Core feature missing
+   - Fix: Implement RecurringService + UI
 
-10. 📌 **Add UI tests**
-11. 📌 **Improve logging**
-12. 📌 **Add analytics**
-13. 📌 **Implement offline mode**
+7. **Location-Based Tasks Not Implemented**
+   - Impact: Core feature missing
+   - Fix: Implement LocationService + geofencing + UI
 
----
+### Priority 3 (Production Monitoring)
 
-## 🏆 What's Good About Your App
+8. **Sentry Not Integrated**
+   - Impact: No error tracking in production
+   - Files: SentryService.swift (all TODOs)
+   - Fix: Add Sentry SDK and configure
 
-1. ✅ **Modern Swift** - Great use of async/await, SwiftUI, Combine
-2. ✅ **Clean Architecture** - Good separation of concerns
-3. ✅ **Security-Minded** - Proper Keychain usage
-4. ✅ **Error Types** - Well-defined error enums
-5. ✅ **API Error Handling** - Catches rate limiting, unauthorized, etc.
-6. ✅ **Code Organization** - Logical folder structure
-
----
-
-## 📉 What Needs Improvement
-
-1. ❌ **API Integration** - Multiple mismatches with Rails backend
-2. ❌ **Test Coverage** - Only 3 test files for 57 source files
-3. ❌ **Production Safety** - Force unwraps, minimal error handling
-4. ⚠️ **Code Duplication** - Multiple EmptyResponse, duplicate clients
-5. ⚠️ **God Objects** - AppState doing too much
-6. ⚠️ **Logging** - Too many print statements, should use proper logging
+9. **Silent Error Suppression**
+   - Impact: Production issues invisible
+   - Files: AppState.swift:76-90
+   - Fix: Add error reporting/logging
 
 ---
 
-## 🎯 30-Day Improvement Plan
+## 7. RECOMMENDATIONS
 
-### Week 1: Critical Fixes
-- [ ] Fix ListDTO model (id: Int, name not title)
-- [ ] Fix DeviceService field mappings
-- [ ] Fix CreateListRequest
-- [ ] Test integration with Rails API
-- [ ] Remove force unwraps
+### Immediate Actions (Week 1)
 
-### Week 2: Testing Foundation
-- [ ] Add tests for AuthService
-- [ ] Add tests for ListService
-- [ ] Add tests for KeychainManager
-- [ ] Add tests for DeviceService
-- [ ] Target: 40% coverage
+1. **Enable DeltaSyncService**
+   - Uncomment all references
+   - Test sync functionality
+   - Remove placeholder print statements
 
-### Week 3: Architecture Improvements
-- [ ] Split AppState into managers
-- [ ] Remove duplicate code
-- [ ] Consolidate API clients
-- [ ] Add retry logic
+2. **Remove Mock Data**
+   - Remove ItemService mock item creation
+   - Remove AuthAPI mock mode fallback
+   - Add proper error handling
 
-### Week 4: Polish & Production Prep
-- [ ] Add certificate pinning
-- [ ] Improve logging
-- [ ] Add UI tests for critical flows
-- [ ] Production deployment checklist
+3. **Fix WebSocket URL**
+   - Add environment-based configuration
+   - Support staging/production URLs
+
+### Short Term (Weeks 2-4)
+
+4. **Implement Missing Features**
+   - Subtasks service + UI
+   - Recurring tasks service + UI
+   - Location-based tasks service + UI
+
+5. **Add Sentry Integration**
+   - Add SDK via SPM
+   - Configure SentryService
+   - Test error reporting
+
+6. **Fix API Endpoints**
+   - Confirm correct endpoints with backend
+   - Remove fallback routes
+   - Update documentation
+
+### Long Term (Ongoing)
+
+7. **Improve Error Handling**
+   - Add user-facing error messages
+   - Implement retry logic
+   - Add error reporting
+
+8. **Add Automated Tests**
+   - Unit tests for services
+   - Integration tests for API
+   - UI tests for critical flows
+
+9. **Performance Optimization**
+   - Remove unnecessary fallback requests
+   - Implement proper caching strategy
+   - Add loading states
 
 ---
 
-## 💯 Final Assessment
+## 8. FILES REQUIRING ATTENTION
 
-### Production Readiness: ❌ NOT READY
+### High Priority
+- `/focusmate/Focusmate/Core/Services/DeltaSyncService.swift` - Re-enable
+- `/focusmate/Focusmate/Core/Services/ItemService.swift` - Remove mocks, fix endpoints
+- `/focusmate/Focusmate/Core/Services/WebSocketManager.swift` - Fix URL configuration
+- `/focusmate/Focusmate/Core/Services/SentryService.swift` - Implement
+- `/focusmate/Focusmate/ViewModels/ItemViewModel.swift` - Remove placeholder sync
 
-**Blockers**:
-1. API contract mismatches will cause decoding failures
-2. Insufficient test coverage
-3. Force unwraps risk crashes
+### Medium Priority
+- `/focusmate/Focusmate/App/AppState.swift` - Fix error suppression
+- `/focusmate/Focusmate/Core/API/AuthAPI.swift` - Remove mock mode
+- `/focusmate/Focusmate/Features/Lists/ListDetailView.swift` - Fix refresh pattern
 
-**Time to Production**: **2-3 weeks** (if all critical issues fixed)
-
-### Overall Quality: C+ (73/100)
-
-**Strengths**:
-- Modern Swift architecture
-- Good security practices
-- Clean code organization
-
-**Weaknesses**:
-- API integration broken
-- Minimal testing
-- Some production safety issues
+### New Files Needed
+- `/focusmate/Focusmate/Core/Services/SubtaskService.swift`
+- `/focusmate/Focusmate/Core/Services/RecurringTaskService.swift`
+- `/focusmate/Focusmate/Core/Services/LocationService.swift`
+- `/focusmate/Focusmate/Features/Subtasks/SubtaskListView.swift`
+- `/focusmate/Focusmate/Features/Recurring/RecurrenceConfigView.swift`
+- `/focusmate/Focusmate/Features/Location/LocationPickerView.swift`
 
 ---
 
-**Status**: 🟡 **NEEDS WORK BEFORE PRODUCTION**
-**Next Action**: Fix API contract mismatches (blockers)
-**Signed**: AI Code Auditor
-**Date**: October 31, 2025
+## 9. TESTING COVERAGE
+
+### What's Testable
+- ✅ Test views exist (`ErrorHandlingTestView`, `SwiftDataTestView`, `VisibilityTestView`)
+- ✅ But not accessible from app navigation
+
+### What's Missing
+- ❌ No unit tests found
+- ❌ No integration tests found
+- ❌ No UI tests found
+- ❌ Test views not linked in app navigation
+
+---
+
+## 10. CONCLUSION
+
+The iOS app has a solid foundation with good architecture and well-structured services. However, critical gaps exist:
+
+**Strengths:**
+- Clean MVVM architecture
+- Good error handling framework (when not suppressed)
+- Comprehensive models matching backend
+- Real-time updates infrastructure in place
+
+**Critical Gaps:**
+- DeltaSyncService completely disabled
+- Mock data in production paths
+- 3 major features (subtasks, recurring, location) not implemented
+- No error monitoring (Sentry)
+- WebSocket hardcoded to localhost
+
+**Recommended Next Steps:**
+1. Re-enable DeltaSyncService (1-2 days)
+2. Remove all mock data fallbacks (1 day)
+3. Fix WebSocket configuration (0.5 day)
+4. Implement subtasks (1 week)
+5. Implement recurring tasks (1 week)
+6. Implement location-based tasks (1.5 weeks)
+7. Add Sentry (0.5 day)
+
+**Estimated Time to Production-Ready:** 4-6 weeks with focused effort
+
+---
+
+**Audit Completed:** October 31, 2025
+**Auditor:** Claude (Comprehensive Code Analysis)
