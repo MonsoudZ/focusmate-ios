@@ -11,6 +11,12 @@ struct ShareListView: View {
   @State private var error: FocusmateError?
   @State private var shares: [ListShare] = []
 
+  private var isValidEmail: Bool {
+    let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+    let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+    return emailPredicate.evaluate(with: email)
+  }
+
   private let roles = [
     ("viewer", "Viewer", "Can view tasks only"),
     ("editor", "Editor", "Can view and edit tasks"),
@@ -74,11 +80,18 @@ struct ShareListView: View {
             Text("Invite New User")
               .font(.headline)
 
-            TextField("Email address", text: self.$email)
-              .textFieldStyle(.roundedBorder)
-              .keyboardType(.emailAddress)
-              .autocapitalization(.none)
-              .disableAutocorrection(true)
+            HStack {
+              TextField("Email address", text: self.$email)
+                .textFieldStyle(.roundedBorder)
+                .keyboardType(.emailAddress)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+
+              if !self.email.isEmpty {
+                Image(systemName: self.isValidEmail ? "checkmark.circle.fill" : "xmark.circle.fill")
+                  .foregroundColor(self.isValidEmail ? .green : .red)
+              }
+            }
           }
 
           VStack(alignment: .leading, spacing: 8) {
@@ -129,11 +142,11 @@ struct ShareListView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(self.email.isEmpty ? Color.gray : Color.blue)
+            .background(!self.isValidEmail || self.isLoading ? Color.gray : Color.blue)
             .foregroundColor(.white)
             .clipShape(RoundedRectangle(cornerRadius: 12))
           }
-          .disabled(self.email.isEmpty || self.isLoading)
+          .disabled(!self.isValidEmail || self.isLoading)
         }
 
         Spacer()
@@ -166,11 +179,22 @@ struct ShareListView: View {
   private func shareList() async {
     guard !self.email.isEmpty else { return }
 
+    // Validate email format
+    let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+    let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+    guard emailPredicate.evaluate(with: self.email) else {
+      self.error = .custom("VALIDATION_ERROR", "Please enter a valid email address")
+      return
+    }
+
     self.isLoading = true
     self.error = nil
 
     do {
-      let request = ShareListRequest(email: email, role: selectedRole)
+      let trimmedEmail = self.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+      let request = ShareListRequest(email: trimmedEmail, role: selectedRole)
+
+      print("🔍 ShareListView: Sharing list \(self.list.id) with email: \(trimmedEmail), role: \(selectedRole)")
       let response: ShareListResponse = try await listService.shareList(id: self.list.id, request: request)
 
       // Convert ShareListResponse to ListShare for display
@@ -192,6 +216,21 @@ struct ShareListView: View {
       self.selectedRole = "viewer"
 
       print("✅ ShareListView: Successfully shared list with \(response.email)")
+    } catch let apiError as APIError {
+      // Handle specific API errors with better messages
+      switch apiError {
+      case let .badStatus(400, message, _):
+        self.error = .custom("VALIDATION_ERROR", message ?? "Invalid email or role")
+      case .badStatus(404, _, _):
+        self.error = .custom("NOT_FOUND", "List not found")
+      case .badStatus(409, _, _):
+        self.error = .custom("CONFLICT", "This user already has access to this list")
+      case .unauthorized:
+        self.error = .unauthorized("You don't have permission to share this list")
+      default:
+        self.error = ErrorHandler.shared.handle(apiError)
+      }
+      print("❌ ShareListView: Failed to share list: \(apiError)")
     } catch {
       self.error = ErrorHandler.shared.handle(error)
       print("❌ ShareListView: Failed to share list: \(error)")
