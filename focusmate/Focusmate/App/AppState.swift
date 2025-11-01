@@ -15,6 +15,7 @@ final class AppState: ObservableObject {
   private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
   private(set) lazy var escalationService = EscalationService(apiClient: auth.api)
   private(set) lazy var locationService = LocationService()
+  private(set) lazy var sentryService = SentryService.shared
 
   // SwiftData Services
   private(set) lazy var swiftDataManager = SwiftDataManager.shared
@@ -40,6 +41,9 @@ final class AppState: ObservableObject {
   @Published var notificationService = NotificationService()
 
   init() {
+    // Initialize Sentry for error tracking
+    sentryService.initialize()
+
     // Initialize services when auth is ready
     Task {
       await self.setupServices()
@@ -59,6 +63,9 @@ final class AppState: ObservableObject {
 
     // Listen for data sync requests from HTTP polling
     self.setupDataSyncListener()
+
+    // Listen for auth changes to update Sentry user context
+    self.setupAuthListener()
   }
 
   private func setupServices() async {
@@ -274,8 +281,50 @@ final class AppState: ObservableObject {
               print("✅ AppState: Data sync completed via HTTP polling")
             } catch {
               print("❌ AppState: Data sync failed via HTTP polling: \(error)")
+              // Report sync errors to Sentry
+              sentryService.captureError(error, context: ["source": "http_polling"])
             }
           }
+
+  // MARK: - Sentry Integration
+
+  private func setupAuthListener() {
+    // Monitor auth state changes to update Sentry user context
+    // This could be implemented with Combine or by observing the auth property
+    // For now, we'll set user context when auth is available
+    Task { @MainActor in
+      // Check if user is already authenticated
+      if let jwt = auth.jwt {
+        await updateSentryUserContext()
+      }
+    }
+  }
+
+  private func updateSentryUserContext() async {
+    // Try to fetch user profile and set Sentry context
+    do {
+      let profile: UserProfile = try await auth.api.request(
+        "GET",
+        "profile",
+        body: nil as String?,
+        queryParameters: [:]
+      )
+
+      sentryService.setUser(id: profile.id, email: profile.email, name: profile.name)
+      sentryService.setTag(value: profile.role, key: "user_role")
+      sentryService.setTag(value: profile.timezone, key: "user_timezone")
+
+      print("✅ AppState: Updated Sentry user context for user ID: \(profile.id)")
+    } catch {
+      print("⚠️ AppState: Could not fetch user profile for Sentry context: \(error)")
+    }
+  }
+
+  /// Call this when user logs out
+  func clearSentryContext() {
+    sentryService.clearUser()
+    print("✅ AppState: Cleared Sentry user context")
+  }
 }
 
 // MARK: - Additional Notification Names

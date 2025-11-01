@@ -6,11 +6,24 @@ import SwiftUI
 final class ErrorHandler {
   static let shared = ErrorHandler()
   private let advancedHandler = AdvancedErrorHandler.shared
+  private let sentryService = SentryService.shared
 
   private init() {}
 
   func handle(_ error: Error, context: String = "") -> FocusmateError {
-    return self.advancedHandler.handle(error, context: context)
+    let focusmateError = self.advancedHandler.handle(error, context: context)
+
+    // Send error to Sentry
+    var sentryContext: [String: Any] = [:]
+    if !context.isEmpty {
+      sentryContext["context"] = context
+    }
+    sentryContext["error_code"] = focusmateError.code
+    sentryContext["is_retryable"] = focusmateError.isRetryable
+
+    sentryService.captureError(error, context: sentryContext)
+
+    return focusmateError
   }
 
   func showAlert(for error: FocusmateError) -> Alert {

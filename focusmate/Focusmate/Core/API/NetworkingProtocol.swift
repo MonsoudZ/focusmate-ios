@@ -17,6 +17,7 @@ protocol NetworkingProtocol {
 final class InternalNetworking: NetworkingProtocol {
   private let session: URLSession = .shared
   private let tokenProvider: () -> String?
+  private let sentryService = SentryService.shared
 
   init(tokenProvider: @escaping () -> String?) {
     self.tokenProvider = tokenProvider
@@ -54,6 +55,9 @@ final class InternalNetworking: NetworkingProtocol {
 
     let (data, resp) = try await session.data(for: req)
     guard let http = resp as? HTTPURLResponse else { throw APIError.badURL }
+
+    // Add breadcrumb for API call
+    sentryService.addAPIBreadcrumb(method: method, endpoint: path, statusCode: http.statusCode)
 
     // Parse error response if present
     let errorResponse = self.parseErrorResponse(data: data, statusCode: http.statusCode)
