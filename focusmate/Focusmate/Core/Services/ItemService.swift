@@ -82,9 +82,17 @@ final class ItemService {
 
   func fetchItems(listId: Int) async throws -> [Item] {
     do {
-      // Try direct array response first (Rails API returns array directly)
-      let items: [Item] = try await apiClient.request("GET", "lists/\(listId)/tasks", body: nil as String?)
-      return items
+      // Try wrapped response first (Rails returns {tasks: [...], tombstones: [], pagination: {...}})
+      let response: ItemsResponse = try await apiClient.request("GET", "lists/\(listId)/tasks", body: nil as String?)
+      return response.items
+    } catch APIError.decoding {
+      // If wrapped fails, try direct array (backward compatibility)
+      do {
+        let items: [Item] = try await apiClient.request("GET", "lists/\(listId)/tasks", body: nil as String?)
+        return items
+      } catch let error as APIError {
+        throw error
+      }
     } catch let error as APIError {
       if case .badStatus(404, _, _) = error {
         print("🔄 ItemService: Primary route failed, trying fallback routes...")

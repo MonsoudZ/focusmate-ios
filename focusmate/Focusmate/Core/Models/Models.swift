@@ -47,7 +47,19 @@ struct UserProfile: Codable {
 }
 
 struct ItemsResponse: Codable {
-  let items: [Item]
+  let tasks: [Item]  // Rails API returns "tasks" not "items"
+  let tombstones: [String]?
+  let pagination: Pagination?
+
+  struct Pagination: Codable {
+    let page: Int
+    let per_page: Int
+    let total: Int
+    let total_pages: Int
+  }
+
+  // Convenience computed property
+  var items: [Item] { tasks }
 }
 
 // MARK: - List Model
