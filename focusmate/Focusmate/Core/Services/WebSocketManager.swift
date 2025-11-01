@@ -32,12 +32,9 @@ class WebSocketManager: ObservableObject {
     self.token = token
     self.connectionStatus = .connecting
 
-    // Get WebSocket URL from environment configuration
-    let cableURLString = Bundle.main.object(forInfoDictionaryKey: "CABLE_URL") as? String ?? "ws://localhost:3000/cable"
-    guard let baseURL = URL(string: cableURLString) else {
-      self.connectionStatus = .error("Invalid WebSocket URL: \(cableURLString)")
-      return
-    }
+    // Use centralized WebSocket URL from API configuration
+    let baseURL = API.webSocketURL
+    print("🔌 WebSocketManager: Using WebSocket URL: \(baseURL.absoluteString)")
 
     var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
     urlComponents?.queryItems = [URLQueryItem(name: "token", value: token)]

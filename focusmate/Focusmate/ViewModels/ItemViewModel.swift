@@ -123,9 +123,14 @@ final class ItemViewModel: ObservableObject {
     do {
       // Clear all cached data first
       await self.clearAllCachedData()
-      // TODO: Implement sync when DeltaSyncService is re-enabled
-      // try await self.deltaSyncService.syncAll()
-      print("✅ ItemViewModel: Lists data refreshed successfully (placeholder)")
+
+      // Perform full sync if SyncCoordinator is available
+      if let syncCoordinator = syncCoordinator {
+        try await syncCoordinator.syncAll()
+        print("✅ ItemViewModel: Lists data refreshed successfully")
+      } else {
+        print("⚠️ ItemViewModel: No SyncCoordinator available for refresh")
+      }
     } catch {
       print("❌ ItemViewModel: Failed to refresh lists data: \(error)")
     }

@@ -2,8 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct SwiftDataTestView: View {
+  @EnvironmentObject var appState: AppState
   @EnvironmentObject var swiftDataManager: SwiftDataManager
-  // @EnvironmentObject var deltaSyncService: DeltaSyncService // Temporarily disabled
   @State private var testResults: [String] = []
   @State private var isRunningTest = false
 
@@ -89,10 +89,9 @@ struct SwiftDataTestView: View {
 
     Task {
       do {
-        // TODO: Implement sync when DeltaSyncService is re-enabled
-        // try await self.deltaSyncService.syncAll()
+        try await appState.syncCoordinator.syncAll()
         await MainActor.run {
-          self.testResults.append("✅ Full sync test completed successfully (placeholder)")
+          self.testResults.append("✅ Full sync test completed successfully")
         }
       } catch {
         await MainActor.run {
@@ -105,9 +104,6 @@ struct SwiftDataTestView: View {
 
 #Preview {
   SwiftDataTestView()
+    .environmentObject(AppState())
     .environmentObject(SwiftDataManager.shared)
-    // .environmentObject(DeltaSyncService( // Temporarily disabled
-    //   apiClient: APIClient(tokenProvider: { nil }),
-    //   swiftDataManager: SwiftDataManager.shared
-    // ))
 }

@@ -2,8 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct SyncStatusView: View {
+  @EnvironmentObject var appState: AppState
   @EnvironmentObject var swiftDataManager: SwiftDataManager
-  // @EnvironmentObject var deltaSyncService: DeltaSyncService // Temporarily disabled
   @State private var isExpanded = false
 
   var body: some View {
@@ -55,9 +55,12 @@ struct SyncStatusView: View {
           if !self.swiftDataManager.syncStatus.isOnline {
             Button("Retry Sync") {
               Task {
-                // TODO: Implement sync when DeltaSyncService is re-enabled
-                // try await self.deltaSyncService.syncAll()
-                print("Sync retry requested (placeholder)")
+                do {
+                  try await self.appState.syncCoordinator.syncAll()
+                  print("✅ SyncStatusView: Manual sync completed")
+                } catch {
+                  print("❌ SyncStatusView: Manual sync failed: \(error)")
+                }
               }
             }
             .font(.caption2)
@@ -116,9 +119,6 @@ struct SyncStatusView: View {
 
 #Preview {
   SyncStatusView()
+    .environmentObject(AppState())
     .environmentObject(SwiftDataManager.shared)
-    // .environmentObject(DeltaSyncService( // Temporarily disabled
-    //   apiClient: APIClient(tokenProvider: { nil }),
-    //   swiftDataManager: SwiftDataManager.shared
-    // ))
 }

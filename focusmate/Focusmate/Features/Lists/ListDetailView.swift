@@ -330,6 +330,21 @@ struct ItemRowView: View {
             .clipShape(Capsule())
           }
 
+          // Show subtask progress badge
+          if self.item.has_subtasks && self.item.subtasks_count > 0 {
+            HStack(spacing: 2) {
+              Image(systemName: "checklist")
+                .font(.caption2)
+              Text("\(self.item.subtasks_completed_count)/\(self.item.subtasks_count)")
+                .font(.caption2)
+            }
+            .foregroundColor(self.item.subtasks_completed_count == self.item.subtasks_count ? .green : .orange)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background((self.item.subtasks_completed_count == self.item.subtasks_count ? Color.green : Color.orange).opacity(0.1))
+            .clipShape(Capsule())
+          }
+
           // Show completion details for completed tasks
           if self.item.isCompleted, let completedAt = item.completed_at {
             Spacer()

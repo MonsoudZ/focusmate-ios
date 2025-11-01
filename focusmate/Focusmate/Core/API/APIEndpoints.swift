@@ -10,10 +10,26 @@ enum API {
             return URL(string: "http://localhost:3000")!
         }
     }()
-    
-    // Mock mode for testing when API is not available
-    static let isMockMode: Bool = {
-        ProcessInfo.processInfo.environment["MOCK_API"] == "true"
+
+    /// WebSocket (ActionCable) URL - automatically derived from base URL
+    static let webSocketURL: URL = {
+        // Convert HTTP base URL to WebSocket URL
+        var urlString = base.absoluteString
+
+        // Replace http:// with ws:// and https:// with wss://
+        if urlString.hasPrefix("https://") {
+            urlString = urlString.replacingOccurrences(of: "https://", with: "wss://")
+        } else if urlString.hasPrefix("http://") {
+            urlString = urlString.replacingOccurrences(of: "http://", with: "ws://")
+        }
+
+        // Remove /api/v1 suffix if present and add /cable
+        if urlString.hasSuffix("/api/v1") {
+            urlString = String(urlString.dropLast(7))
+        }
+        urlString += "/cable"
+
+        return URL(string: urlString)!
     }()
 
     enum Auth {
