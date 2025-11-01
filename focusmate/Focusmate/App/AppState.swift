@@ -14,6 +14,7 @@ final class AppState: ObservableObject {
   private(set) lazy var authService = AuthService(apiClient: auth.api)
   private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
   private(set) lazy var escalationService = EscalationService(apiClient: auth.api)
+  private(set) lazy var locationService = LocationService()
 
   // SwiftData Services
   private(set) lazy var swiftDataManager = SwiftDataManager.shared

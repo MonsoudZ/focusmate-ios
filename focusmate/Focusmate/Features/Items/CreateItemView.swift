@@ -15,6 +15,14 @@ struct CreateItemView: View {
   @State private var recurrencePattern = "daily"
   @State private var recurrenceInterval = 1
   @State private var selectedWeekdays: Set<Int> = []
+  @State private var locationBased = false
+  @State private var locationName = ""
+  @State private var locationLatitude: Double?
+  @State private var locationLongitude: Double?
+  @State private var locationRadius = 100
+  @State private var notifyOnArrival = false
+  @State private var notifyOnDeparture = false
+  @State private var showLocationPicker = false
 
   init(listId: Int, itemService: ItemService) {
     self.listId = listId
@@ -92,6 +100,53 @@ struct CreateItemView: View {
             }
           }
         }
+
+        Section(header: Text("Location-Based")) {
+          Toggle("Trigger at location", isOn: self.$locationBased)
+            .help("Get notified when you arrive at or leave a specific location")
+
+          if self.locationBased {
+            if let lat = locationLatitude, let lon = locationLongitude {
+              VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                  VStack(alignment: .leading, spacing: 4) {
+                    if !locationName.isEmpty {
+                      Text(locationName)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    }
+                    Text("Lat: \(lat, specifier: "%.6f"), Lon: \(lon, specifier: "%.6f")")
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+                  }
+
+                  Spacer()
+
+                  Button("Change") {
+                    showLocationPicker = true
+                  }
+                  .font(.caption)
+                }
+
+                Text("Radius: \(locationRadius)m")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+            } else {
+              Button(action: {
+                showLocationPicker = true
+              }) {
+                HStack {
+                  Image(systemName: "mappin.and.ellipse")
+                  Text("Pick Location")
+                }
+              }
+            }
+
+            Toggle("Notify on arrival", isOn: self.$notifyOnArrival)
+            Toggle("Notify on departure", isOn: self.$notifyOnDeparture)
+          }
+        }
       }
       .navigationTitle("New Item")
       .navigationBarTitleDisplayMode(.inline)
@@ -110,6 +165,15 @@ struct CreateItemView: View {
           }
           .disabled(self.name.isEmpty || self.itemViewModel.isLoading)
         }
+      }
+      .sheet(isPresented: self.$showLocationPicker) {
+        LocationPickerView(
+          locationService: LocationService(),
+          locationName: self.$locationName,
+          latitude: self.$locationLatitude,
+          longitude: self.$locationLongitude,
+          radius: self.$locationRadius
+        )
       }
       .alert("Error", isPresented: .constant(self.itemViewModel.error != nil)) {
         Button("OK") {
@@ -144,7 +208,14 @@ struct CreateItemView: View {
       isRecurring: self.isRecurring,
       recurrencePattern: self.isRecurring ? self.recurrencePattern : nil,
       recurrenceInterval: self.isRecurring ? self.recurrenceInterval : nil,
-      recurrenceDays: (self.isRecurring && self.recurrencePattern == "weekly") ? Array(self.selectedWeekdays).sorted() : nil
+      recurrenceDays: (self.isRecurring && self.recurrencePattern == "weekly") ? Array(self.selectedWeekdays).sorted() : nil,
+      locationBased: self.locationBased,
+      locationName: self.locationBased ? self.locationName : nil,
+      locationLatitude: self.locationBased ? self.locationLatitude : nil,
+      locationLongitude: self.locationBased ? self.locationLongitude : nil,
+      locationRadiusMeters: self.locationBased ? self.locationRadius : nil,
+      notifyOnArrival: self.locationBased ? self.notifyOnArrival : false,
+      notifyOnDeparture: self.locationBased ? self.notifyOnDeparture : false
     )
 
     if self.itemViewModel.error == nil {

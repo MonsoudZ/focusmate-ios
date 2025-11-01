@@ -316,6 +316,22 @@ struct ItemRowView: View {
             .clipShape(Capsule())
           }
 
+          // Show location-based task badge
+          if self.item.location_based, let locationName = self.item.location_name {
+            HStack(spacing: 2) {
+              Image(systemName: "location.fill")
+                .font(.caption2)
+              Text(locationName)
+                .font(.caption2)
+                .lineLimit(1)
+            }
+            .foregroundColor(.purple)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.purple.opacity(0.1))
+            .clipShape(Capsule())
+          }
+
           // Show completion details for completed tasks
           if self.item.isCompleted, let completedAt = item.completed_at {
             Spacer()

@@ -389,6 +389,13 @@ struct CreateItemRequest: Codable {
   let recurrencePattern: String?
   let recurrenceInterval: Int?
   let recurrenceDays: [Int]?
+  let locationBased: Bool?
+  let locationName: String?
+  let locationLatitude: Double?
+  let locationLongitude: Double?
+  let locationRadiusMeters: Int?
+  let notifyOnArrival: Bool?
+  let notifyOnDeparture: Bool?
 
   enum CodingKeys: String, CodingKey {
     case name = "title" // Map 'name' to 'title' for Rails API
@@ -399,6 +406,13 @@ struct CreateItemRequest: Codable {
     case recurrencePattern = "recurrence_pattern"
     case recurrenceInterval = "recurrence_interval"
     case recurrenceDays = "recurrence_days"
+    case locationBased = "location_based"
+    case locationName = "location_name"
+    case locationLatitude = "location_latitude"
+    case locationLongitude = "location_longitude"
+    case locationRadiusMeters = "location_radius_meters"
+    case notifyOnArrival = "notify_on_arrival"
+    case notifyOnDeparture = "notify_on_departure"
   }
 }
 
@@ -412,6 +426,13 @@ struct UpdateItemRequest: Codable {
   let recurrencePattern: String?
   let recurrenceInterval: Int?
   let recurrenceDays: [Int]?
+  let locationBased: Bool?
+  let locationName: String?
+  let locationLatitude: Double?
+  let locationLongitude: Double?
+  let locationRadiusMeters: Int?
+  let notifyOnArrival: Bool?
+  let notifyOnDeparture: Bool?
 
   enum CodingKeys: String, CodingKey {
     case name = "title" // Map 'name' to 'title' for Rails API
@@ -422,6 +443,13 @@ struct UpdateItemRequest: Codable {
     case recurrencePattern = "recurrence_pattern"
     case recurrenceInterval = "recurrence_interval"
     case recurrenceDays = "recurrence_days"
+    case locationBased = "location_based"
+    case locationName = "location_name"
+    case locationLatitude = "location_latitude"
+    case locationLongitude = "location_longitude"
+    case locationRadiusMeters = "location_radius_meters"
+    case notifyOnArrival = "notify_on_arrival"
+    case notifyOnDeparture = "notify_on_departure"
   }
 }
 

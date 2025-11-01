@@ -68,7 +68,14 @@ struct VisibilityTestView: View {
       isRecurring: nil,
       recurrencePattern: nil,
       recurrenceInterval: nil,
-      recurrenceDays: nil
+      recurrenceDays: nil,
+      locationBased: nil,
+      locationName: nil,
+      locationLatitude: nil,
+      locationLongitude: nil,
+      locationRadiusMeters: nil,
+      notifyOnArrival: nil,
+      notifyOnDeparture: nil
     )
 
     do {
@@ -101,7 +108,14 @@ struct VisibilityTestView: View {
       isRecurring: nil,
       recurrencePattern: nil,
       recurrenceInterval: nil,
-      recurrenceDays: nil
+      recurrenceDays: nil,
+      locationBased: nil,
+      locationName: nil,
+      locationLatitude: nil,
+      locationLongitude: nil,
+      locationRadiusMeters: nil,
+      notifyOnArrival: nil,
+      notifyOnDeparture: nil
     )
 
     do {

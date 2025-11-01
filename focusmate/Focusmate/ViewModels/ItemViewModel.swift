@@ -172,7 +172,14 @@ final class ItemViewModel: ObservableObject {
     isRecurring: Bool = false,
     recurrencePattern: String? = nil,
     recurrenceInterval: Int? = nil,
-    recurrenceDays: [Int]? = nil
+    recurrenceDays: [Int]? = nil,
+    locationBased: Bool = false,
+    locationName: String? = nil,
+    locationLatitude: Double? = nil,
+    locationLongitude: Double? = nil,
+    locationRadiusMeters: Int? = nil,
+    notifyOnArrival: Bool = false,
+    notifyOnDeparture: Bool = false
   ) async {
     self.isLoading = true
     self.error = nil
@@ -201,7 +208,14 @@ final class ItemViewModel: ObservableObject {
         isRecurring: isRecurring,
         recurrencePattern: recurrencePattern,
         recurrenceInterval: recurrenceInterval,
-        recurrenceDays: recurrenceDays
+        recurrenceDays: recurrenceDays,
+        locationBased: locationBased,
+        locationName: locationName,
+        locationLatitude: locationLatitude,
+        locationLongitude: locationLongitude,
+        locationRadiusMeters: locationRadiusMeters,
+        notifyOnArrival: notifyOnArrival,
+        notifyOnDeparture: notifyOnDeparture
       )
       self.items.append(newItem)
       print("✅ ItemViewModel: Created item: \(newItem.title)")
@@ -240,7 +254,14 @@ final class ItemViewModel: ObservableObject {
     isRecurring: Bool? = nil,
     recurrencePattern: String? = nil,
     recurrenceInterval: Int? = nil,
-    recurrenceDays: [Int]? = nil
+    recurrenceDays: [Int]? = nil,
+    locationBased: Bool? = nil,
+    locationName: String? = nil,
+    locationLatitude: Double? = nil,
+    locationLongitude: Double? = nil,
+    locationRadiusMeters: Int? = nil,
+    notifyOnArrival: Bool? = nil,
+    notifyOnDeparture: Bool? = nil
   ) async {
     self.isLoading = true
     self.error = nil
@@ -256,7 +277,14 @@ final class ItemViewModel: ObservableObject {
         isRecurring: isRecurring,
         recurrencePattern: recurrencePattern,
         recurrenceInterval: recurrenceInterval,
-        recurrenceDays: recurrenceDays
+        recurrenceDays: recurrenceDays,
+        locationBased: locationBased,
+        locationName: locationName,
+        locationLatitude: locationLatitude,
+        locationLongitude: locationLongitude,
+        locationRadiusMeters: locationRadiusMeters,
+        notifyOnArrival: notifyOnArrival,
+        notifyOnDeparture: notifyOnDeparture
       )
       if let index = items.firstIndex(where: { $0.id == id }) {
         self.items[index] = updatedItem

@@ -15,6 +15,14 @@ struct EditItemView: View {
   @State private var recurrencePattern: String
   @State private var recurrenceInterval: Int
   @State private var selectedWeekdays: Set<Int>
+  @State private var locationBased: Bool
+  @State private var locationName: String
+  @State private var locationLatitude: Double?
+  @State private var locationLongitude: Double?
+  @State private var locationRadius: Int
+  @State private var notifyOnArrival: Bool
+  @State private var notifyOnDeparture: Bool
+  @State private var showLocationPicker = false
 
   init(item: Item, itemService: ItemService) {
     self.item = item
@@ -40,6 +48,13 @@ struct EditItemView: View {
     _recurrencePattern = State(initialValue: item.recurrence_pattern ?? "daily")
     _recurrenceInterval = State(initialValue: item.recurrence_interval)
     _selectedWeekdays = State(initialValue: Set(item.recurrence_days ?? []))
+    _locationBased = State(initialValue: item.location_based)
+    _locationName = State(initialValue: item.location_name ?? "")
+    _locationLatitude = State(initialValue: item.location_latitude)
+    _locationLongitude = State(initialValue: item.location_longitude)
+    _locationRadius = State(initialValue: item.location_radius_meters)
+    _notifyOnArrival = State(initialValue: item.notify_on_arrival)
+    _notifyOnDeparture = State(initialValue: item.notify_on_departure)
   }
 
   var body: some View {
@@ -107,6 +122,53 @@ struct EditItemView: View {
             }
           }
         }
+
+        Section(header: Text("Location-Based")) {
+          Toggle("Trigger at location", isOn: self.$locationBased)
+            .help("Get notified when you arrive at or leave a specific location")
+
+          if self.locationBased {
+            if let lat = locationLatitude, let lon = locationLongitude {
+              VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                  VStack(alignment: .leading, spacing: 4) {
+                    if !locationName.isEmpty {
+                      Text(locationName)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    }
+                    Text("Lat: \(lat, specifier: "%.6f"), Lon: \(lon, specifier: "%.6f")")
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+                  }
+
+                  Spacer()
+
+                  Button("Change") {
+                    showLocationPicker = true
+                  }
+                  .font(.caption)
+                }
+
+                Text("Radius: \(locationRadius)m")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+            } else {
+              Button(action: {
+                showLocationPicker = true
+              }) {
+                HStack {
+                  Image(systemName: "mappin.and.ellipse")
+                  Text("Pick Location")
+                }
+              }
+            }
+
+            Toggle("Notify on arrival", isOn: self.$notifyOnArrival)
+            Toggle("Notify on departure", isOn: self.$notifyOnDeparture)
+          }
+        }
       }
       .navigationTitle("Edit Item")
       .navigationBarTitleDisplayMode(.inline)
@@ -125,6 +187,15 @@ struct EditItemView: View {
           }
           .disabled(self.name.isEmpty || self.itemViewModel.isLoading)
         }
+      }
+      .sheet(isPresented: self.$showLocationPicker) {
+        LocationPickerView(
+          locationService: LocationService(),
+          locationName: self.$locationName,
+          latitude: self.$locationLatitude,
+          longitude: self.$locationLongitude,
+          radius: self.$locationRadius
+        )
       }
       .alert("Error", isPresented: .constant(self.itemViewModel.error != nil)) {
         Button("OK") {
@@ -149,7 +220,14 @@ struct EditItemView: View {
       isRecurring: self.isRecurring,
       recurrencePattern: self.isRecurring ? self.recurrencePattern : nil,
       recurrenceInterval: self.isRecurring ? self.recurrenceInterval : nil,
-      recurrenceDays: (self.isRecurring && self.recurrencePattern == "weekly") ? Array(self.selectedWeekdays).sorted() : nil
+      recurrenceDays: (self.isRecurring && self.recurrencePattern == "weekly") ? Array(self.selectedWeekdays).sorted() : nil,
+      locationBased: self.locationBased,
+      locationName: self.locationBased ? self.locationName : nil,
+      locationLatitude: self.locationBased ? self.locationLatitude : nil,
+      locationLongitude: self.locationBased ? self.locationLongitude : nil,
+      locationRadiusMeters: self.locationBased ? self.locationRadius : nil,
+      notifyOnArrival: self.locationBased ? self.notifyOnArrival : false,
+      notifyOnDeparture: self.locationBased ? self.notifyOnDeparture : false
     )
 
     if self.itemViewModel.error == nil {

@@ -99,7 +99,14 @@ final class ItemService {
     isRecurring: Bool = false,
     recurrencePattern: String? = nil,
     recurrenceInterval: Int? = nil,
-    recurrenceDays: [Int]? = nil
+    recurrenceDays: [Int]? = nil,
+    locationBased: Bool = false,
+    locationName: String? = nil,
+    locationLatitude: Double? = nil,
+    locationLongitude: Double? = nil,
+    locationRadiusMeters: Int? = nil,
+    notifyOnArrival: Bool = false,
+    notifyOnDeparture: Bool = false
   ) async throws -> Item {
     let request = CreateItemRequest(
       name: name,
@@ -109,7 +116,14 @@ final class ItemService {
       isRecurring: isRecurring ? true : nil,
       recurrencePattern: recurrencePattern,
       recurrenceInterval: recurrenceInterval,
-      recurrenceDays: recurrenceDays
+      recurrenceDays: recurrenceDays,
+      locationBased: locationBased ? true : nil,
+      locationName: locationName,
+      locationLatitude: locationLatitude,
+      locationLongitude: locationLongitude,
+      locationRadiusMeters: locationRadiusMeters,
+      notifyOnArrival: notifyOnArrival ? true : nil,
+      notifyOnDeparture: notifyOnDeparture ? true : nil
     )
 
     // Debug: Log the request payload
@@ -137,7 +151,14 @@ final class ItemService {
     isRecurring: Bool? = nil,
     recurrencePattern: String? = nil,
     recurrenceInterval: Int? = nil,
-    recurrenceDays: [Int]? = nil
+    recurrenceDays: [Int]? = nil,
+    locationBased: Bool? = nil,
+    locationName: String? = nil,
+    locationLatitude: Double? = nil,
+    locationLongitude: Double? = nil,
+    locationRadiusMeters: Int? = nil,
+    notifyOnArrival: Bool? = nil,
+    notifyOnDeparture: Bool? = nil
   ) async throws -> Item {
     let request = UpdateItemRequest(
       name: name,
@@ -148,7 +169,14 @@ final class ItemService {
       isRecurring: isRecurring,
       recurrencePattern: recurrencePattern,
       recurrenceInterval: recurrenceInterval,
-      recurrenceDays: recurrenceDays
+      recurrenceDays: recurrenceDays,
+      locationBased: locationBased,
+      locationName: locationName,
+      locationLatitude: locationLatitude,
+      locationLongitude: locationLongitude,
+      locationRadiusMeters: locationRadiusMeters,
+      notifyOnArrival: notifyOnArrival,
+      notifyOnDeparture: notifyOnDeparture
     )
 
     // Debug: Log the request payload
@@ -224,6 +252,13 @@ final class ItemService {
     let recurrencePattern: String?
     let recurrenceInterval: Int?
     let recurrenceDays: [Int]?
+    let locationBased: Bool?
+    let locationName: String?
+    let locationLatitude: Double?
+    let locationLongitude: Double?
+    let locationRadiusMeters: Int?
+    let notifyOnArrival: Bool?
+    let notifyOnDeparture: Bool?
 
     enum CodingKeys: String, CodingKey {
       case name = "title" // Map name to title for Rails API
@@ -234,6 +269,13 @@ final class ItemService {
       case recurrencePattern = "recurrence_pattern"
       case recurrenceInterval = "recurrence_interval"
       case recurrenceDays = "recurrence_days"
+      case locationBased = "location_based"
+      case locationName = "location_name"
+      case locationLatitude = "location_latitude"
+      case locationLongitude = "location_longitude"
+      case locationRadiusMeters = "location_radius_meters"
+      case notifyOnArrival = "notify_on_arrival"
+      case notifyOnDeparture = "notify_on_departure"
     }
   }
 
