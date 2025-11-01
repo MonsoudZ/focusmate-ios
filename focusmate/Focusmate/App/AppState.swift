@@ -17,9 +17,14 @@ final class AppState: ObservableObject {
 
   // SwiftData Services
   private(set) lazy var swiftDataManager = SwiftDataManager.shared
-  private(set) lazy var deltaSyncService = DeltaSyncService(apiClient: NewAPIClient(auth: AuthSession()), swiftDataManager: swiftDataManager, authSession: AuthSession())
   private(set) lazy var itemService = ItemService(
     apiClient: auth.api,
+    swiftDataManager: swiftDataManager
+  )
+  private(set) lazy var listService = ListService(apiClient: auth.api)
+  private(set) lazy var syncCoordinator = SyncCoordinator(
+    itemService: itemService,
+    listService: listService,
     swiftDataManager: swiftDataManager
   )
 
@@ -260,7 +265,7 @@ final class AppState: ObservableObject {
             print("🔄 AppState: HTTP polling triggered data sync request")
 
             do {
-              try await self.deltaSyncService.syncAll()
+              try await self.syncCoordinator.syncAll()
               print("✅ AppState: Data sync completed via HTTP polling")
             } catch {
               print("❌ AppState: Data sync failed via HTTP polling: \(error)")

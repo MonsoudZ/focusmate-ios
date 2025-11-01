@@ -73,9 +73,8 @@ final class ItemService {
   }
 
   func syncAllItems() async throws {
-    // TODO: Implement sync when DeltaSyncService is re-enabled
-    // try await self.deltaSyncService.syncItems()
-    print("Sync all items requested (placeholder)")
+    // This method is deprecated - use SyncCoordinator.syncAll() instead
+    print("⚠️ ItemService.syncAllItems() is deprecated - use SyncCoordinator.syncAll() instead")
   }
 
   // MARK: - Item Management

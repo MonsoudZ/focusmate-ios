@@ -13,19 +13,19 @@ final class ItemViewModel: ObservableObject {
 
   private let itemService: ItemService
   private let swiftDataManager: SwiftDataManager
-  // private let deltaSyncService: DeltaSyncService // Temporarily disabled
+  private let syncCoordinator: SyncCoordinator?
   private let apiClient: APIClient
   private var cancellables = Set<AnyCancellable>()
 
   init(
     itemService: ItemService,
     swiftDataManager: SwiftDataManager,
-    // deltaSyncService: DeltaSyncService, // Temporarily disabled
+    syncCoordinator: SyncCoordinator? = nil,
     apiClient: APIClient
   ) {
     self.itemService = itemService
     self.swiftDataManager = swiftDataManager
-    // self.deltaSyncService = deltaSyncService // Temporarily disabled
+    self.syncCoordinator = syncCoordinator
     self.apiClient = apiClient
     self.setupTaskUpdateListener()
     self.updateSyncStatus()
@@ -41,10 +41,14 @@ final class ItemViewModel: ObservableObject {
     self.error = nil
 
     do {
-      // TODO: Implement sync when DeltaSyncService is re-enabled
-      // try await self.deltaSyncService.syncAll()
+      if let syncCoordinator = syncCoordinator {
+        try await syncCoordinator.syncAll()
+        self.lastSyncTime = syncCoordinator.lastSyncTime
+      } else {
+        print("⚠️ ItemViewModel: No SyncCoordinator available, skipping full sync")
+      }
       self.updateSyncStatus()
-      print("✅ ItemViewModel: Full sync completed (placeholder)")
+      print("✅ ItemViewModel: Full sync completed")
     } catch {
       self.error = ErrorHandler.shared.handle(error)
       print("❌ ItemViewModel: Full sync failed: \(error)")
