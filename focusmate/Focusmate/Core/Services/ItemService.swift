@@ -274,6 +274,26 @@ final class ItemService {
     }
 
     let item: Item = try await apiClient.request("PUT", "tasks/\(id)", body: request)
+
+    // Update local SwiftData cache
+    let taskItem = convertItemToTaskItem(item)
+    let fetchDescriptor = FetchDescriptor<TaskItem>(
+      predicate: #Predicate<TaskItem> { $0.id == item.id }
+    )
+
+    if let existing = try? swiftDataManager.context.fetch(fetchDescriptor).first {
+      // Update existing item in local storage
+      existing.title = taskItem.title
+      existing.itemDescription = taskItem.itemDescription
+      existing.dueAt = taskItem.dueAt
+      existing.completedAt = taskItem.completedAt
+      existing.priority = taskItem.priority
+      existing.isVisible = taskItem.isVisible
+      existing.updatedAt = taskItem.updatedAt
+      try? swiftDataManager.context.save()
+      print("✅ ItemService: Updated item in local storage")
+    }
+
     return item
   }
 
