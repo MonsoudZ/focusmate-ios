@@ -204,6 +204,32 @@ struct Item: Codable, Identifiable {
   }
 }
 
+// MARK: - Subtask Models
+
+struct Subtask: Codable, Identifiable {
+  let id: Int
+  let task_id: Int
+  let title: String
+  let description: String?
+  let completed_at: String?
+  let position: Int
+  let created_at: String
+  let updated_at: String
+
+  var isCompleted: Bool {
+    completed_at != nil
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id, task_id, title, description, completed_at, position
+    case created_at, updated_at
+  }
+}
+
+struct SubtasksResponse: Codable {
+  let subtasks: [Subtask]
+}
+
 // MARK: - Escalation Models
 
 struct Escalation: Codable, Identifiable {

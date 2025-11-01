@@ -4,6 +4,7 @@ struct TaskActionSheet: View {
   let item: Item
   let itemViewModel: ItemViewModel
   @Environment(\.dismiss) var dismiss
+  @EnvironmentObject var appState: AppState
 
   @State private var showingReassign = false
   @State private var showingExplanation = false
@@ -19,36 +20,37 @@ struct TaskActionSheet: View {
 
   var body: some View {
     NavigationView {
-      VStack(spacing: 0) {
-        // Task Header
-        VStack(alignment: .leading, spacing: 16) {
-          // Title with overdue highlighting
-          HStack {
-            Text(self.item.title)
-              .font(.title2)
-              .fontWeight(.bold)
-              .foregroundColor(self.isOverdue ? .red : .primary)
+      ScrollView {
+        VStack(spacing: 0) {
+          // Task Header
+          VStack(alignment: .leading, spacing: 16) {
+            // Title with overdue highlighting
+            HStack {
+              Text(self.item.title)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(self.isOverdue ? .red : .primary)
 
-            if self.isOverdue {
-              Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.red)
-                .font(.title3)
+              if self.isOverdue {
+                Image(systemName: "exclamationmark.triangle.fill")
+                  .foregroundColor(.red)
+                  .font(.title3)
+              }
             }
-          }
 
-          // Description
-          if let description = item.description, !description.isEmpty {
-            Text(description)
-              .font(.body)
-              .foregroundColor(.primary)
-              .padding(.vertical, 8)
-          } else {
-            Text("No description")
-              .font(.body)
-              .foregroundColor(.secondary)
-              .italic()
-              .padding(.vertical, 8)
-          }
+            // Description
+            if let description = item.description, !description.isEmpty {
+              Text(description)
+                .font(.body)
+                .foregroundColor(.primary)
+                .padding(.vertical, 8)
+            } else {
+              Text("No description")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .italic()
+                .padding(.vertical, 8)
+            }
 
           // Due Date and Overdue Status
           VStack(alignment: .leading, spacing: 8) {
@@ -110,6 +112,18 @@ struct TaskActionSheet: View {
             .stroke(Color.red, lineWidth: 2) :
             nil
         )
+
+        // Subtasks Section
+        if self.item.has_subtasks || self.item.subtasks_count > 0 {
+          VStack(spacing: 0) {
+            SubtaskListView(taskId: self.item.id, appState: self.appState)
+              .frame(height: 300)
+          }
+          .background(Color(.systemBackground))
+          .clipShape(RoundedRectangle(cornerRadius: 12))
+          .padding(.horizontal)
+          .padding(.bottom)
+        }
 
         // Action Buttons
         VStack(spacing: 16) {
@@ -182,9 +196,8 @@ struct TaskActionSheet: View {
           }
         }
         .padding()
-
-        Spacer()
       }
+    }
       .navigationTitle("Task Actions")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

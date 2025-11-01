@@ -22,6 +22,10 @@ final class AppState: ObservableObject {
     swiftDataManager: swiftDataManager
   )
   private(set) lazy var listService = ListService(apiClient: auth.api)
+  private(set) lazy var subtaskService = SubtaskService(
+    apiClient: auth.api,
+    swiftDataManager: swiftDataManager
+  )
   private(set) lazy var syncCoordinator = SyncCoordinator(
     itemService: itemService,
     listService: listService,
@@ -81,7 +85,7 @@ final class AppState: ObservableObject {
     } catch let apiError as APIError {
       // Device registration is optional - suppress errors in development
       switch apiError {
-      case let .badStatus(422, message, _):
+      case let .badStatus(422, _, _):
         print("ℹ️ AppState: Device registration skipped - validation failed (expected in development)")
       case .badStatus(401, _, _):
         print("ℹ️ AppState: Device registration skipped - unauthorized")
