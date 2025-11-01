@@ -339,10 +339,6 @@ final class ItemService {
     let item: Item
   }
 
-  struct ItemsResponse: Codable {
-    let items: [Item]
-  }
-
   // MARK: - Helper Methods
 
   private func convertItemToTaskItem(_ item: Item) -> TaskItem {
