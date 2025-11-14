@@ -6,8 +6,12 @@
 	<string>$(API_BASE_URL)</string>
 	<key>CABLE_URL</key>
 	<string>$(CABLE_URL)</string>
-	<key>SENTRY_DSN</key>
-	<string>https://your-sentry-dsn@sentry.io/project-id</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Focusmate uses your location to help you organize tasks based on where you are.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Focusmate needs background location access to send you reminders when you arrive at or leave specific locations.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Focusmate uses your location to provide location-based task reminders and help you stay organized.</string>
 	<key>CFBundleDisplayName</key>
 	<string>Focusmate</string>
 	<key>CFBundleExecutable</key>

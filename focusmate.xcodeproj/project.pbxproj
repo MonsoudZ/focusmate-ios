@@ -410,7 +410,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				BASE_CONFIGURATION_REFERENCE = Debug.xcconfig;
-				CODE_SIGN_ENTITLEMENTS = focusmate/focusmate.entitlements;
+				CODE_SIGN_ENTITLEMENTS = focusmate/Debug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = CNK57345QT;
@@ -445,13 +445,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				BASE_CONFIGURATION_REFERENCE = Release.xcconfig;
-				CODE_SIGN_ENTITLEMENTS = focusmate/focusmate.entitlements;
+				CODE_SIGN_ENTITLEMENTS = focusmate/Release.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = CNK57345QT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = focusmate/Info.plist;
+				INFOPLIST_FILE = focusmate/Release-Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

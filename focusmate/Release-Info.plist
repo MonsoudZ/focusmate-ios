@@ -2,11 +2,55 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>API_BASE_URL</key>
-    <string>$(API_BASE_URL)</string>
-    <key>CABLE_URL</key>
-    <string>$(CABLE_URL)</string>
+	<key>API_BASE_URL</key>
+	<string>$(API_BASE_URL)</string>
+	<key>CABLE_URL</key>
+	<string>$(CABLE_URL)</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Focusmate uses your location to help you organize tasks based on where you are.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Focusmate needs background location access to send you reminders when you arrive at or leave specific locations.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Focusmate uses your location to provide location-based task reminders and help you stay organized.</string>
+	<key>CFBundleDisplayName</key>
+	<string>Focusmate</string>
+	<key>CFBundleExecutable</key>
+	<string>focusmate</string>
+	<key>CFBundleIdentifier</key>
+	<string>dev.local.chace.focusmate</string>
+	<key>CFBundleName</key>
+	<string>focusmate</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
 </dict>
 </plist>
-
-
