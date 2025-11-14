@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="1024" height="1024" rx="226" fill="url(#bgGradient)"/>
+
+  <!-- FM Text -->
+  <text x="512" y="650"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="480"
+        font-weight="bold"
+        fill="white"
+        text-anchor="middle">FM</text>
+</svg>
