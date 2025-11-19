@@ -2,18 +2,33 @@ import Foundation
 
 enum API {
     static let base: URL = {
-        // Try to get staging URL from environment, fallback to localhost for development
-        if let stagingURL = ProcessInfo.processInfo.environment["STAGING_API_URL"], !stagingURL.isEmpty {
-            return URL(string: stagingURL)!
-        } else {
-            // Fallback to localhost for development
-            return URL(string: "http://localhost:3000")!
+        // Read API_BASE_URL from Info.plist (configured via xcconfig files)
+        if let urlString = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
+           let url = URL(string: urlString) {
+            return url
         }
+
+        // Fallback: Try environment variable for CI/CD or testing
+        if let stagingURL = ProcessInfo.processInfo.environment["STAGING_API_URL"],
+           !stagingURL.isEmpty,
+           let url = URL(string: stagingURL) {
+            return URL(string: stagingURL)!
+        }
+
+        // Last resort fallback for development (should never happen with proper xcconfig setup)
+        print("⚠️ WARNING: API_BASE_URL not found in Info.plist, using localhost fallback")
+        return URL(string: "http://localhost:3000")!
     }()
 
-    /// WebSocket (ActionCable) URL - automatically derived from base URL
+    /// WebSocket (ActionCable) URL - read from Info.plist or derived from base URL
     static let webSocketURL: URL = {
-        // Convert HTTP base URL to WebSocket URL
+        // First try to read CABLE_URL directly from Info.plist (configured via xcconfig)
+        if let cableURLString = Bundle.main.object(forInfoDictionaryKey: "CABLE_URL") as? String,
+           let url = URL(string: cableURLString) {
+            return url
+        }
+
+        // Fallback: Derive from base URL
         var urlString = base.absoluteString
 
         // Replace http:// with ws:// and https:// with wss://

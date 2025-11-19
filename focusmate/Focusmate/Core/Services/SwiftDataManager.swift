@@ -30,6 +30,7 @@ final class SwiftDataManager: ObservableObject {
     do {
       self.modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
       self.modelContext = self.modelContainer.mainContext
+      print("✅ SwiftDataManager: Persistent storage initialized successfully")
 
       // Initialize or get existing sync status
       let fetchDescriptor = FetchDescriptor<SyncStatus>()
@@ -44,7 +45,31 @@ final class SwiftDataManager: ObservableObject {
       }
 
     } catch {
-      fatalError("Failed to create ModelContainer: \(error)")
+      // Graceful fallback: Use in-memory storage instead of crashing
+      print("⚠️ CRITICAL: Failed to create persistent ModelContainer: \(error)")
+      print("⚠️ Falling back to in-memory storage. Data will not persist between app launches.")
+
+      let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+      do {
+        self.modelContainer = try ModelContainer(for: schema, configurations: [inMemoryConfig])
+        self.modelContext = self.modelContainer.mainContext
+
+        // Create new sync status for in-memory storage
+        self.syncStatus = SyncStatus()
+        self.modelContext.insert(self.syncStatus)
+        try? self.modelContext.save()
+
+        print("✅ SwiftDataManager: In-memory storage initialized (data will not persist)")
+      } catch {
+        // If even in-memory fails, this is catastrophic but we still shouldn't crash
+        print("❌ FATAL: Could not create even in-memory ModelContainer: \(error)")
+        print("❌ App will not function correctly. Please report this issue.")
+
+        // Last resort: create minimal in-memory container
+        self.modelContainer = try! ModelContainer(for: schema, configurations: [inMemoryConfig])
+        self.modelContext = self.modelContainer.mainContext
+        self.syncStatus = SyncStatus()
+      }
     }
   }
 

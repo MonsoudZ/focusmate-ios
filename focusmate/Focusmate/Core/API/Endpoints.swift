@@ -5,7 +5,10 @@ enum Endpoints {
     guard let urlString = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
           let url = URL(string: urlString)
     else {
-      fatalError("API_BASE_URL not found in Info.plist")
+      // Graceful fallback instead of crashing
+      print("⚠️ CRITICAL: API_BASE_URL not found in Info.plist")
+      print("⚠️ Using localhost fallback. Check xcconfig files and build configuration.")
+      return URL(string: "http://localhost:3000")!
     }
     return url
   }()
