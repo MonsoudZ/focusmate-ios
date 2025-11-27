@@ -10,7 +10,9 @@ final class SwiftDataTestService {
   }
 
   func testSwiftDataIntegration() async {
+    #if DEBUG
     print("🧪 SwiftDataTestService: Testing SwiftData integration...")
+    #endif
 
     let context = self.swiftDataManager.context
 
@@ -90,36 +92,52 @@ final class SwiftDataTestService {
     // Save the context
     do {
       try context.save()
+      #if DEBUG
       print("✅ SwiftDataTestService: Test data created successfully")
+      #endif
 
       // Test fetching data
       let userFetchDescriptor = FetchDescriptor<User>(
         predicate: #Predicate { $0.id == 999 }
       )
       let users = try context.fetch(userFetchDescriptor)
+      #if DEBUG
       print("✅ SwiftDataTestService: Found \(users.count) test users")
+      #endif
 
       let listFetchDescriptor = FetchDescriptor<List>(
         predicate: #Predicate { $0.id == 999 }
       )
       let lists = try context.fetch(listFetchDescriptor)
+      #if DEBUG
       print("✅ SwiftDataTestService: Found \(lists.count) test lists")
+      #endif
 
       let itemFetchDescriptor = FetchDescriptor<TaskItem>(
         predicate: #Predicate { $0.id == 999 }
       )
       let items = try context.fetch(itemFetchDescriptor)
+      #if DEBUG
       print("✅ SwiftDataTestService: Found \(items.count) test items")
+      #endif
 
       // Test relationships
       if let firstList = lists.first {
+        #if DEBUG
         print("✅ SwiftDataTestService: List owner: \(firstList.owner?.email ?? "nil")")
+        #endif
+        #if DEBUG
         print("✅ SwiftDataTestService: List items count: \(firstList.items.count)")
+        #endif
       }
 
       if let firstItem = items.first {
+        #if DEBUG
         print("✅ SwiftDataTestService: Item creator: \(firstItem.creator?.email ?? "nil")")
+        #endif
+        #if DEBUG
         print("✅ SwiftDataTestService: Item list: \(firstItem.list?.name ?? "nil")")
+        #endif
       }
 
       // Clean up test data
@@ -134,24 +152,36 @@ final class SwiftDataTestService {
       }
 
       try context.save()
+      #if DEBUG
       print("✅ SwiftDataTestService: Test data cleaned up successfully")
+      #endif
 
     } catch {
+      #if DEBUG
       print("❌ SwiftDataTestService: Test failed: \(error)")
+      #endif
     }
   }
 
   func testDeltaSyncParameters() {
+    #if DEBUG
     print("🧪 SwiftDataTestService: Testing delta sync parameters...")
+    #endif
 
     // Test getting sync parameters for different entity types
     let userParams = self.swiftDataManager.getDeltaSyncParameters(for: "users")
     let listParams = self.swiftDataManager.getDeltaSyncParameters(for: "lists")
     let itemParams = self.swiftDataManager.getDeltaSyncParameters(for: "items")
 
+    #if DEBUG
     print("✅ SwiftDataTestService: User sync params: \(userParams)")
+    #endif
+    #if DEBUG
     print("✅ SwiftDataTestService: List sync params: \(listParams)")
+    #endif
+    #if DEBUG
     print("✅ SwiftDataTestService: Item sync params: \(itemParams)")
+    #endif
 
     // Test updating sync timestamps
     let now = Date()
@@ -159,10 +189,14 @@ final class SwiftDataTestService {
     self.swiftDataManager.updateLastSyncTimestamp(for: "lists", timestamp: now, since: "2024-01-01T00:00:00Z")
     self.swiftDataManager.updateLastSyncTimestamp(for: "items", timestamp: now, since: "2024-01-01T00:00:00Z")
 
+    #if DEBUG
     print("✅ SwiftDataTestService: Sync timestamps updated")
+    #endif
 
     // Test getting updated parameters
     let updatedUserParams = self.swiftDataManager.getDeltaSyncParameters(for: "users")
+    #if DEBUG
     print("✅ SwiftDataTestService: Updated user sync params: \(updatedUserParams)")
+    #endif
   }
 }

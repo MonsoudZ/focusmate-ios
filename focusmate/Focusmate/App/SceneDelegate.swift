@@ -14,7 +14,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   }
 
   private func handleNotificationLaunch(_: UNNotificationResponse) {
+    #if DEBUG
     print("🔔 SceneDelegate: App launched from notification")
+    #endif
     // The NotificationDelegate will handle the actual task opening
   }
 }
@@ -23,12 +25,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 extension SceneDelegate {
   func application(_: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    #if DEBUG
     print("🔔 SceneDelegate: Device token received")
+    #endif
     NotificationDelegate.shared.handlePushToken(deviceToken)
   }
 
   func application(_: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+    #if DEBUG
     print("❌ SceneDelegate: Failed to register for remote notifications")
+    #endif
     NotificationDelegate.shared.handlePushTokenError(error)
   }
 }

@@ -45,13 +45,19 @@ final class ItemViewModel: ObservableObject {
         try await syncCoordinator.syncAll()
         self.lastSyncTime = syncCoordinator.lastSyncTime
       } else {
+        #if DEBUG
         print("⚠️ ItemViewModel: No SyncCoordinator available, skipping full sync")
+        #endif
       }
       self.updateSyncStatus()
+      #if DEBUG
       print("✅ ItemViewModel: Full sync completed")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ItemViewModel: Full sync failed: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -65,7 +71,9 @@ final class ItemViewModel: ObservableObject {
       // Validate user identity first
       let isValidUser = await validateUserIdentity()
       if !isValidUser {
+        #if DEBUG
         print("⚠️ ItemViewModel: User identity validation failed, clearing cache")
+        #endif
         await self.clearAllCachedData()
         self.error = .custom("AUTH_ERROR", "Please log in again")
         self.isLoading = false
@@ -74,41 +82,55 @@ final class ItemViewModel: ObservableObject {
 
       // First, try to load from local SwiftData storage
       self.items = self.itemService.fetchItemsFromLocal(listId: listId)
+      #if DEBUG
       print("✅ ItemViewModel: Loaded \(self.items.count) items from local storage for list \(listId)")
+      #endif
 
       // Then attempt to sync with server
       try await self.itemService.syncItemsForList(listId: listId)
 
       // Reload from local storage after sync
       self.items = self.itemService.fetchItemsFromLocal(listId: listId)
+      #if DEBUG
       print("✅ ItemViewModel: Synced and reloaded \(self.items.count) items for list \(listId)")
+      #endif
 
     } catch {
       // Handle specific error types
       if let apiError = error as? APIError {
         switch apiError {
         case .badStatus(404, _, _):
+          #if DEBUG
           print("⚠️ ItemViewModel: List not found (404), refreshing lists data")
+          #endif
           // Trigger a full data refresh to handle stale data
           await self.refreshListsData()
           self.error = ErrorHandler.shared.handle(error)
         case .badStatus(500, _, _):
+          #if DEBUG
           print("⚠️ ItemViewModel: Server error (500), clearing cache and refreshing")
+          #endif
           await self.clearAllCachedData()
           await self.refreshListsData()
           self.error = .custom("SERVER_ERROR", "Server error occurred. Data has been refreshed.")
         case .unauthorized:
+          #if DEBUG
           print("⚠️ ItemViewModel: Unauthorized access, clearing cache and requiring re-authentication")
+          #endif
           await self.clearAllCachedData()
           self.error = .custom("AUTH_ERROR", "Please log in again")
         default:
+          #if DEBUG
           print("⚠️ ItemViewModel: Sync failed, showing local data: \(error)")
+          #endif
           if self.items.isEmpty {
             self.error = ErrorHandler.shared.handle(error)
           }
         }
       } else {
+        #if DEBUG
         print("⚠️ ItemViewModel: Sync failed, showing local data: \(error)")
+        #endif
         if self.items.isEmpty {
           self.error = ErrorHandler.shared.handle(error)
         }
@@ -119,7 +141,9 @@ final class ItemViewModel: ObservableObject {
   }
 
   private func refreshListsData() async {
+    #if DEBUG
     print("🔄 ItemViewModel: Refreshing lists data due to 404 error")
+    #endif
     do {
       // Clear all cached data first
       await self.clearAllCachedData()
@@ -127,26 +151,38 @@ final class ItemViewModel: ObservableObject {
       // Perform full sync if SyncCoordinator is available
       if let syncCoordinator = syncCoordinator {
         try await syncCoordinator.syncAll()
+        #if DEBUG
         print("✅ ItemViewModel: Lists data refreshed successfully")
+        #endif
       } else {
+        #if DEBUG
         print("⚠️ ItemViewModel: No SyncCoordinator available for refresh")
+        #endif
       }
     } catch {
+      #if DEBUG
       print("❌ ItemViewModel: Failed to refresh lists data: \(error)")
+      #endif
     }
   }
 
   private func clearAllCachedData() async {
+    #if DEBUG
     print("🧹 ItemViewModel: Clearing all cached data due to data inconsistency")
+    #endif
     // Clear local SwiftData cache
     self.swiftDataManager.deleteAllData()
     // Clear items array
     self.items = []
+    #if DEBUG
     print("✅ ItemViewModel: All cached data cleared")
+    #endif
   }
 
   private func validateUserIdentity() async -> Bool {
+    #if DEBUG
     print("🔍 ItemViewModel: Validating user identity")
+    #endif
     do {
       // Try to call the profile endpoint to validate current user
       let profile: UserProfile = try await apiClient.request(
@@ -155,15 +191,21 @@ final class ItemViewModel: ObservableObject {
         body: nil as String?,
         queryParameters: [:]
       )
+      #if DEBUG
       print("✅ ItemViewModel: User identity validated - User ID: \(profile.id), Email: \(profile.email)")
+      #endif
       return true
     } catch {
       // Profile endpoint might not exist - that's OK, assume valid if we have a token
       if case APIError.badStatus(404, _, _) = error {
+        #if DEBUG
         print("ℹ️ ItemViewModel: Profile endpoint not available, skipping validation")
+        #endif
         return true
       }
+      #if DEBUG
       print("❌ ItemViewModel: User identity validation failed: \(error)")
+      #endif
       return false
     }
   }
@@ -223,7 +265,9 @@ final class ItemViewModel: ObservableObject {
         notifyOnDeparture: notifyOnDeparture
       )
       self.items.append(newItem)
+      #if DEBUG
       print("✅ ItemViewModel: Created item: \(newItem.title)")
+      #endif
     } catch let apiError as APIError {
       // Handle specific API errors
       switch apiError {
@@ -236,10 +280,14 @@ final class ItemViewModel: ObservableObject {
       default:
         self.error = ErrorHandler.shared.handle(apiError)
       }
+      #if DEBUG
       print("❌ ItemViewModel: Failed to create item: \(apiError)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ItemViewModel: Failed to create item: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -294,10 +342,14 @@ final class ItemViewModel: ObservableObject {
       if let index = items.firstIndex(where: { $0.id == id }) {
         self.items[index] = updatedItem
       }
+      #if DEBUG
       print("✅ ItemViewModel: Updated item: \(updatedItem.title)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ItemViewModel: Failed to update item: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -310,10 +362,14 @@ final class ItemViewModel: ObservableObject {
     do {
       try await self.itemService.deleteItem(id: id)
       self.items.removeAll { $0.id == id }
+      #if DEBUG
       print("✅ ItemViewModel: Deleted item with id: \(id)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ItemViewModel: Failed to delete item: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -332,7 +388,9 @@ final class ItemViewModel: ObservableObject {
       if let index = items.firstIndex(where: { $0.id == id }) {
         // Temporary workaround: If Rails API doesn't set completed_at, set it locally
         if completed, updatedItem.completed_at == nil {
+          #if DEBUG
           print("🔧 ItemViewModel: Rails API didn't set completed_at, setting locally")
+          #endif
           var localItem = updatedItem
           // Create a new Item with completed_at set to current time
           let currentTime = Date().ISO8601Format()
@@ -383,12 +441,20 @@ final class ItemViewModel: ObservableObject {
           self.items[index] = updatedItem
         }
       }
+      #if DEBUG
       print("✅ ItemViewModel: Completed item: \(updatedItem.title)")
+      #endif
+      #if DEBUG
       print("🔍 ItemViewModel: completed_at: \(updatedItem.completed_at ?? "nil")")
+      #endif
+      #if DEBUG
       print("🔍 ItemViewModel: isCompleted: \(updatedItem.isCompleted)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ItemViewModel: Failed to complete item: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -407,10 +473,14 @@ final class ItemViewModel: ObservableObject {
       if let index = items.firstIndex(where: { $0.id == id }) {
         self.items[index] = updatedItem
       }
+      #if DEBUG
       print("✅ ItemViewModel: Reassigned item: \(updatedItem.title)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ItemViewModel: Failed to reassign item: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -425,10 +495,14 @@ final class ItemViewModel: ObservableObject {
       if let index = items.firstIndex(where: { $0.id == id }) {
         self.items[index] = updatedItem
       }
+      #if DEBUG
       print("✅ ItemViewModel: Added explanation to item: \(updatedItem.title)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ItemViewModel: Failed to add explanation: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -448,33 +522,49 @@ final class ItemViewModel: ObservableObject {
 
   private func handleTaskUpdate(_ notification: Notification) {
     guard let updatedTask = notification.userInfo?["updatedTask"] as? Item else {
+      #if DEBUG
       print("🔌 ItemViewModel: Invalid task update data")
+      #endif
       return
     }
 
+    #if DEBUG
     print("🔌 ItemViewModel: Received task update for item \(updatedTask.id)")
+    #endif
 
     // Find and merge the updated task
     if let index = items.firstIndex(where: { $0.id == updatedTask.id }) {
       let oldTask = self.items[index]
       self.items[index] = updatedTask
 
+      #if DEBUG
       print("✅ ItemViewModel: Merged task update for '\(updatedTask.title)'")
+      #endif
+      #if DEBUG
       print("🔍 ItemViewModel: Status changed from \(oldTask.isCompleted) to \(updatedTask.isCompleted)")
+      #endif
 
       // Log specific changes
       if oldTask.title != updatedTask.title {
+        #if DEBUG
         print("🔍 ItemViewModel: Title changed from '\(oldTask.title)' to '\(updatedTask.title)'")
+        #endif
       }
       if oldTask.completed_at != updatedTask.completed_at {
+        #if DEBUG
         print("🔍 ItemViewModel: Completion status changed")
+        #endif
       }
       if oldTask.description != updatedTask.description {
+        #if DEBUG
         print("🔍 ItemViewModel: Description updated")
+        #endif
       }
     } else {
       // Task doesn't exist in current list, might be from another list
+      #if DEBUG
       print("🔌 ItemViewModel: Task \(updatedTask.id) not found in current list")
+      #endif
     }
   }
 

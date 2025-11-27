@@ -34,10 +34,14 @@ final class SubtaskService {
     do {
       let jsonData = try JSONEncoder().encode(request)
       if let jsonString = String(data: jsonData, encoding: .utf8) {
+        #if DEBUG
         print("🔍 SubtaskService: Sending request payload: \(jsonString)")
+        #endif
       }
     } catch {
+      #if DEBUG
       print("❌ SubtaskService: Failed to encode request: \(error)")
+      #endif
     }
 
     let subtask: Subtask = try await apiClient.request(
@@ -45,7 +49,9 @@ final class SubtaskService {
       "tasks/\(taskId)/subtasks",
       body: request
     )
+    #if DEBUG
     print("✅ SubtaskService: Successfully created subtask: \(subtask.title)")
+    #endif
     return subtask
   }
 
@@ -64,10 +70,14 @@ final class SubtaskService {
     do {
       let jsonData = try JSONEncoder().encode(request)
       if let jsonString = String(data: jsonData, encoding: .utf8) {
+        #if DEBUG
         print("🔍 SubtaskService: Sending update request for subtask \(id): \(jsonString)")
+        #endif
       }
     } catch {
+      #if DEBUG
       print("❌ SubtaskService: Failed to encode update request: \(error)")
+      #endif
     }
 
     let subtask: Subtask = try await apiClient.request(
@@ -75,7 +85,9 @@ final class SubtaskService {
       "subtasks/\(id)",
       body: request
     )
+    #if DEBUG
     print("✅ SubtaskService: Successfully updated subtask: \(subtask.title)")
+    #endif
     return subtask
   }
 
@@ -85,7 +97,9 @@ final class SubtaskService {
       "subtasks/\(id)",
       body: nil as String?
     ) as EmptyResponse
+    #if DEBUG
     print("✅ SubtaskService: Successfully deleted subtask \(id)")
+    #endif
   }
 
   func reorderSubtasks(taskId: Int, subtaskIds: [Int]) async throws {
@@ -96,7 +110,9 @@ final class SubtaskService {
       "tasks/\(taskId)/subtasks/reorder",
       body: request
     ) as EmptyResponse
+    #if DEBUG
     print("✅ SubtaskService: Successfully reordered subtasks for task \(taskId)")
+    #endif
   }
 
   func completeSubtask(id: Int, completed: Bool) async throws -> Subtask {
@@ -107,7 +123,9 @@ final class SubtaskService {
       "subtasks/\(id)/complete",
       body: request
     )
+    #if DEBUG
     print("✅ SubtaskService: Completed subtask \(id) - status: \(completed)")
+    #endif
     return subtask
   }
 

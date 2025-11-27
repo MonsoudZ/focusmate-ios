@@ -28,7 +28,9 @@ final class OfflineModeManager: ObservableObject {
       }
     }
     monitor.start(queue: monitorQueue)
+    #if DEBUG
     print("🌐 OfflineModeManager: Network monitoring started")
+    #endif
   }
 
   private func updateConnectionStatus(path: NWPath) {
@@ -41,13 +43,17 @@ final class OfflineModeManager: ObservableObject {
     // Log connection changes
     if wasOnline != isOnline {
       if isOnline {
+        #if DEBUG
         print("✅ OfflineModeManager: Connection restored - \(connectionQuality)")
+        #endif
         NotificationCenter.default.post(name: .connectionRestored, object: nil)
         Task {
           await processPendingOperations()
         }
       } else {
+        #if DEBUG
         print("❌ OfflineModeManager: Connection lost - going offline")
+        #endif
         NotificationCenter.default.post(name: .connectionLost, object: nil)
       }
     }
@@ -74,7 +80,9 @@ final class OfflineModeManager: ObservableObject {
   func addPendingOperation(_ operation: PendingOperation) {
     pendingOperations.append(operation)
     savePendingOperations()
+    #if DEBUG
     print("📝 OfflineModeManager: Added pending operation: \(operation.type)")
+    #endif
   }
 
   func removePendingOperation(_ operation: PendingOperation) {
@@ -85,16 +93,22 @@ final class OfflineModeManager: ObservableObject {
   private func processPendingOperations() async {
     guard isOnline, !pendingOperations.isEmpty else { return }
 
+    #if DEBUG
     print("🔄 OfflineModeManager: Processing \(pendingOperations.count) pending operations")
+    #endif
 
     let operations = pendingOperations
     for operation in operations {
       do {
         try await executeOperation(operation)
         removePendingOperation(operation)
+        #if DEBUG
         print("✅ OfflineModeManager: Completed pending operation: \(operation.type)")
+        #endif
       } catch {
+        #if DEBUG
         print("❌ OfflineModeManager: Failed to execute pending operation: \(error)")
+        #endif
         // Keep in queue for next retry
       }
     }
@@ -103,7 +117,9 @@ final class OfflineModeManager: ObservableObject {
   private func executeOperation(_ operation: PendingOperation) async throws {
     // Execute the pending operation
     // This would integrate with your services
+    #if DEBUG
     print("🔄 OfflineModeManager: Executing \(operation.type)")
+    #endif
 
     switch operation.type {
     case .createItem:

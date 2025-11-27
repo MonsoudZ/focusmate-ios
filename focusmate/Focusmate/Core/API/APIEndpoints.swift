@@ -16,7 +16,9 @@ enum API {
         }
 
         // Last resort fallback for development (should never happen with proper xcconfig setup)
+        #if DEBUG
         print("⚠️ WARNING: API_BASE_URL not found in Info.plist, using localhost fallback")
+        #endif
         return URL(string: "http://localhost:3000")!
     }()
 

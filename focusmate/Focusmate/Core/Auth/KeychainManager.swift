@@ -24,9 +24,13 @@ final class KeychainManager {
     // Add new item
     let status = SecItemAdd(query as CFDictionary, nil)
     if status != errSecSuccess {
+      #if DEBUG
       print("❌ KeychainManager: Failed to save token: \(status)")
+      #endif
     } else {
+      #if DEBUG
       print("✅ KeychainManager: Token saved successfully")
+      #endif
     }
   }
 
@@ -46,10 +50,14 @@ final class KeychainManager {
        let data = result as? Data,
        let token = String(data: data, encoding: .utf8)
     {
+      #if DEBUG
       print("✅ KeychainManager: Token loaded successfully")
+      #endif
       return token
     } else {
+      #if DEBUG
       print("⚠️ KeychainManager: No token found or error: \(status)")
+      #endif
       return nil
     }
   }
@@ -63,9 +71,13 @@ final class KeychainManager {
 
     let status = SecItemDelete(query as CFDictionary)
     if status == errSecSuccess {
+      #if DEBUG
       print("✅ KeychainManager: Token cleared successfully")
+      #endif
     } else {
+      #if DEBUG
       print("⚠️ KeychainManager: Failed to clear token: \(status)")
+      #endif
     }
   }
 }

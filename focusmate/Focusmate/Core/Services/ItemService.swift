@@ -23,7 +23,9 @@ final class ItemService {
       let taskItems = try swiftDataManager.context.fetch(fetchDescriptor)
       return taskItems.map { self.convertTaskItemToItem($0) }
     } catch {
+      #if DEBUG
       print("❌ ItemService: Failed to fetch items from local storage: \(error)")
+      #endif
       return []
     }
   }
@@ -34,14 +36,18 @@ final class ItemService {
     do {
       return try self.swiftDataManager.context.fetch(fetchDescriptor)
     } catch {
+      #if DEBUG
       print("❌ ItemService: Failed to fetch all items from local storage: \(error)")
+      #endif
       return []
     }
   }
 
   func syncItemsForList(listId: Int) async throws {
     // Fetch items from server and save to local storage
+    #if DEBUG
     print("🔄 ItemService: Syncing items for list \(listId)")
+    #endif
     let items = try await fetchItems(listId: listId)
 
     // Save items to local SwiftData storage
@@ -69,12 +75,16 @@ final class ItemService {
     }
 
     try? swiftDataManager.context.save()
+    #if DEBUG
     print("✅ ItemService: Synced \(items.count) items for list \(listId)")
+    #endif
   }
 
   func syncAllItems() async throws {
     // This method is deprecated - use SyncCoordinator.syncAll() instead
+    #if DEBUG
     print("⚠️ ItemService.syncAllItems() is deprecated - use SyncCoordinator.syncAll() instead")
+    #endif
   }
 
   // MARK: - Item Management
@@ -130,14 +140,20 @@ final class ItemService {
     do {
       let jsonData = try JSONEncoder().encode(request)
       if let jsonString = String(data: jsonData, encoding: .utf8) {
+        #if DEBUG
         print("🔍 ItemService: Sending request payload: \(jsonString)")
+        #endif
       }
     } catch {
+      #if DEBUG
       print("❌ ItemService: Failed to encode request: \(error)")
+      #endif
     }
 
     let item: Item = try await apiClient.request("POST", "lists/\(listId)/tasks", body: request)
+    #if DEBUG
     print("✅ ItemService: Successfully created item: \(item.title)")
+    #endif
     return item
   }
 
@@ -183,10 +199,14 @@ final class ItemService {
     do {
       let jsonData = try JSONEncoder().encode(request)
       if let jsonString = String(data: jsonData, encoding: .utf8) {
+        #if DEBUG
         print("🔍 ItemService: Sending update request for task \(id): \(jsonString)")
+        #endif
       }
     } catch {
+      #if DEBUG
       print("❌ ItemService: Failed to encode update request: \(error)")
+      #endif
     }
 
     let item: Item = try await apiClient.request("PUT", "tasks/\(id)", body: request)
@@ -207,7 +227,9 @@ final class ItemService {
       existing.isVisible = taskItem.isVisible
       existing.updatedAt = taskItem.updatedAt
       try? swiftDataManager.context.save()
+      #if DEBUG
       print("✅ ItemService: Updated item in local storage")
+      #endif
     }
 
     return item
@@ -222,9 +244,13 @@ final class ItemService {
 
   func completeItem(id: Int, completed: Bool, completionNotes: String?) async throws -> Item {
     let request = CompleteItemRequest(completed: completed, completionNotes: completionNotes)
+    #if DEBUG
     print("🔍 ItemService: Completing task \(id) with completed=\(completed)")
+    #endif
     let item: Item = try await apiClient.request("POST", "tasks/\(id)/complete", body: request)
+    #if DEBUG
     print("🔍 ItemService: Received completion response - completed_at: \(item.completed_at ?? "nil")")
+    #endif
     return item
   }
 

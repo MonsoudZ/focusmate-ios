@@ -17,7 +17,9 @@ final class RefreshCoordinator: ObservableObject {
 
   /// Trigger a refresh for a specific entity type
   func triggerRefresh(_ event: RefreshEvent) {
+    #if DEBUG
     print("🔄 RefreshCoordinator: Triggering refresh for \(event)")
+    #endif
     refreshSubject.send(event)
   }
 }

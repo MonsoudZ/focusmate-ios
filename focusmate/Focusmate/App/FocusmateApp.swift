@@ -77,7 +77,9 @@ struct RootView: View {
           }
       }
       .task {
+        #if DEBUG
         print("📋 ListsView loading...")
+        #endif
         await self.auth.loadProfile()
       }
     }

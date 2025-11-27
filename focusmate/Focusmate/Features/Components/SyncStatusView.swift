@@ -57,9 +57,13 @@ struct SyncStatusView: View {
               Task {
                 do {
                   try await self.appState.syncCoordinator.syncAll()
+                  #if DEBUG
                   print("✅ SyncStatusView: Manual sync completed")
+                  #endif
                 } catch {
+                  #if DEBUG
                   print("❌ SyncStatusView: Manual sync failed: \(error)")
+                  #endif
                 }
               }
             }

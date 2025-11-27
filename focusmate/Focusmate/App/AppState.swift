@@ -81,29 +81,49 @@ final class AppState: ObservableObject {
       let hasPermission = await notificationService.requestPermissions()
 
       if hasPermission, let pushToken = notificationService.pushToken {
+        #if DEBUG
         print("📱 AppState: Registering device with valid APNS token")
+        #endif
         let response = try await deviceService.registerDevice(pushToken: pushToken)
+        #if DEBUG
         print("✅ AppState: Device registered successfully with ID: \(response.device.id)")
+        #endif
       } else {
+        #if DEBUG
         print("📱 AppState: Registering device without push token (permissions not granted or token not available)")
+        #endif
+        #if DEBUG
         print("📱 AppState: This is normal for simulator or when push notifications are not available")
+        #endif
         let response = try await deviceService.registerDevice()
+        #if DEBUG
         print("✅ AppState: Device registered successfully with ID: \(response.device.id)")
+        #endif
       }
     } catch let apiError as APIError {
       // Device registration is optional - suppress errors in development
       switch apiError {
       case let .badStatus(422, _, _):
+        #if DEBUG
         print("ℹ️ AppState: Device registration skipped - validation failed (expected in development)")
+        #endif
       case .badStatus(401, _, _):
+        #if DEBUG
         print("ℹ️ AppState: Device registration skipped - unauthorized")
+        #endif
       case .badStatus(500, _, _):
+        #if DEBUG
         print("ℹ️ AppState: Device registration skipped - server error")
+        #endif
       default:
+        #if DEBUG
         print("ℹ️ AppState: Device registration skipped: \(apiError)")
+        #endif
       }
     } catch {
+      #if DEBUG
       print("ℹ️ AppState: Device registration skipped: \(error)")
+      #endif
     }
   }
 
@@ -117,7 +137,9 @@ final class AppState: ObservableObject {
     // Connect when user is authenticated
     if let jwt = auth.jwt {
       self.webSocketManager.connect(with: jwt)
+      #if DEBUG
       print("🔌 AppState: WebSocket connection initiated")
+      #endif
     }
   }
 
@@ -136,11 +158,15 @@ final class AppState: ObservableObject {
 
   private func handleTaskUpdate(_ notification: Notification) async {
     guard let taskData = notification.userInfo?["task"] as? [String: Any] else {
+      #if DEBUG
       print("🔌 AppState: Invalid task update data")
+      #endif
       return
     }
 
+    #if DEBUG
     print("🔌 AppState: Processing task update: \(taskData)")
+    #endif
 
     // Parse the updated task and merge it
     do {
@@ -154,9 +180,13 @@ final class AppState: ObservableObject {
         userInfo: ["updatedTask": updatedTask]
       )
 
+      #if DEBUG
       print("✅ AppState: Task update processed and broadcasted")
+      #endif
     } catch {
+      #if DEBUG
       print("❌ AppState: Failed to parse task update: \(error)")
+      #endif
     }
   }
 
@@ -189,16 +219,22 @@ final class AppState: ObservableObject {
   private func handlePushTokenReceived(_ notification: Notification) async {
     guard let token = notification.userInfo?["token"] as? String else { return }
 
+    #if DEBUG
     print("🔔 AppState: Push token received, updating device registration")
+    #endif
     self.notificationService.setPushToken(token)
 
     // Update device registration with push token
     Task {
       do {
         try await self.deviceService.updateDeviceToken(token)
+        #if DEBUG
         print("✅ AppState: Device push token updated successfully")
+        #endif
       } catch {
+        #if DEBUG
         print("❌ AppState: Failed to update device push token: \(error)")
+        #endif
       }
     }
   }
@@ -207,11 +243,15 @@ final class AppState: ObservableObject {
     guard let taskId = notification.userInfo?["task_id"] as? Int,
           let listId = notification.userInfo?["list_id"] as? Int
     else {
+      #if DEBUG
       print("❌ AppState: Invalid notification data")
+      #endif
       return
     }
 
+    #if DEBUG
     print("🔔 AppState: Opening task \(taskId) in list \(listId)")
+    #endif
 
     // Set the current list and selected item
     // This will trigger navigation to the task
@@ -231,11 +271,15 @@ final class AppState: ObservableObject {
           let items = try await itemService.fetchItems(listId: listId)
           if let task = items.first(where: { $0.id == taskId }) {
             self.selectedItem = task
+            #if DEBUG
             print("✅ AppState: Task opened successfully")
+            #endif
           }
         }
       } catch {
+        #if DEBUG
         print("❌ AppState: Failed to open task from notification: \(error)")
+        #endif
       }
     }
   }
@@ -253,8 +297,12 @@ final class AppState: ObservableObject {
   }
 
   private func handleWebSocketConnectionFailure() async {
+    #if DEBUG
     print("🔄 AppState: WebSocket connection failed, switching to HTTP polling mode")
+    #endif
+    #if DEBUG
     print("🔄 AppState: App will continue to work with HTTP requests for data synchronization")
+    #endif
 
     // The app will continue to work normally with HTTP requests
     // WebSocket was just for real-time updates, which are now handled via polling
@@ -274,13 +322,19 @@ final class AppState: ObservableObject {
   }
 
           private func handleDataSyncRequest() async {
+            #if DEBUG
             print("🔄 AppState: HTTP polling triggered data sync request")
+            #endif
 
             do {
               try await self.syncCoordinator.syncAll()
+              #if DEBUG
               print("✅ AppState: Data sync completed via HTTP polling")
+              #endif
             } catch {
+              #if DEBUG
               print("❌ AppState: Data sync failed via HTTP polling: \(error)")
+              #endif
               // Report sync errors to Sentry
               sentryService.captureError(error, context: ["source": "http_polling"])
             }
@@ -314,16 +368,22 @@ final class AppState: ObservableObject {
       sentryService.setTag(value: profile.role, key: "user_role")
       sentryService.setTag(value: profile.timezone, key: "user_timezone")
 
+      #if DEBUG
       print("✅ AppState: Updated Sentry user context for user ID: \(profile.id)")
+      #endif
     } catch {
+      #if DEBUG
       print("⚠️ AppState: Could not fetch user profile for Sentry context: \(error)")
+      #endif
     }
   }
 
   /// Call this when user logs out
   func clearSentryContext() {
     sentryService.clearUser()
+    #if DEBUG
     print("✅ AppState: Cleared Sentry user context")
+    #endif
   }
 }
 

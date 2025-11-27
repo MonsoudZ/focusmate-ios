@@ -13,12 +13,20 @@ final class ListService {
     // GET /lists returns object with lists array
     let response: ListsResponse = try await apiClient.request("GET", "lists", body: nil as String?)
     let lists = response.lists
+    #if DEBUG
     print("🔍 ListService: Fetched \(lists.count) lists from Rails API")
+    #endif
+    #if DEBUG
     print("🔍 ListService: List IDs: \(lists.map(\.id))")
+    #endif
 
     // Return all lists - the API should handle permissions
+    #if DEBUG
     print("🔍 ListService: Returning \(lists.count) lists")
+    #endif
+    #if DEBUG
     print("🔍 ListService: List IDs: \(lists.map(\.id))")
+    #endif
 
     return lists
   }

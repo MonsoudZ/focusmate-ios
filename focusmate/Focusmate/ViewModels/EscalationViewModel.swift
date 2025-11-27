@@ -21,10 +21,14 @@ final class EscalationViewModel: ObservableObject {
 
     do {
       self.blockingTasks = try await self.escalationService.getBlockingTasks()
+      #if DEBUG
       print("✅ EscalationViewModel: Loaded \(self.blockingTasks.count) blocking tasks")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ EscalationViewModel: Failed to load blocking tasks: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -41,10 +45,14 @@ final class EscalationViewModel: ObservableObject {
         urgency: urgency
       )
       self.escalations.append(escalation)
+      #if DEBUG
       print("✅ EscalationViewModel: Escalated task \(itemId) with urgency \(urgency.rawValue)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ EscalationViewModel: Failed to escalate task: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -59,10 +67,14 @@ final class EscalationViewModel: ObservableObject {
         itemId: itemId,
         explanation: explanation
       )
+      #if DEBUG
       print("✅ EscalationViewModel: Added explanation for task \(itemId)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ EscalationViewModel: Failed to add explanation: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -81,10 +93,14 @@ final class EscalationViewModel: ObservableObject {
       if let index = escalations.firstIndex(where: { $0.id == escalationId }) {
         self.escalations[index] = resolvedEscalation
       }
+      #if DEBUG
       print("✅ EscalationViewModel: Resolved escalation \(escalationId)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ EscalationViewModel: Failed to resolve escalation: \(error)")
+      #endif
     }
 
     self.isLoading = false

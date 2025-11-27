@@ -7,7 +7,9 @@ enum Endpoints {
     else {
       // Graceful fallback instead of crashing
       print("⚠️ CRITICAL: API_BASE_URL not found in Info.plist")
+      #if DEBUG
       print("⚠️ Using localhost fallback. Check xcconfig files and build configuration.")
+      #endif
       return URL(string: "http://localhost:3000")!
     }
     return url

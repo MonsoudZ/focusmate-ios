@@ -196,10 +196,14 @@ struct ListDetailView: View {
     do {
       let listService = ListService(apiClient: appState.auth.api)
       try await listService.deleteList(id: self.list.id)
+      #if DEBUG
       print("✅ ListDetailView: Deleted list \(self.list.title) (ID: \(self.list.id))")
+      #endif
       self.dismiss() // Navigate back to lists view
     } catch {
+      #if DEBUG
       print("❌ ListDetailView: Failed to delete list: \(error)")
+      #endif
       // You could add error handling here if needed
     }
   }
@@ -208,9 +212,13 @@ struct ListDetailView: View {
     do {
       let listService = ListService(apiClient: appState.auth.api)
       self.shares = try await listService.fetchShares(listId: self.list.id)
+      #if DEBUG
       print("✅ ListDetailView: Loaded \(self.shares.count) shares for list \(self.list.id)")
+      #endif
     } catch {
+      #if DEBUG
       print("❌ ListDetailView: Failed to load shares: \(error)")
+      #endif
     }
   }
 }

@@ -22,7 +22,9 @@ final class SyncCoordinator: ObservableObject {
 
     /// Perform full sync of all data
     func syncAll() async throws {
+        #if DEBUG
         print("🔄 SyncCoordinator: Starting full sync...")
+        #endif
         isSyncing = true
         syncError = nil
 
@@ -34,10 +36,14 @@ final class SyncCoordinator: ObservableObject {
             try await syncAllItems()
 
             lastSyncTime = Date()
+            #if DEBUG
             print("✅ SyncCoordinator: Full sync completed successfully")
+            #endif
         } catch {
             syncError = error
+            #if DEBUG
             print("❌ SyncCoordinator: Full sync failed: \(error)")
+            #endif
             throw error
         }
 
@@ -46,7 +52,9 @@ final class SyncCoordinator: ObservableObject {
 
     /// Sync all lists
     private func syncLists() async throws {
+        #if DEBUG
         print("🔄 SyncCoordinator: Syncing lists...")
+        #endif
 
         let lists = try await listService.fetchLists()
 
@@ -80,12 +88,16 @@ final class SyncCoordinator: ObservableObject {
         }
 
         try? swiftDataManager.context.save()
+        #if DEBUG
         print("✅ SyncCoordinator: Synced \(lists.count) lists")
+        #endif
     }
 
     /// Sync items for all lists
     private func syncAllItems() async throws {
+        #if DEBUG
         print("🔄 SyncCoordinator: Syncing all items...")
+        #endif
 
         // Get all lists
         let lists = try await listService.fetchLists()
@@ -103,27 +115,37 @@ final class SyncCoordinator: ObservableObject {
                     totalItems += items.count
                 }
             } catch {
+                #if DEBUG
                 print("⚠️ SyncCoordinator: Failed to sync items for list \(list.id): \(error)")
+                #endif
                 // Continue with other lists even if one fails
             }
         }
 
+        #if DEBUG
         print("✅ SyncCoordinator: Synced \(totalItems) total items across \(lists.count) lists")
+        #endif
     }
 
     /// Sync items for a specific list
     func syncList(id: Int) async throws {
+        #if DEBUG
         print("🔄 SyncCoordinator: Syncing list \(id)...")
+        #endif
         isSyncing = true
         syncError = nil
 
         do {
             try await itemService.syncItemsForList(listId: id)
             lastSyncTime = Date()
+            #if DEBUG
             print("✅ SyncCoordinator: List \(id) synced successfully")
+            #endif
         } catch {
             syncError = error
+            #if DEBUG
             print("❌ SyncCoordinator: List \(id) sync failed: \(error)")
+            #endif
             throw error
         }
 

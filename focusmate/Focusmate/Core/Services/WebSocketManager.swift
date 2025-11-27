@@ -34,7 +34,9 @@ class WebSocketManager: ObservableObject {
 
     // Use centralized WebSocket URL from API configuration
     let baseURL = API.webSocketURL
+    #if DEBUG
     print("🔌 WebSocketManager: Using WebSocket URL: \(baseURL.absoluteString)")
+    #endif
 
     var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
     urlComponents?.queryItems = [URLQueryItem(name: "token", value: token)]
@@ -44,7 +46,9 @@ class WebSocketManager: ObservableObject {
       return
     }
 
+    #if DEBUG
     print("🔌 WebSocketManager: Connecting to \(webSocketURL)")
+    #endif
 
     // Create URLSession with enhanced configuration for ActionCable
     let config = URLSessionConfiguration.default
@@ -64,7 +68,9 @@ class WebSocketManager: ObservableObject {
     // Add connection timeout
     DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
       if self?.connectionStatus == .connecting {
+        #if DEBUG
         print("🔌 WebSocketManager: Connection timeout")
+        #endif
         self?.connectionStatus = .error("Connection timeout")
         self?.disconnect()
       }
@@ -75,7 +81,9 @@ class WebSocketManager: ObservableObject {
   }
 
   func disconnect() {
+    #if DEBUG
     print("🔌 WebSocketManager: Disconnecting")
+    #endif
     self.webSocketTask?.cancel(with: .goingAway, reason: nil)
     self.webSocketTask = nil
     self.urlSession = nil
@@ -96,11 +104,15 @@ class WebSocketManager: ObservableObject {
     self.webSocketTask?.receive { [weak self] result in
       switch result {
       case let .success(message):
+        #if DEBUG
         print("🔌 WebSocketManager: Message received successfully")
+        #endif
         self?.handleMessage(message)
         self?.receiveMessage() // Continue listening
       case let .failure(error):
+        #if DEBUG
         print("🔌 WebSocketManager: Receive error: \(error)")
+        #endif
         self?.handleConnectionError(error)
       }
     }
@@ -109,15 +121,21 @@ class WebSocketManager: ObservableObject {
   private func handleMessage(_ message: URLSessionWebSocketTask.Message) {
     switch message {
     case let .string(text):
+      #if DEBUG
       print("🔌 WebSocketManager: Received: \(text)")
+      #endif
       self.handleTextMessage(text)
     case let .data(data):
+      #if DEBUG
       print("🔌 WebSocketManager: Received data: \(data.count) bytes")
+      #endif
       if let text = String(data: data, encoding: .utf8) {
         self.handleTextMessage(text)
       }
     @unknown default:
+      #if DEBUG
       print("🔌 WebSocketManager: Unknown message type")
+      #endif
     }
   }
 
@@ -130,7 +148,9 @@ class WebSocketManager: ObservableObject {
         self.handleActionCableMessage(json)
       }
     } catch {
+      #if DEBUG
       print("🔌 WebSocketManager: JSON parsing error: \(error)")
+      #endif
     }
   }
 
@@ -147,7 +167,9 @@ class WebSocketManager: ObservableObject {
       case "reject_subscription":
         self.handleSubscriptionRejection()
       default:
+        #if DEBUG
         print("🔌 WebSocketManager: Unknown message type: \(type)")
+        #endif
       }
     }
 
@@ -158,7 +180,9 @@ class WebSocketManager: ObservableObject {
   }
 
   private func handleWelcome() {
+    #if DEBUG
     print("🔌 WebSocketManager: Welcome message received")
+    #endif
     self.isConnected = true
     self.connectionStatus = .connected
     self.subscribeToTaskUpdates()
@@ -170,16 +194,22 @@ class WebSocketManager: ObservableObject {
   }
 
   private func handleSubscriptionConfirmation() {
+    #if DEBUG
     print("🔌 WebSocketManager: Subscription confirmed")
+    #endif
   }
 
   private func handleSubscriptionRejection() {
+    #if DEBUG
     print("🔌 WebSocketManager: Subscription rejected")
+    #endif
     self.connectionStatus = .error("Subscription rejected")
   }
 
   private func handleTaskUpdate(_ message: [String: Any]) {
+    #if DEBUG
     print("🔌 WebSocketManager: Task update received: \(message)")
+    #endif
 
     // Parse task update and notify observers
     if let taskData = message["task"] as? [String: Any] {
@@ -222,13 +252,17 @@ class WebSocketManager: ObservableObject {
     guard let data = try? JSONSerialization.data(withJSONObject: message),
           let jsonString = String(data: data, encoding: .utf8)
     else {
+      #if DEBUG
       print("🔌 WebSocketManager: Failed to serialize message")
+      #endif
       return
     }
 
     self.webSocketTask?.send(.string(jsonString)) { error in
       if let error {
+        #if DEBUG
         print("🔌 WebSocketManager: Send error: \(error)")
+        #endif
       }
     }
   }
@@ -236,29 +270,43 @@ class WebSocketManager: ObservableObject {
   // MARK: - Error Handling
 
   private func handleConnectionError(_ error: Error) {
+    #if DEBUG
     print("🔌 WebSocketManager: Connection error: \(error)")
+    #endif
     self.isConnected = false
 
     // Enhanced error handling for specific WebSocket issues
     if let urlError = error as? URLError {
       switch urlError.code {
       case .badServerResponse:
+        #if DEBUG
         print("🔌 WebSocketManager: Bad server response - ActionCable WebSocket handshake failed")
+        #endif
+        #if DEBUG
         print("🔌 WebSocketManager: This usually means the server doesn't support WebSocket or has configuration issues")
+        #endif
         self.connectionStatus = .error("WebSocket handshake failed - using HTTP polling")
         self.startHttpPolling()
         return
       case .timedOut:
+        #if DEBUG
         print("🔌 WebSocketManager: Connection timeout")
+        #endif
         self.connectionStatus = .error("Connection timeout")
       case .notConnectedToInternet:
+        #if DEBUG
         print("🔌 WebSocketManager: No internet connection")
+        #endif
         self.connectionStatus = .error("No internet connection")
       case .cannotConnectToHost:
+        #if DEBUG
         print("🔌 WebSocketManager: Cannot connect to host")
+        #endif
         self.connectionStatus = .error("Cannot connect to server")
       default:
+        #if DEBUG
         print("🔌 WebSocketManager: URL error: \(urlError.localizedDescription)")
+        #endif
         self.connectionStatus = .error(urlError.localizedDescription)
       }
     } else {
@@ -274,14 +322,20 @@ class WebSocketManager: ObservableObject {
   private func scheduleReconnect() {
     self.reconnectTimer?.invalidate()
     self.reconnectTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
+      #if DEBUG
       print("🔌 WebSocketManager: Attempting to reconnect...")
+      #endif
       // Note: Would need the token to reconnect
     }
   }
 
   private func startHttpPolling() {
+    #if DEBUG
     print("🔌 WebSocketManager: Starting HTTP polling fallback")
+    #endif
+    #if DEBUG
     print("🔌 WebSocketManager: WebSocket connection failed, using HTTP polling for real-time updates")
+    #endif
     self.connectionStatus = .connected // Mark as connected for polling mode
     self.isConnected = true
 
@@ -296,7 +350,9 @@ class WebSocketManager: ObservableObject {
   }
 
   private func pollForUpdates() {
+    #if DEBUG
     print("🔌 WebSocketManager: Polling for updates...")
+    #endif
 
     // Perform HTTP polling to check for updates
     // This triggers a sync to get the latest data
@@ -306,7 +362,9 @@ class WebSocketManager: ObservableObject {
   }
 
   private func performDataSync() async {
+    #if DEBUG
     print("🔄 WebSocketManager: Performing data sync via HTTP polling")
+    #endif
 
     // This would typically make HTTP requests to sync data
     // For now, we'll post a notification to trigger app-level sync

@@ -17,21 +17,31 @@ final class DeltaSyncService: ObservableObject {
     }
 
     func syncAll() async throws {
+        #if DEBUG
         print("🔄 DeltaSyncService: Starting full sync...")
+        #endif
         try await syncUsers()
         try await syncLists()
         try await syncItems()
+        #if DEBUG
         print("✅ DeltaSyncService: Full sync completed")
+        #endif
     }
 
     func syncUsers() async throws {
+        #if DEBUG
         print("🔄 DeltaSyncService: Syncing users...")
+        #endif
         // For now, just mark as completed since we don't have a users endpoint
+        #if DEBUG
         print("✅ DeltaSyncService: Users sync completed (no-op)")
+        #endif
     }
 
     func syncLists() async throws {
+        #if DEBUG
         print("🔄 DeltaSyncService: Syncing lists...")
+        #endif
         
         let listsRepo = ListsRepo(api: apiClient)
         let page: Page<ListDTO> = try await listsRepo.index()
@@ -53,11 +63,15 @@ final class DeltaSyncService: ObservableObject {
         }
         
         try swiftDataManager.context.save()
+        #if DEBUG
         print("✅ DeltaSyncService: Lists sync completed - \(page.data.count) lists")
+        #endif
     }
 
     func syncItems(for listId: Int? = nil) async throws {
+        #if DEBUG
         print("🔄 DeltaSyncService: Syncing items...")
+        #endif
         
         let tasksRepo = TasksRepo(api: apiClient)
         
@@ -67,10 +81,14 @@ final class DeltaSyncService: ObservableObject {
             await processTaskDTOs(page.data, listId: listId)
         } else {
             // Sync all items (this would need to be implemented based on API)
+            #if DEBUG
             print("⚠️ DeltaSyncService: Syncing all items not yet implemented")
+            #endif
         }
         
+        #if DEBUG
         print("✅ DeltaSyncService: Items sync completed")
+        #endif
     }
     
     private func processTaskDTOs(_ taskDTOs: [TaskDTO], listId: Int) async {

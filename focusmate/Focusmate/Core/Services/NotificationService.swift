@@ -23,14 +23,20 @@ class NotificationService: ObservableObject {
 
       if granted {
         await self.registerForRemoteNotifications()
+        #if DEBUG
         print("✅ NotificationService: Push permissions granted")
+        #endif
       } else {
+        #if DEBUG
         print("❌ NotificationService: Push permissions denied")
+        #endif
       }
 
       return granted
     } catch {
+      #if DEBUG
       print("❌ NotificationService: Failed to request permissions: \(error)")
+      #endif
       return false
     }
   }
@@ -51,7 +57,9 @@ class NotificationService: ObservableObject {
 
   func setPushToken(_ token: String) {
     self.pushToken = token
+    #if DEBUG
     print("🔔 NotificationService: Push token received: \(token)")
+    #endif
   }
 
   // MARK: - Local Notifications
@@ -80,9 +88,13 @@ class NotificationService: ObservableObject {
 
     self.center.add(request) { error in
       if let error {
+        #if DEBUG
         print("❌ NotificationService: Failed to schedule reminder: \(error)")
+        #endif
       } else {
+        #if DEBUG
         print("✅ NotificationService: Scheduled reminder for task \(task.id)")
+        #endif
       }
     }
   }
@@ -95,7 +107,9 @@ class NotificationService: ObservableObject {
 
       if !identifiers.isEmpty {
         self?.center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        #if DEBUG
         print("✅ NotificationService: Cancelled \(identifiers.count) reminders for task \(task.id)")
+        #endif
       }
     }
   }
@@ -108,11 +122,15 @@ class NotificationService: ObservableObject {
     guard let taskId = userInfo["task_id"] as? Int,
           let listId = userInfo["list_id"] as? Int
     else {
+      #if DEBUG
       print("❌ NotificationService: Invalid notification data")
+      #endif
       return
     }
 
+    #if DEBUG
     print("🔔 NotificationService: Opening task \(taskId) in list \(listId)")
+    #endif
 
     // Post notification to open the task
     NotificationCenter.default.post(
@@ -130,7 +148,9 @@ class NotificationService: ObservableObject {
   func updateBadgeCount(_ count: Int) {
     self.center.setBadgeCount(count) { error in
       if let error {
+        #if DEBUG
         print("❌ NotificationService: Failed to set badge count: \(error)")
+        #endif
       }
     }
   }
@@ -138,7 +158,9 @@ class NotificationService: ObservableObject {
   func clearBadge() {
     self.center.setBadgeCount(0) { error in
       if let error {
+        #if DEBUG
         print("❌ NotificationService: Failed to clear badge: \(error)")
+        #endif
       }
     }
   }

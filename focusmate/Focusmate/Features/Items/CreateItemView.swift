@@ -190,14 +190,18 @@ struct CreateItemView: View {
   private func createItem() async {
     // Add client-side validation
     guard !self.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+      #if DEBUG
       print("❌ CreateItemView: Title is required")
+      #endif
       return
     }
 
     let trimmedName = self.name.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedDescription = self.description.trimmingCharacters(in: .whitespacesAndNewlines)
 
+    #if DEBUG
     print("🔍 CreateItemView: Creating item with title: '\(trimmedName)'")
+    #endif
 
     await self.itemViewModel.createItem(
       listId: self.listId,

@@ -174,7 +174,9 @@ final class AdvancedErrorHandler: ObservableObject {
   // MARK: - Error Processing
 
   func handle(_ error: Error, context: String = "") -> FocusmateError {
+    #if DEBUG
     print("🔍 AdvancedErrorHandler: Processing error in context '\(context)': \(error)")
+    #endif
 
     if let apiError = error as? APIError {
       return self.processAPIError(apiError, context: context)
@@ -253,12 +255,16 @@ final class AdvancedErrorHandler: ObservableObject {
 
   func handleUnauthorized() async -> Bool {
     guard !self.isReauthenticating else {
+      #if DEBUG
       print("🔄 AdvancedErrorHandler: Already re-authenticating, skipping")
+      #endif
       return false
     }
 
     self.isReauthenticating = true
+    #if DEBUG
     print("🔄 AdvancedErrorHandler: Starting re-authentication process")
+    #endif
 
     // Clear stored credentials
     await self.clearStoredCredentials()
@@ -273,13 +279,17 @@ final class AdvancedErrorHandler: ObservableObject {
   private func clearStoredCredentials() async {
     // Clear JWT token and user data
     // This would integrate with your AuthStore
+    #if DEBUG
     print("🧹 AdvancedErrorHandler: Clearing stored credentials")
+    #endif
   }
 
   private func navigateToSignIn() async {
     // Navigate to sign-in screen
     // This would integrate with your navigation system
+    #if DEBUG
     print("🔐 AdvancedErrorHandler: Navigating to sign-in")
+    #endif
   }
 
   // MARK: - Rate Limiting and Backoff
@@ -291,7 +301,9 @@ final class AdvancedErrorHandler: ObservableObject {
     let currentRetries = self.retryCount[retryKey] ?? 0
 
     if currentRetries >= self.maxRetries {
+      #if DEBUG
       print("⏰ AdvancedErrorHandler: Max retries exceeded for \(retryKey)")
+      #endif
       return false
     }
 
@@ -301,7 +313,9 @@ final class AdvancedErrorHandler: ObservableObject {
       let requiredDelay = self.calculateBackoffDelay(retryCount: currentRetries)
 
       if timeSinceLastRetry < requiredDelay {
+        #if DEBUG
         print("⏰ AdvancedErrorHandler: Not enough time passed since last retry for \(retryKey)")
+        #endif
         return false
       }
     }
@@ -314,7 +328,9 @@ final class AdvancedErrorHandler: ObservableObject {
     self.retryCount[retryKey, default: 0] += 1
     self.lastRetryTime[retryKey] = Date()
 
+    #if DEBUG
     print("🔄 AdvancedErrorHandler: Recorded retry attempt \(self.retryCount[retryKey]!) for \(retryKey)")
+    #endif
   }
 
   func resetRetryCount(context: String) {
@@ -323,7 +339,9 @@ final class AdvancedErrorHandler: ObservableObject {
       self.retryCount.removeValue(forKey: key)
       self.lastRetryTime.removeValue(forKey: key)
     }
+    #if DEBUG
     print("🔄 AdvancedErrorHandler: Reset retry count for context: \(context)")
+    #endif
   }
 
   private func calculateBackoffDelay(retryCount: Int) -> TimeInterval {
@@ -345,7 +363,9 @@ final class AdvancedErrorHandler: ObservableObject {
     self.recordRetryAttempt(context: context, error: error)
 
     let delay = self.calculateBackoffDelay(retryCount: self.retryCount["\(context)_\(error.code)"] ?? 0)
+    #if DEBUG
     print("⏰ AdvancedErrorHandler: Waiting \(delay) seconds before retry for \(context)")
+    #endif
 
     try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
 

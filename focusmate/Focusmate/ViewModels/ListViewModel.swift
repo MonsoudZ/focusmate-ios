@@ -21,10 +21,14 @@ final class ListViewModel: ObservableObject {
     do {
       // Use the injected authenticated listService
       self.lists = try await listService.fetchLists()
+      #if DEBUG
       print("✅ ListViewModel: Loaded \(self.lists.count) lists from API")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ListViewModel: Failed to load lists: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -39,10 +43,14 @@ final class ListViewModel: ObservableObject {
       let newList = try await listService.createList(name: name, description: description)
 
       self.lists.append(newList)
+      #if DEBUG
       print("✅ ListViewModel: Created list: \(newList.title)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ListViewModel: Failed to create list: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -57,10 +65,14 @@ final class ListViewModel: ObservableObject {
       if let index = lists.firstIndex(where: { $0.id == id }) {
         self.lists[index] = updatedList
       }
+      #if DEBUG
       print("✅ ListViewModel: Updated list: \(updatedList.title)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ListViewModel: Failed to update list: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -73,10 +85,14 @@ final class ListViewModel: ObservableObject {
     do {
       try await self.listService.deleteList(id: id)
       self.lists.removeAll { $0.id == id }
+      #if DEBUG
       print("✅ ListViewModel: Deleted list with id: \(id)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ListViewModel: Failed to delete list: \(error)")
+      #endif
     }
 
     self.isLoading = false

@@ -31,10 +31,14 @@ final class SubtaskViewModel: ObservableObject {
 
     do {
       subtasks = try await subtaskService.fetchSubtasks(taskId: taskId)
+      #if DEBUG
       print("✅ SubtaskViewModel: Loaded \(subtasks.count) subtasks for task \(taskId)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ SubtaskViewModel: Failed to load subtasks: \(error)")
+      #endif
     }
 
     isLoading = false
@@ -64,7 +68,9 @@ final class SubtaskViewModel: ObservableObject {
       subtasks.append(newSubtask)
       // Sort by position
       subtasks.sort { $0.position < $1.position }
+      #if DEBUG
       print("✅ SubtaskViewModel: Created subtask: \(newSubtask.title)")
+      #endif
     } catch let apiError as APIError {
       switch apiError {
       case let .badStatus(422, message, _):
@@ -74,10 +80,14 @@ final class SubtaskViewModel: ObservableObject {
       default:
         error = ErrorHandler.shared.handle(apiError)
       }
+      #if DEBUG
       print("❌ SubtaskViewModel: Failed to create subtask: \(apiError)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ SubtaskViewModel: Failed to create subtask: \(error)")
+      #endif
     }
 
     isLoading = false
@@ -95,10 +105,14 @@ final class SubtaskViewModel: ObservableObject {
         completed: !currentStatus
       )
       subtasks[index] = updatedSubtask
+      #if DEBUG
       print("✅ SubtaskViewModel: Toggled subtask \(id) to \(!currentStatus)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ SubtaskViewModel: Failed to toggle subtask: \(error)")
+      #endif
     }
   }
 
@@ -108,10 +122,14 @@ final class SubtaskViewModel: ObservableObject {
     do {
       try await subtaskService.deleteSubtask(id: id)
       subtasks.removeAll { $0.id == id }
+      #if DEBUG
       print("✅ SubtaskViewModel: Deleted subtask \(id)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ SubtaskViewModel: Failed to delete subtask: \(error)")
+      #endif
     }
   }
 
@@ -126,12 +144,16 @@ final class SubtaskViewModel: ObservableObject {
 
     do {
       try await subtaskService.reorderSubtasks(taskId: taskId, subtaskIds: subtaskIds)
+      #if DEBUG
       print("✅ SubtaskViewModel: Reordered subtasks")
+      #endif
       // Reload to get correct positions from server
       await loadSubtasks()
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ SubtaskViewModel: Failed to reorder subtasks: \(error)")
+      #endif
       // Reload to revert to server state
       await loadSubtasks()
     }

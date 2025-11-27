@@ -68,7 +68,9 @@ struct ListsView: View {
           Button("Sign Out") {
             Task {
               await self.state.auth.signOut()
+              #if DEBUG
               print("🔄 ListsView: Sign out button tapped")
+              #endif
             }
           }
         }
@@ -119,11 +121,17 @@ struct ListsView: View {
       let listService = ListService(apiClient: state.auth.api)
       self.lists = try await listService.fetchLists()
 
+      #if DEBUG
       print("✅ ListsView: Loaded \(self.lists.count) lists from API")
+      #endif
+      #if DEBUG
       print("📋 ListsView: List IDs: \(self.lists.map(\.id))")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ListsView: Failed to load lists: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -137,10 +145,14 @@ struct ListsView: View {
 
       // Remove from local array
       self.lists.removeAll { $0.id == list.id }
+      #if DEBUG
       print("✅ ListsView: Deleted list \(list.title) (ID: \(list.id))")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ListsView: Failed to delete list: \(error)")
+      #endif
     }
   }
 }

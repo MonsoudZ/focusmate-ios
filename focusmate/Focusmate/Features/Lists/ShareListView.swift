@@ -194,7 +194,9 @@ struct ShareListView: View {
       let trimmedEmail = self.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
       let request = ShareListRequest(email: trimmedEmail, role: selectedRole)
 
+      #if DEBUG
       print("🔍 ShareListView: Sharing list \(self.list.id) with email: \(trimmedEmail), role: \(selectedRole)")
+      #endif
       let response: ShareListResponse = try await listService.shareList(id: self.list.id, request: request)
 
       // Convert ShareListResponse to ListShare for display
@@ -215,7 +217,9 @@ struct ShareListView: View {
       self.email = ""
       self.selectedRole = "viewer"
 
+      #if DEBUG
       print("✅ ShareListView: Successfully shared list with \(response.email)")
+      #endif
     } catch let apiError as APIError {
       // Handle specific API errors with better messages
       switch apiError {
@@ -230,10 +234,14 @@ struct ShareListView: View {
       default:
         self.error = ErrorHandler.shared.handle(apiError)
       }
+      #if DEBUG
       print("❌ ShareListView: Failed to share list: \(apiError)")
+      #endif
     } catch {
       self.error = ErrorHandler.shared.handle(error)
+      #if DEBUG
       print("❌ ShareListView: Failed to share list: \(error)")
+      #endif
     }
 
     self.isLoading = false
@@ -242,9 +250,13 @@ struct ShareListView: View {
   private func loadShares() async {
     do {
       self.shares = try await self.listService.fetchShares(listId: self.list.id)
+      #if DEBUG
       print("✅ ShareListView: Loaded \(self.shares.count) shares")
+      #endif
     } catch {
+      #if DEBUG
       print("❌ ShareListView: Failed to load shares: \(error)")
+      #endif
     }
   }
 }

@@ -11,8 +11,12 @@ final class DeviceService {
   // MARK: - Device Management
 
   func registerDevice(pushToken: String? = nil) async throws -> DeviceRegistrationResponse {
+    #if DEBUG
     print("📱 DeviceService: Registering device with platform: ios")
+    #endif
+    #if DEBUG
     print("📱 DeviceService: Push token: \(pushToken ?? "nil")")
+    #endif
 
     let deviceInfo = DeviceInfo(pushToken: pushToken)
 
@@ -20,42 +24,62 @@ final class DeviceService {
     do {
       let jsonData = try JSONEncoder().encode(deviceInfo)
       if let jsonString = String(data: jsonData, encoding: .utf8) {
+        #if DEBUG
         print("🔍 DeviceService: Sending device registration payload: \(jsonString)")
+        #endif
       }
     } catch {
+      #if DEBUG
       print("❌ DeviceService: Failed to encode device info: \(error)")
+      #endif
     }
 
     // If no push token is available, we need to handle this gracefully
     if pushToken == nil {
+      #if DEBUG
       print("⚠️ DeviceService: No APNS token available - this may cause registration to fail")
+      #endif
+      #if DEBUG
       print("⚠️ DeviceService: This is normal in simulator or when push notifications are not configured")
+      #endif
     }
 
     do {
       // Try to decode as wrapped response first
       do {
         let response: DeviceRegistrationResponse = try await apiClient.request("POST", "devices", body: deviceInfo)
+        #if DEBUG
         print("✅ DeviceService: Device registered successfully with ID: \(response.device.id)")
+        #endif
         return response
       } catch {
         // If wrapped response fails, try direct device object
+        #if DEBUG
         print("⚠️ DeviceService: Wrapped response failed, trying direct device object")
+        #endif
         let device: Device = try await apiClient.request("POST", "devices", body: deviceInfo)
         let response = DeviceRegistrationResponse(device: device)
+        #if DEBUG
         print("✅ DeviceService: Device registered successfully with ID: \(device.id)")
+        #endif
         return response
       }
     } catch let apiError as APIError {
       // Suppress error logging for 422 validation errors (expected in development)
       if case .badStatus(422, _, _) = apiError {
+        #if DEBUG
         print("ℹ️ DeviceService: Device registration skipped - validation failed")
+        #endif
       } else {
+        #if DEBUG
         print("⚠️ DeviceService: Device registration failed: \(apiError)")
+        #endif
       }
       throw apiError
     } catch {
+      #if DEBUG
       print("⚠️ DeviceService: Device registration failed: \(error)")
+      #endif
       throw APIError.network(error)
     }
   }

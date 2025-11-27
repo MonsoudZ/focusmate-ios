@@ -67,14 +67,18 @@ struct RegisterView: View {
   }
 
   private func register() async {
+    #if DEBUG
     print("🔄 RegisterView: Starting registration...")
+    #endif
     // Clear any previous errors before starting registration
     self.state.auth.error = nil
     await self.state.auth.register(email: self.email, password: self.password, name: self.name)
 
     // If registration was successful, dismiss the modal
     if self.state.auth.jwt != nil, self.state.auth.currentUser != nil {
+      #if DEBUG
       print("✅ RegisterView: Registration successful, dismissing modal...")
+      #endif
       await MainActor.run {
         self.dismiss()
       }

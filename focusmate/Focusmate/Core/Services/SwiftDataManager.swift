@@ -30,7 +30,9 @@ final class SwiftDataManager: ObservableObject {
     do {
       self.modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
       self.modelContext = self.modelContainer.mainContext
+      #if DEBUG
       print("✅ SwiftDataManager: Persistent storage initialized successfully")
+      #endif
 
       // Initialize or get existing sync status
       let fetchDescriptor = FetchDescriptor<SyncStatus>()
@@ -47,7 +49,9 @@ final class SwiftDataManager: ObservableObject {
     } catch {
       // Graceful fallback: Use in-memory storage instead of crashing
       print("⚠️ CRITICAL: Failed to create persistent ModelContainer: \(error)")
+      #if DEBUG
       print("⚠️ Falling back to in-memory storage. Data will not persist between app launches.")
+      #endif
 
       let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
       do {
@@ -59,7 +63,9 @@ final class SwiftDataManager: ObservableObject {
         self.modelContext.insert(self.syncStatus)
         try? self.modelContext.save()
 
+        #if DEBUG
         print("✅ SwiftDataManager: In-memory storage initialized (data will not persist)")
+        #endif
       } catch {
         // If even in-memory fails, this is catastrophic but we still shouldn't crash
         print("❌ FATAL: Could not create even in-memory ModelContainer: \(error)")
@@ -131,12 +137,16 @@ final class SwiftDataManager: ObservableObject {
     do {
       try self.modelContext.save()
     } catch {
+      #if DEBUG
       print("❌ SwiftDataManager: Failed to save context: \(error)")
+      #endif
     }
   }
 
   func deleteAllData() {
+    #if DEBUG
     print("🧹 SwiftDataManager: Deleting all cached data")
+    #endif
 
     // Delete all entities
     let userDescriptor = FetchDescriptor<User>()
@@ -178,9 +188,13 @@ final class SwiftDataManager: ObservableObject {
       self.syncStatus.lastSyncAttempt = nil
 
       try self.modelContext.save()
+      #if DEBUG
       print("✅ SwiftDataManager: All cached data deleted and sync timestamps reset")
+      #endif
     } catch {
+      #if DEBUG
       print("❌ SwiftDataManager: Failed to delete all data: \(error)")
+      #endif
     }
   }
 

@@ -22,12 +22,16 @@ final class LocationService: NSObject, ObservableObject {
   // MARK: - Permission Management
 
   func requestPermission() {
+    #if DEBUG
     print("📍 LocationService: Requesting location permissions")
+    #endif
     locationManager.requestWhenInUseAuthorization()
   }
 
   func requestAlwaysAuthorization() {
+    #if DEBUG
     print("📍 LocationService: Requesting always authorization for geofencing")
+    #endif
     locationManager.requestAlwaysAuthorization()
   }
 
@@ -48,17 +52,23 @@ final class LocationService: NSObject, ObservableObject {
 
   func startUpdatingLocation() {
     guard hasLocationPermission else {
+      #if DEBUG
       print("⚠️ LocationService: No location permission")
+      #endif
       return
     }
 
+    #if DEBUG
     print("📍 LocationService: Starting location updates")
+    #endif
     isMonitoringLocation = true
     locationManager.startUpdatingLocation()
   }
 
   func stopUpdatingLocation() {
+    #if DEBUG
     print("📍 LocationService: Stopping location updates")
+    #endif
     isMonitoringLocation = false
     locationManager.stopUpdatingLocation()
   }
@@ -66,41 +76,55 @@ final class LocationService: NSObject, ObservableObject {
   // MARK: - Geocoding
 
   func geocodeAddress(_ address: String) async throws -> CLLocation {
+    #if DEBUG
     print("🔍 LocationService: Geocoding address: \(address)")
+    #endif
 
     return try await withCheckedThrowingContinuation { continuation in
       geocoder.geocodeAddressString(address) { placemarks, error in
         if let error = error {
+          #if DEBUG
           print("❌ LocationService: Geocoding failed: \(error)")
+          #endif
           continuation.resume(throwing: error)
           return
         }
 
         guard let location = placemarks?.first?.location else {
+          #if DEBUG
           print("❌ LocationService: No location found for address")
+          #endif
           continuation.resume(throwing: LocationError.locationNotFound)
           return
         }
 
+        #if DEBUG
         print("✅ LocationService: Geocoded to: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+        #endif
         continuation.resume(returning: location)
       }
     }
   }
 
   func reverseGeocode(_ location: CLLocation) async throws -> String {
+    #if DEBUG
     print("🔍 LocationService: Reverse geocoding: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+    #endif
 
     return try await withCheckedThrowingContinuation { continuation in
       geocoder.reverseGeocodeLocation(location) { placemarks, error in
         if let error = error {
+          #if DEBUG
           print("❌ LocationService: Reverse geocoding failed: \(error)")
+          #endif
           continuation.resume(throwing: error)
           return
         }
 
         guard let placemark = placemarks?.first else {
+          #if DEBUG
           print("❌ LocationService: No placemark found")
+          #endif
           continuation.resume(throwing: LocationError.locationNotFound)
           return
         }
@@ -112,7 +136,9 @@ final class LocationService: NSObject, ObservableObject {
           placemark.country
         ].compactMap { $0 }.joined(separator: ", ")
 
+        #if DEBUG
         print("✅ LocationService: Reverse geocoded to: \(address)")
+        #endif
         continuation.resume(returning: address)
       }
     }
@@ -128,7 +154,9 @@ final class LocationService: NSObject, ObservableObject {
     notifyOnExit: Bool
   ) {
     guard hasAlwaysPermission else {
+      #if DEBUG
       print("⚠️ LocationService: Need 'Always' permission for geofencing")
+      #endif
       return
     }
 
@@ -143,9 +171,15 @@ final class LocationService: NSObject, ObservableObject {
     region.notifyOnEntry = notifyOnEntry
     region.notifyOnExit = notifyOnExit
 
+    #if DEBUG
     print("📍 LocationService: Starting geofence monitoring for \(identifier)")
+    #endif
+    #if DEBUG
     print("   Center: \(coordinate.latitude), \(coordinate.longitude)")
+    #endif
+    #if DEBUG
     print("   Radius: \(radius)m, Entry: \(notifyOnEntry), Exit: \(notifyOnExit)")
+    #endif
 
     locationManager.startMonitoring(for: region)
     monitoredRegions.insert(identifier)
@@ -156,13 +190,17 @@ final class LocationService: NSObject, ObservableObject {
       return
     }
 
+    #if DEBUG
     print("📍 LocationService: Stopping geofence monitoring for \(identifier)")
+    #endif
     locationManager.stopMonitoring(for: region)
     monitoredRegions.remove(identifier)
   }
 
   func stopAllMonitoring() {
+    #if DEBUG
     print("📍 LocationService: Stopping all geofence monitoring")
+    #endif
     for region in locationManager.monitoredRegions {
       locationManager.stopMonitoring(for: region)
     }
@@ -184,7 +222,9 @@ extension LocationService: CLLocationManagerDelegate {
   nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
     Task { @MainActor in
       let status = manager.authorizationStatus
+      #if DEBUG
       print("📍 LocationService: Authorization status changed to \(status.rawValue)")
+      #endif
       self.authorizationStatus = status
     }
   }
@@ -192,20 +232,26 @@ extension LocationService: CLLocationManagerDelegate {
   nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
     Task { @MainActor in
       guard let location = locations.last else { return }
+      #if DEBUG
       print("📍 LocationService: Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+      #endif
       self.currentLocation = location
     }
   }
 
   nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
     Task { @MainActor in
+      #if DEBUG
       print("❌ LocationService: Location manager failed: \(error)")
+      #endif
     }
   }
 
   nonisolated func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
     Task { @MainActor in
+      #if DEBUG
       print("📍 LocationService: Entered region: \(region.identifier)")
+      #endif
       // Post notification for arrival
       NotificationCenter.default.post(
         name: .taskLocationEntered,
@@ -217,7 +263,9 @@ extension LocationService: CLLocationManagerDelegate {
 
   nonisolated func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
     Task { @MainActor in
+      #if DEBUG
       print("📍 LocationService: Exited region: \(region.identifier)")
+      #endif
       // Post notification for departure
       NotificationCenter.default.post(
         name: .taskLocationExited,
@@ -230,9 +278,13 @@ extension LocationService: CLLocationManagerDelegate {
   nonisolated func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
     Task { @MainActor in
       if let region = region {
+        #if DEBUG
         print("❌ LocationService: Monitoring failed for region \(region.identifier): \(error)")
+        #endif
       } else {
+        #if DEBUG
         print("❌ LocationService: Monitoring failed: \(error)")
+        #endif
       }
     }
   }

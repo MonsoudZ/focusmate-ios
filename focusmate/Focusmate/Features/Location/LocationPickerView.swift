@@ -247,10 +247,14 @@ struct LocationPickerView: View {
       locationName = searchText
       region.center = coordinate
 
+      #if DEBUG
       print("✅ LocationPickerView: Found location: \(coordinate.latitude), \(coordinate.longitude)")
+      #endif
     } catch {
       self.error = "Could not find location: \(searchText)"
+      #if DEBUG
       print("❌ LocationPickerView: Geocoding failed: \(error)")
+      #endif
     }
     isSearching = false
   }

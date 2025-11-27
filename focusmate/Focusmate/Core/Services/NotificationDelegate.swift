@@ -31,14 +31,20 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
   ) {
     let userInfo = response.notification.request.content.userInfo
 
+    #if DEBUG
     print("🔔 NotificationDelegate: Received notification response")
+    #endif
+    #if DEBUG
     print("🔔 UserInfo: \(userInfo)")
+    #endif
 
     // Handle different notification types
     if let taskId = userInfo["task_id"] as? Int,
        let listId = userInfo["list_id"] as? Int
     {
+      #if DEBUG
       print("🔔 Opening task \(taskId) in list \(listId)")
+      #endif
 
       // Post notification to open the task
       NotificationCenter.default.post(
@@ -60,7 +66,9 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
 extension NotificationDelegate {
   func handlePushToken(_ deviceToken: Data) {
     let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+    #if DEBUG
     print("🔔 NotificationDelegate: Push token received: \(token)")
+    #endif
 
     // Post notification with the token
     NotificationCenter.default.post(
@@ -71,6 +79,8 @@ extension NotificationDelegate {
   }
 
   func handlePushTokenError(_ error: Error) {
+    #if DEBUG
     print("❌ NotificationDelegate: Failed to register for push notifications: \(error)")
+    #endif
   }
 }

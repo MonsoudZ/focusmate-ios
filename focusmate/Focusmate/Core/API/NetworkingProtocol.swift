@@ -66,18 +66,26 @@ final class InternalNetworking: NetworkingProtocol {
     case 200 ... 299:
       break
     case 401:
+      #if DEBUG
       print("🚫 APIClient: 401 Unauthorized for \(method) \(url.absoluteString)")
+      #endif
       throw APIError.unauthorized
     case 429:
       let retryAfter = self.extractRetryAfter(from: http.allHeaderFields)
+      #if DEBUG
       print("⏰ APIClient: 429 Rate Limited for \(method) \(url.absoluteString), retry after: \(retryAfter)s")
+      #endif
       throw APIError.rateLimited(retryAfter)
     case 500 ... 599:
+      #if DEBUG
       print("🔥 APIClient: Server error \(http.statusCode) for \(method) \(url.absoluteString)")
+      #endif
       throw APIError.serverError(http.statusCode, errorResponse?.message, errorResponse?.details)
     default:
       let bodyPreview = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+      #if DEBUG
       print("⚠️ APIClient: bad status \(http.statusCode) for \(method) \(url.absoluteString) body=\(bodyPreview)")
+      #endif
       throw APIError.badStatus(http.statusCode, errorResponse?.message, errorResponse?.details)
     }
 
@@ -89,7 +97,9 @@ final class InternalNetworking: NetworkingProtocol {
         } else if T.self == ListService.AnyResponse.self {
           return ListService.AnyResponse() as! T
         } else {
+          #if DEBUG
           print("🧩 APIClient: Expected \(T.self) but got empty response")
+          #endif
           throw APIError.decoding
         }
       }
@@ -98,9 +108,15 @@ final class InternalNetworking: NetworkingProtocol {
       return result
     } catch {
       let bodyPreview = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+      #if DEBUG
       print("🧩 APIClient: decoding error for \(method) \(url.absoluteString)")
+      #endif
+      #if DEBUG
       print("🧩 APIClient: Response body: \(bodyPreview)")
+      #endif
+      #if DEBUG
       print("🧩 APIClient: Decoding error: \(error)")
+      #endif
       throw APIError.decoding
     }
   }
@@ -136,7 +152,9 @@ final class InternalNetworking: NetworkingProtocol {
       throw APIError.unauthorized
     default:
       let bodyPreview = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+      #if DEBUG
       print("⚠️ APIClient: bad status \(http.statusCode) for GET \(url.absoluteString) body=\(bodyPreview)")
+      #endif
       throw APIError.badStatus(http.statusCode, nil, nil)
     }
   }
