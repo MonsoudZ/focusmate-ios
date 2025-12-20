@@ -1,70 +1,75 @@
 import SwiftUI
 
 struct EditListView: View {
-  let list: ListDTO
-  let listService: ListService
-  @Environment(\.dismiss) var dismiss
-  @StateObject private var listViewModel: ListViewModel
+    let list: ListDTO
+    let listService: ListService
+    @Environment(\.dismiss) var dismiss
 
-  @State private var name: String
-  @State private var description: String
+    @State private var name: String
+    @State private var description: String
+    @State private var isLoading = false
+    @State private var error: FocusmateError?
 
-  init(list: ListDTO, listService: ListService) {
-    self.list = list
-    self.listService = listService
-    _listViewModel = StateObject(wrappedValue: ListViewModel(listService: listService))
-    _name = State(initialValue: list.title)
-    _description = State(initialValue: "") // ListDTO doesn't have description field
-  }
+    init(list: ListDTO, listService: ListService) {
+        self.list = list
+        self.listService = listService
+        _name = State(initialValue: list.name)
+        _description = State(initialValue: list.description ?? "")
+    }
 
-  var body: some View {
-    NavigationView {
-      Form {
-        Section(header: Text("List Details")) {
-          TextField("List Name", text: self.$name)
-          TextField("Description (Optional)", text: self.$description, axis: .vertical)
-            .lineLimit(3 ... 6)
-        }
-      }
-      .navigationTitle("Edit List")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .navigationBarLeading) {
-          Button("Cancel") {
-            self.dismiss()
-          }
-        }
-
-        ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Save") {
-            Task {
-              await self.updateList()
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("List Details") {
+                    TextField("List Name", text: $name)
+                    TextField("Description (Optional)", text: $description, axis: .vertical)
+                        .lineLimit(3...6)
+                }
             }
-          }
-          .disabled(self.name.isEmpty || self.listViewModel.isLoading)
-        }
-      }
-      .alert("Error", isPresented: .constant(self.listViewModel.error != nil)) {
-        Button("OK") {
-          self.listViewModel.clearError()
-        }
-      } message: {
-        if let error = listViewModel.error {
-          Text(error.errorDescription ?? "An error occurred")
-        }
-      }
-    }
-  }
+            .navigationTitle("Edit List")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
 
-  private func updateList() async {
-    await self.listViewModel.updateList(
-      id: self.list.id,
-      name: self.name,
-      description: self.description.isEmpty ? nil : self.description
-    )
-
-    if self.listViewModel.error == nil {
-      self.dismiss()
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        Task { await updateList() }
+                    }
+                    .disabled(name.isEmpty || isLoading)
+                }
+            }
+            .alert("Error", isPresented: .constant(error != nil)) {
+                Button("OK") { error = nil }
+            } message: {
+                if let error = error {
+                    Text(error.message)
+                }
+            }
+        }
     }
-  }
+
+    private func updateList() async {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            _ = try await listService.updateList(
+                id: list.id,
+                name: trimmedName,
+                description: description.isEmpty ? nil : description
+            )
+            dismiss()
+        } catch let err as FocusmateError {
+            error = err
+        } catch {
+            self.error = .custom("UPDATE_ERROR", error.localizedDescription)
+        }
+    }
 }

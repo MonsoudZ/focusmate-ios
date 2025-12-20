@@ -27,6 +27,7 @@ enum API {
 
     enum Users {
         static let deviceToken = "api/v1/devices"
+        static let profile = "api/v1/users/profile"
     }
 
     enum Lists {

@@ -1,66 +1,66 @@
 import SwiftUI
 
 struct CreateListView: View {
-  @Environment(\.dismiss) var dismiss
-  @EnvironmentObject var appState: AppState
-  @StateObject private var listViewModel: ListViewModel
+    @Environment(\.dismiss) var dismiss
+    let listService: ListService
 
-  @State private var name = ""
-  @State private var description = ""
+    @State private var name = ""
+    @State private var description = ""
+    @State private var isLoading = false
+    @State private var error: FocusmateError?
 
-  init(listService: ListService) {
-    _listViewModel = StateObject(wrappedValue: ListViewModel(listService: listService))
-  }
-
-  var body: some View {
-    NavigationView {
-      Form {
-        Section(header: Text("List Details")) {
-          TextField("List Name", text: self.$name)
-          TextField("Description (Optional)", text: self.$description, axis: .vertical)
-            .lineLimit(3 ... 6)
-        }
-      }
-      .navigationTitle("New List")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .navigationBarLeading) {
-          Button("Cancel") {
-            self.dismiss()
-          }
-        }
-
-        ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Create") {
-            Task {
-              await self.createList()
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("List Details") {
+                    TextField("List Name", text: $name)
+                    TextField("Description (Optional)", text: $description, axis: .vertical)
+                        .lineLimit(3...6)
+                }
             }
-          }
-          .disabled(self.name.isEmpty || self.listViewModel.isLoading)
-        }
-      }
-      .alert("Error", isPresented: .constant(self.listViewModel.error != nil)) {
-        Button("OK") {
-          self.listViewModel.clearError()
-        }
-      } message: {
-        if let error = listViewModel.error {
-          Text(error.errorDescription ?? "An error occurred")
-        }
-      }
-    }
-  }
+            .navigationTitle("New List")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
 
-  private func createList() async {
-    await self.listViewModel.createList(
-      name: self.name,
-      description: self.description.isEmpty ? nil : self.description
-    )
-
-    if self.listViewModel.error == nil {
-      // Trigger refresh of lists view
-      RefreshCoordinator.shared.triggerRefresh(.lists)
-      self.dismiss()
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") {
+                        Task { await createList() }
+                    }
+                    .disabled(name.isEmpty || isLoading)
+                }
+            }
+            .alert("Error", isPresented: .constant(error != nil)) {
+                Button("OK") { error = nil }
+            } message: {
+                if let error = error {
+                    Text(error.message)
+                }
+            }
+        }
     }
-  }
+
+    private func createList() async {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            _ = try await listService.createList(
+                name: trimmedName,
+                description: description.isEmpty ? nil : description
+            )
+            dismiss()
+        } catch let err as FocusmateError {
+            error = err
+        } catch {
+            self.error = .custom("CREATE_ERROR", error.localizedDescription)
+        }
+    }
 }
