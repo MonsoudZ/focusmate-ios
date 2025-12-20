@@ -22,14 +22,14 @@ final class SentryService {
   /// Initialize Sentry SDK with DSN from environment or configuration
   func initialize() {
     guard !isInitialized else {
-      print("⚠️ SentryService: Already initialized")
+      Logger.warning("SentryService: Already initialized", category: .general)
       return
     }
 
     #if canImport(Sentry)
     // Get Sentry DSN from Info.plist or environment
     guard let dsn = getSentryDSN() else {
-      print("⚠️ SentryService: No Sentry DSN found, skipping initialization")
+      Logger.warning("SentryService: No Sentry DSN found, skipping initialization", category: .general)
       return
     }
 
@@ -70,13 +70,13 @@ final class SentryService {
       options.sessionReplaySampleRate = 0.0
       options.sessionReplayOnErrorSampleRate = 1.0 // Record sessions with errors
 
-      print("✅ SentryService: Initialized with DSN for \(options.environment ?? "unknown") environment")
+      Logger.info("SentryService: Initialized with DSN for \(options.environment ?? "unknown") environment", category: .general)
     }
 
     isInitialized = true
     #else
-    print("⚠️ SentryService: Sentry SDK not available. Add it via Swift Package Manager.")
-    print("   See SENTRY_SETUP.md for installation instructions.")
+    Logger.warning("SentryService: Sentry SDK not available. Add it via Swift Package Manager.", category: .general)
+    Logger.info("See SENTRY_SETUP.md for installation instructions.", category: .general)
     #endif
   }
 
@@ -105,9 +105,9 @@ final class SentryService {
     user.username = name
 
     SentrySDK.setUser(user)
-    print("✅ SentryService: User context set - ID: \(id), Email: \(email)")
+    Logger.info("SentryService: User context set - ID: \(id), Email: \(email)", category: .general)
     #else
-    print("📝 SentryService: Would set user - ID: \(id), Email: \(email)")
+    Logger.debug("SentryService: Would set user - ID: \(id), Email: \(email)", category: .general)
     #endif
   }
 
@@ -115,9 +115,9 @@ final class SentryService {
   func clearUser() {
     #if canImport(Sentry)
     SentrySDK.setUser(nil)
-    print("✅ SentryService: User context cleared")
+    Logger.info("SentryService: User context cleared", category: .general)
     #else
-    print("📝 SentryService: Would clear user context")
+    Logger.debug("SentryService: Would clear user context", category: .general)
     #endif
   }
 
@@ -136,11 +136,11 @@ final class SentryService {
     }
 
     SentrySDK.capture(error: error)
-    print("📤 SentryService: Captured error - \(error)")
+    Logger.debug("SentryService: Captured error - \(error)", category: .general)
     #else
-    print("📝 SentryService: Would capture error - \(error)")
+    Logger.debug("SentryService: Would capture error - \(error)", category: .general)
     if let context = context {
-      print("   Context: \(context)")
+      Logger.debug("Context: \(context)", category: .general)
     }
     #endif
   }
@@ -151,9 +151,9 @@ final class SentryService {
     SentrySDK.capture(message: message) { scope in
       scope.setLevel(level)
     }
-    print("📤 SentryService: Captured message [\(level)] - \(message)")
+    Logger.debug("SentryService: Captured message [\(level)] - \(message)", category: .general)
     #else
-    print("📝 SentryService: Would capture message [\(level.description)] - \(message)")
+    Logger.debug("SentryService: Would capture message [\(level.description)] - \(message)", category: .general)
     #endif
   }
 
@@ -166,9 +166,9 @@ final class SentryService {
       }
     }
     #else
-    print("📝 SentryService: Would capture exception - \(error)")
+    Logger.debug("SentryService: Would capture exception - \(error)", category: .general)
     if let fingerprint = fingerprint {
-      print("   Fingerprint: \(fingerprint)")
+      Logger.debug("Fingerprint: \(fingerprint)", category: .general)
     }
     #endif
   }
@@ -188,7 +188,7 @@ final class SentryService {
 
     SentrySDK.addBreadcrumb(breadcrumb)
     #else
-    print("🍞 SentryService: Breadcrumb [\(category)] - \(message)")
+    Logger.debug("SentryService: Breadcrumb [\(category)] - \(message)", category: .general)
     #endif
   }
 
@@ -276,7 +276,7 @@ final class SentryService {
       scope.setContext(value: context, key: key)
     }
     #else
-    print("📝 SentryService: Would set context [\(key)] - \(context)")
+    Logger.debug("SentryService: Would set context [\(key)] - \(context)", category: .general)
     #endif
   }
 
@@ -287,7 +287,7 @@ final class SentryService {
       scope.setTag(value: value, key: key)
     }
     #else
-    print("📝 SentryService: Would set tag [\(key)] = \(value)")
+    Logger.debug("SentryService: Would set tag [\(key)] = \(value)", category: .general)
     #endif
   }
 
@@ -298,7 +298,7 @@ final class SentryService {
       scope.setExtra(value: value, key: key)
     }
     #else
-    print("📝 SentryService: Would set extra [\(key)] = \(value)")
+    Logger.debug("SentryService: Would set extra [\(key)] = \(value)", category: .general)
     #endif
   }
 
@@ -308,9 +308,9 @@ final class SentryService {
   func startSession() {
     #if canImport(Sentry)
     SentrySDK.startSession()
-    print("✅ SentryService: Session started")
+    Logger.info("SentryService: Session started", category: .general)
     #else
-    print("📝 SentryService: Would start session")
+    Logger.debug("SentryService: Would start session", category: .general)
     #endif
   }
 
@@ -318,9 +318,9 @@ final class SentryService {
   func endSession() {
     #if canImport(Sentry)
     SentrySDK.endSession()
-    print("✅ SentryService: Session ended")
+    Logger.info("SentryService: Session ended", category: .general)
     #else
-    print("📝 SentryService: Would end session")
+    Logger.debug("SentryService: Would end session", category: .general)
     #endif
   }
 
@@ -331,12 +331,12 @@ final class SentryService {
     #if canImport(Sentry)
     await withCheckedContinuation { continuation in
       SentrySDK.flush(timeout: timeout) {
-        print("✅ SentryService: Flushed pending events")
+        Logger.info("SentryService: Flushed pending events", category: .general)
         continuation.resume()
       }
     }
     #else
-    print("📝 SentryService: Would flush pending events")
+    Logger.debug("SentryService: Would flush pending events", category: .general)
     #endif
   }
 
@@ -344,13 +344,11 @@ final class SentryService {
 
   /// Test Sentry integration (for debugging)
   func testIntegration() {
-    #if DEBUG
     #if canImport(Sentry)
     SentrySDK.capture(message: "Sentry iOS integration test")
-    print("🧪 SentryService: Test message sent to Sentry")
+    Logger.debug("SentryService: Test message sent to Sentry", category: .general)
     #else
-    print("🧪 SentryService: Would send test message (Sentry SDK not available)")
-    #endif
+    Logger.debug("SentryService: Would send test message (Sentry SDK not available)", category: .general)
     #endif
   }
 }

@@ -15,6 +15,10 @@ final class AppState: ObservableObject {
   private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
   private(set) lazy var escalationService = EscalationService(apiClient: auth.api)
   private(set) lazy var locationService = LocationService()
+  private(set) lazy var locationMonitoringService = LocationMonitoringService.shared
+  private(set) lazy var calendarIntegrationService = CalendarIntegrationService.shared
+  private(set) lazy var remindersIntegrationService = RemindersIntegrationService.shared
+  private(set) lazy var siriShortcutsService = SiriShortcutsService.shared
   private(set) lazy var sentryService = SentryService.shared
 
   // SwiftData Services
@@ -66,12 +70,24 @@ final class AppState: ObservableObject {
 
     // Listen for auth changes to update Sentry user context
     self.setupAuthListener()
+
+    // Setup location-based task monitoring
+    self.setupLocationMonitoring()
+
+    // Setup Siri Shortcuts handling
+    self.setupSiriShortcutsHandling()
   }
 
   private func setupServices() async {
-    // Register device on app launch
+    // Performance: Defer non-critical operations to improve app launch time
     if self.auth.jwt != nil {
-      await self.registerDeviceWithErrorHandling()
+      // Defer device registration and location setup by 1 second
+      // This allows the UI to become interactive first
+      Task {
+        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        await self.registerDeviceWithErrorHandling()
+        await self.registerLocationBasedTasks()
+      }
     }
   }
 
@@ -81,29 +97,29 @@ final class AppState: ObservableObject {
       let hasPermission = await notificationService.requestPermissions()
 
       if hasPermission, let pushToken = notificationService.pushToken {
-        print("📱 AppState: Registering device with valid APNS token")
+        Logger.debug("Registering device with valid APNS token", category: .notification)
         let response = try await deviceService.registerDevice(pushToken: pushToken)
-        print("✅ AppState: Device registered successfully with ID: \(response.device.id)")
+        Logger.info("Device registered successfully with ID: \(response.device.id)", category: .notification)
       } else {
-        print("📱 AppState: Registering device without push token (permissions not granted or token not available)")
-        print("📱 AppState: This is normal for simulator or when push notifications are not available")
+        Logger.debug("Registering device without push token (permissions not granted or token not available)", category: .notification)
+        Logger.debug("This is normal for simulator or when push notifications are not available", category: .notification)
         let response = try await deviceService.registerDevice()
-        print("✅ AppState: Device registered successfully with ID: \(response.device.id)")
+        Logger.info("Device registered successfully with ID: \(response.device.id)", category: .notification)
       }
     } catch let apiError as APIError {
       // Device registration is optional - suppress errors in development
       switch apiError {
-      case let .badStatus(422, _, _):
-        print("ℹ️ AppState: Device registration skipped - validation failed (expected in development)")
+      case .badStatus(422, _, _):
+        Logger.warning("Device registration skipped - validation failed (expected in development)", category: .notification)
       case .badStatus(401, _, _):
-        print("ℹ️ AppState: Device registration skipped - unauthorized")
+        Logger.warning("Device registration skipped - unauthorized", category: .notification)
       case .badStatus(500, _, _):
-        print("ℹ️ AppState: Device registration skipped - server error")
+        Logger.warning("Device registration skipped - server error", category: .notification)
       default:
-        print("ℹ️ AppState: Device registration skipped: \(apiError)")
+        Logger.warning("Device registration skipped: \(apiError)", category: .notification)
       }
     } catch {
-      print("ℹ️ AppState: Device registration skipped: \(error)")
+      Logger.warning("Device registration skipped: \(error)", category: .notification)
     }
   }
 
@@ -117,7 +133,7 @@ final class AppState: ObservableObject {
     // Connect when user is authenticated
     if let jwt = auth.jwt {
       self.webSocketManager.connect(with: jwt)
-      print("🔌 AppState: WebSocket connection initiated")
+      Logger.debug("WebSocket connection initiated", category: .websocket)
     }
   }
 
@@ -136,11 +152,11 @@ final class AppState: ObservableObject {
 
   private func handleTaskUpdate(_ notification: Notification) async {
     guard let taskData = notification.userInfo?["task"] as? [String: Any] else {
-      print("🔌 AppState: Invalid task update data")
+      Logger.warning("Invalid task update data", category: .websocket)
       return
     }
 
-    print("🔌 AppState: Processing task update: \(taskData)")
+    Logger.debug("Processing task update: \(taskData)", category: .websocket)
 
     // Parse the updated task and merge it
     do {
@@ -154,9 +170,9 @@ final class AppState: ObservableObject {
         userInfo: ["updatedTask": updatedTask]
       )
 
-      print("✅ AppState: Task update processed and broadcasted")
+      Logger.info("Task update processed and broadcasted", category: .websocket)
     } catch {
-      print("❌ AppState: Failed to parse task update: \(error)")
+      Logger.error("Failed to parse task update", error: error, category: .websocket)
     }
   }
 
@@ -189,16 +205,16 @@ final class AppState: ObservableObject {
   private func handlePushTokenReceived(_ notification: Notification) async {
     guard let token = notification.userInfo?["token"] as? String else { return }
 
-    print("🔔 AppState: Push token received, updating device registration")
+    Logger.debug("Push token received, updating device registration", category: .notification)
     self.notificationService.setPushToken(token)
 
     // Update device registration with push token
     Task {
       do {
         try await self.deviceService.updateDeviceToken(token)
-        print("✅ AppState: Device push token updated successfully")
+        Logger.info("Device push token updated successfully", category: .notification)
       } catch {
-        print("❌ AppState: Failed to update device push token: \(error)")
+        Logger.error("Failed to update device push token", error: error, category: .notification)
       }
     }
   }
@@ -207,35 +223,29 @@ final class AppState: ObservableObject {
     guard let taskId = notification.userInfo?["task_id"] as? Int,
           let listId = notification.userInfo?["list_id"] as? Int
     else {
-      print("❌ AppState: Invalid notification data")
+      Logger.error("Invalid notification data", category: .notification)
       return
     }
 
-    print("🔔 AppState: Opening task \(taskId) in list \(listId)")
+    Logger.debug("Opening task \(taskId) in list \(listId)", category: .notification)
 
     // Set the current list and selected item
     // This will trigger navigation to the task
     Task {
-      // Load the list first
-      let listService = ListService(apiClient: auth.api)
+      // Performance: Use AppState's shared services instead of creating new instances
       do {
-        let lists = try await listService.fetchLists()
+        let lists = try await self.listService.fetchLists()
         if let list = lists.first(where: { $0.id == listId }) {
           self.currentList = list
 
-          // Load the specific task
-          let itemService = ItemService(
-            apiClient: auth.api,
-            swiftDataManager: SwiftDataManager.shared
-          )
-          let items = try await itemService.fetchItems(listId: listId)
+          let items = try await self.itemService.fetchItems(listId: listId)
           if let task = items.first(where: { $0.id == taskId }) {
             self.selectedItem = task
-            print("✅ AppState: Task opened successfully")
+            Logger.info("Task opened successfully", category: .notification)
           }
         }
       } catch {
-        print("❌ AppState: Failed to open task from notification: \(error)")
+        Logger.error("Failed to open task from notification", error: error, category: .notification)
       }
     }
   }
@@ -253,8 +263,8 @@ final class AppState: ObservableObject {
   }
 
   private func handleWebSocketConnectionFailure() async {
-    print("🔄 AppState: WebSocket connection failed, switching to HTTP polling mode")
-    print("🔄 AppState: App will continue to work with HTTP requests for data synchronization")
+    Logger.warning("WebSocket connection failed, switching to HTTP polling mode", category: .websocket)
+    Logger.debug("App will continue to work with HTTP requests for data synchronization", category: .websocket)
 
     // The app will continue to work normally with HTTP requests
     // WebSocket was just for real-time updates, which are now handled via polling
@@ -274,17 +284,186 @@ final class AppState: ObservableObject {
   }
 
           private func handleDataSyncRequest() async {
-            print("🔄 AppState: HTTP polling triggered data sync request")
+            Logger.debug("HTTP polling triggered data sync request", category: .sync)
 
             do {
               try await self.syncCoordinator.syncAll()
-              print("✅ AppState: Data sync completed via HTTP polling")
+              Logger.info("Data sync completed via HTTP polling", category: .sync)
             } catch {
-              print("❌ AppState: Data sync failed via HTTP polling: \(error)")
+              Logger.error("Data sync failed via HTTP polling", error: error, category: .sync)
               // Report sync errors to Sentry
               sentryService.captureError(error, context: ["source": "http_polling"])
             }
           }
+
+  // MARK: - Location-Based Task Management
+
+  private func setupLocationMonitoring() {
+    // Listen for location trigger activations
+    NotificationCenter.default.addObserver(
+      forName: .taskLocationTriggerActivated,
+      object: nil,
+      queue: .main
+    ) { [weak self] notification in
+      Task { @MainActor in
+        await self?.handleLocationTrigger(notification)
+      }
+    }
+  }
+
+  private func handleLocationTrigger(_ notification: Notification) async {
+    guard let taskId = notification.userInfo?["taskId"] as? Int,
+          let triggerType = notification.userInfo?["triggerType"] as? String
+    else {
+      Logger.warning("Invalid location trigger data", category: .location)
+      return
+    }
+
+    Logger.info("Location trigger activated for task \(taskId): \(triggerType)", category: .location)
+
+    // The LocationMonitoringService already sends notifications
+    // Here we can add any additional app-level logic if needed
+    // For example, refreshing task lists or updating UI state
+  }
+
+  private func registerLocationBasedTasks() async {
+    Logger.debug("Registering location-based tasks for geofencing", category: .location)
+
+    // Performance: Fetch all lists and their tasks concurrently
+    do {
+      let lists = try await listService.fetchLists()
+
+      // Fetch items for all lists concurrently
+      try await withThrowingTaskGroup(of: [Item].self) { group in
+        for list in lists {
+          group.addTask {
+            try await self.itemService.fetchItems(listId: list.id)
+          }
+        }
+
+        for try await items in group {
+          let locationBasedTasks = items.filter { $0.location_based }
+
+          if !locationBasedTasks.isEmpty {
+            Logger.debug("Found \(locationBasedTasks.count) location-based tasks", category: .location)
+            locationMonitoringService.registerGeofences(for: locationBasedTasks)
+          }
+        }
+      }
+
+      Logger.info("Location-based task registration complete", category: .location)
+    } catch {
+      Logger.error("Failed to register location-based tasks", error: error, category: .location)
+      // Don't fail app launch if geofence registration fails
+      sentryService.captureError(error, context: ["source": "location_geofence_registration"])
+    }
+  }
+
+  // MARK: - Siri Shortcuts Integration
+
+  private func setupSiriShortcutsHandling() {
+    // Listen for Siri action requests
+    NotificationCenter.default.addObserver(
+      forName: .handleSiriAction,
+      object: nil,
+      queue: .main
+    ) { [weak self] notification in
+      Task { @MainActor in
+        await self?.handleSiriAction(notification)
+      }
+    }
+  }
+
+  private func handleSiriAction(_ notification: Notification) async {
+    guard let action = notification.userInfo?["action"] as? SiriAction else {
+      Logger.error("Invalid Siri action", category: .ui)
+      return
+    }
+
+    Logger.info("Handling Siri action: \(action)", category: .ui)
+
+    switch action {
+    case .createTask(let title, let listName):
+      await handleCreateTaskFromSiri(title: title, listName: listName)
+
+    case .completeTask(let title):
+      await handleCompleteTaskFromSiri(title: title)
+
+    case .viewTasks(let listName):
+      await handleViewTasksFromSiri(listName: listName)
+    }
+  }
+
+  private func handleCreateTaskFromSiri(title: String?, listName: String?) async {
+    Logger.info("Creating task from Siri - \(title ?? "New Task") in \(listName ?? "Default")", category: .ui)
+    // Post notification for UI to handle
+    NotificationCenter.default.post(
+      name: .showCreateTask,
+      object: nil,
+      userInfo: [
+        "title": title as Any,
+        "listName": listName as Any
+      ]
+    )
+  }
+
+  private func handleCompleteTaskFromSiri(title: String?) async {
+    guard let title = title else {
+      Logger.warning("No title provided for complete task action", category: .ui)
+      return
+    }
+
+    Logger.info("Completing task from Siri - \(title)", category: .ui)
+
+    // Performance: Search for task by title across all lists concurrently
+    do {
+      let lists = try await listService.fetchLists()
+
+      // Fetch items from all lists concurrently
+      try await withThrowingTaskGroup(of: Item?.self) { group in
+        for list in lists {
+          group.addTask {
+            let items = try await self.itemService.fetchItems(listId: list.id)
+            // Find uncompleted task matching title
+            for item in items {
+              if item.title == title {
+                let completed = await MainActor.run { item.isCompleted }
+                if !completed {
+                  return item
+                }
+              }
+            }
+            return nil
+          }
+        }
+
+        // Find first matching task
+        for try await task in group {
+          if let task = task {
+            // Complete the task
+            _ = try await itemService.completeItem(id: task.id, completed: true, completionNotes: "Completed via Siri")
+            Logger.info("Task '\(title)' completed via Siri", category: .ui)
+            group.cancelAll() // Stop searching once found
+            return
+          }
+        }
+      }
+
+      Logger.warning("Task '\(title)' not found", category: .ui)
+    } catch {
+      Logger.error("Failed to complete task via Siri", error: error, category: .ui)
+    }
+  }
+
+  private func handleViewTasksFromSiri(listName: String?) async {
+    Logger.info("Viewing tasks from Siri - \(listName ?? "All")", category: .ui)
+    // Post notification for UI to handle
+    NotificationCenter.default.post(
+      name: .showTaskList,
+      object: nil,
+      userInfo: ["listName": listName as Any]
+    )
+  }
 
   // MARK: - Sentry Integration
 
@@ -294,7 +473,7 @@ final class AppState: ObservableObject {
     // For now, we'll set user context when auth is available
     Task { @MainActor in
       // Check if user is already authenticated
-      if let jwt = auth.jwt {
+      if auth.jwt != nil {
         await updateSentryUserContext()
       }
     }
@@ -314,16 +493,16 @@ final class AppState: ObservableObject {
       sentryService.setTag(value: profile.role, key: "user_role")
       sentryService.setTag(value: profile.timezone, key: "user_timezone")
 
-      print("✅ AppState: Updated Sentry user context for user ID: \(profile.id)")
+      Logger.info("Updated Sentry user context for user ID: \(profile.id)", category: .general)
     } catch {
-      print("⚠️ AppState: Could not fetch user profile for Sentry context: \(error)")
+      Logger.warning("Could not fetch user profile for Sentry context: \(error)", category: .general)
     }
   }
 
   /// Call this when user logs out
   func clearSentryContext() {
     sentryService.clearUser()
-    print("✅ AppState: Cleared Sentry user context")
+    Logger.info("Cleared Sentry user context", category: .general)
   }
 }
 
@@ -332,4 +511,7 @@ final class AppState: ObservableObject {
 extension Notification.Name {
   static let mergeTaskUpdate = Notification.Name("mergeTaskUpdate")
   static let pushTokenReceived = Notification.Name("pushTokenReceived")
+  static let showCreateTask = Notification.Name("showCreateTask")
+  static let showTaskList = Notification.Name("showTaskList")
+  static let showDegradedStorageWarning = Notification.Name("showDegradedStorageWarning")
 }

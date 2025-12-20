@@ -194,7 +194,7 @@ struct ShareListView: View {
       let trimmedEmail = self.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
       let request = ShareListRequest(email: trimmedEmail, role: selectedRole)
 
-      print("🔍 ShareListView: Sharing list \(self.list.id) with email: \(trimmedEmail), role: \(selectedRole)")
+      Logger.debug("Sharing list \(self.list.id) with email: \(trimmedEmail), role: \(selectedRole)", category: .ui)
       let response: ShareListResponse = try await listService.shareList(id: self.list.id, request: request)
 
       // Convert ShareListResponse to ListShare for display
@@ -215,7 +215,7 @@ struct ShareListView: View {
       self.email = ""
       self.selectedRole = "viewer"
 
-      print("✅ ShareListView: Successfully shared list with \(response.email)")
+      Logger.info("Successfully shared list with \(response.email)", category: .ui)
     } catch let apiError as APIError {
       // Handle specific API errors with better messages
       switch apiError {
@@ -230,10 +230,10 @@ struct ShareListView: View {
       default:
         self.error = ErrorHandler.shared.handle(apiError)
       }
-      print("❌ ShareListView: Failed to share list: \(apiError)")
+      Logger.error("Failed to share list", error: apiError, category: .ui)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ ShareListView: Failed to share list: \(error)")
+      Logger.error("Failed to share list", error: error, category: .ui)
     }
 
     self.isLoading = false
@@ -242,9 +242,9 @@ struct ShareListView: View {
   private func loadShares() async {
     do {
       self.shares = try await self.listService.fetchShares(listId: self.list.id)
-      print("✅ ShareListView: Loaded \(self.shares.count) shares")
+      Logger.info("Loaded \(self.shares.count) shares", category: .ui)
     } catch {
-      print("❌ ShareListView: Failed to load shares: \(error)")
+      Logger.error("Failed to load shares", error: error, category: .ui)
     }
   }
 }

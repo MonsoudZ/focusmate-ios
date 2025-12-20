@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
   @EnvironmentObject var appState: AppState
+  @State private var showingEditProfile = false
 
   var body: some View {
     NavigationView {
@@ -23,6 +24,19 @@ struct SettingsView: View {
               Text(name)
                 .foregroundColor(.secondary)
             }
+          }
+
+          HStack {
+            Text("Timezone")
+            Spacer()
+            if let timezone = appState.auth.currentUser?.timezone {
+              Text(timezone)
+                .foregroundColor(.secondary)
+            }
+          }
+
+          Button("Edit Profile") {
+            showingEditProfile = true
           }
 
           Button("Sign Out") {
@@ -51,6 +65,25 @@ struct SettingsView: View {
             Spacer()
             Text(OfflineModeManager.shared.connectionQuality.rawValue)
               .foregroundColor(.secondary)
+          }
+
+          HStack {
+            Text("Real-time Updates")
+            Spacer()
+            switch appState.webSocketManager.connectionStatus {
+            case .connected:
+              Label("Connected", systemImage: "bolt.circle.fill")
+                .foregroundColor(.green)
+            case .connecting:
+              Label("Connecting", systemImage: "bolt.circle")
+                .foregroundColor(.orange)
+            case .disconnected:
+              Label("Disconnected", systemImage: "bolt.slash.circle")
+                .foregroundColor(.gray)
+            case .error:
+              Label("Error", systemImage: "exclamationmark.circle")
+                .foregroundColor(.red)
+            }
           }
         }
 
@@ -88,6 +121,11 @@ struct SettingsView: View {
       }
       .navigationTitle("Settings")
       .navigationBarTitleDisplayMode(.large)
+      .sheet(isPresented: $showingEditProfile) {
+        if let user = appState.auth.currentUser {
+          EditProfileView(user: user)
+        }
+      }
     }
   }
 }

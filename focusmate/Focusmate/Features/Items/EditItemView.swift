@@ -31,10 +31,6 @@ struct EditItemView: View {
     _itemViewModel = StateObject(wrappedValue: ItemViewModel(
       itemService: itemService,
       swiftDataManager: SwiftDataManager.shared,
-      // deltaSyncService: DeltaSyncService( // Temporarily disabled
-      //   apiClient: apiClient,
-      //   swiftDataManager: SwiftDataManager.shared
-      // ),
       apiClient: apiClient
     ))
 
@@ -71,7 +67,7 @@ struct EditItemView: View {
           Toggle("Set due date", isOn: self.$hasDueDate)
 
           if self.hasDueDate {
-            DatePicker("Due Date", selection: self.$dueDate, displayedComponents: [.date, .hourAndMinute])
+            DatePicker("Due Date", selection: self.$dueDate, in: Date()..., displayedComponents: [.date, .hourAndMinute])
           }
         }
 

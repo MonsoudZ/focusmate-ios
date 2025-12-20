@@ -43,9 +43,57 @@ final class SwiftDataManager: ObservableObject {
         try? self.modelContext.save()
       }
 
+      Logger.info("SwiftData initialized successfully", category: .database)
+      self.isInitialized = true
+
     } catch {
-      fatalError("Failed to create ModelContainer: \(error)")
+      // Graceful degradation: Use in-memory storage as fallback
+      Logger.error("Failed to create persistent ModelContainer, falling back to in-memory storage", error: error, category: .database)
+
+      // Report to Sentry
+      SentryService.shared.captureError(error, context: ["source": "swiftdata_init", "fallback": "in_memory"])
+
+      // Create in-memory container as fallback
+      let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+
+      do {
+        self.modelContainer = try ModelContainer(for: schema, configurations: [inMemoryConfig])
+        self.modelContext = self.modelContainer.mainContext
+
+        // Initialize sync status for in-memory store
+        self.syncStatus = SyncStatus()
+        self.modelContext.insert(self.syncStatus)
+        try? self.modelContext.save()
+
+        Logger.warning("Using in-memory storage - data will not persist", category: .database)
+        self.isInitialized = true
+
+        // Show user notification about degraded mode
+        Task { @MainActor in
+          self.notifyUserOfDegradedStorage()
+        }
+
+      } catch {
+        // If even in-memory fails, this is critical
+        Logger.error("Critical: Failed to create even in-memory ModelContainer", error: error, category: .database)
+        SentryService.shared.captureError(error, context: ["source": "swiftdata_init_fallback_failed"])
+
+        // Create minimal SyncStatus to prevent crashes
+        self.syncStatus = SyncStatus()
+
+        // Last resort: Create a dummy container that won't be used
+        // This prevents the app from crashing, but features will be limited
+        fatalError("Critical: SwiftData initialization completely failed. Cannot continue.")
+      }
     }
+  }
+
+  private func notifyUserOfDegradedStorage() {
+    // Post notification for UI to show alert
+    NotificationCenter.default.post(
+      name: .showDegradedStorageWarning,
+      object: nil
+    )
   }
 
   // MARK: - Public Access
@@ -106,12 +154,12 @@ final class SwiftDataManager: ObservableObject {
     do {
       try self.modelContext.save()
     } catch {
-      print("❌ SwiftDataManager: Failed to save context: \(error)")
+      Logger.error("SwiftDataManager: Failed to save context: \(error)", category: .database)
     }
   }
 
   func deleteAllData() {
-    print("🧹 SwiftDataManager: Deleting all cached data")
+    Logger.debug("🧹 SwiftDataManager: Deleting all cached data", category: .database)
 
     // Delete all entities
     let userDescriptor = FetchDescriptor<User>()
@@ -153,9 +201,9 @@ final class SwiftDataManager: ObservableObject {
       self.syncStatus.lastSyncAttempt = nil
 
       try self.modelContext.save()
-      print("✅ SwiftDataManager: All cached data deleted and sync timestamps reset")
+      Logger.info("SwiftDataManager: All cached data deleted and sync timestamps reset", category: .database)
     } catch {
-      print("❌ SwiftDataManager: Failed to delete all data: \(error)")
+      Logger.error("SwiftDataManager: Failed to delete all data: \(error)", category: .database)
     }
   }
 

@@ -9,6 +9,7 @@ struct TaskActionSheet: View {
   @State private var showingReassign = false
   @State private var showingExplanation = false
   @State private var showingEscalation = false
+  @State private var showingSnooze = false
   @State private var completionNotes = ""
   @State private var showingCompletionForm = false
   @State private var showingEditForm = false
@@ -170,6 +171,20 @@ struct TaskActionSheet: View {
 
           // Secondary Actions
           VStack(spacing: 8) {
+            if self.item.can_be_snoozed && !self.item.isCompleted {
+              Button(action: { self.showingSnooze = true }) {
+                HStack {
+                  Image(systemName: "clock.badge.checkmark")
+                  Text("Snooze Task")
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.indigo)
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+              }
+            }
+
             Button(action: { self.showingExplanation = true }) {
               HStack {
                 Image(systemName: "text.bubble")
@@ -240,6 +255,9 @@ struct TaskActionSheet: View {
       }
       .sheet(isPresented: self.$showingCompletionForm) {
         CompletionFormView(item: self.item, itemViewModel: self.itemViewModel)
+      }
+      .sheet(isPresented: self.$showingSnooze) {
+        SnoozePickerView(item: self.item, itemViewModel: self.itemViewModel)
       }
     }
   }

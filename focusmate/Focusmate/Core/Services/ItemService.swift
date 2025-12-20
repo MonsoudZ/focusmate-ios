@@ -4,12 +4,10 @@ import SwiftData
 final class ItemService {
   private let apiClient: APIClient
   private let swiftDataManager: SwiftDataManager
-  // private let deltaSyncService: DeltaSyncService // Temporarily disabled
 
-  init(apiClient: APIClient, swiftDataManager: SwiftDataManager, deltaSyncService: Any? = nil) { // Temporarily disabled
+  init(apiClient: APIClient, swiftDataManager: SwiftDataManager) {
     self.apiClient = apiClient
     self.swiftDataManager = swiftDataManager
-    // self.deltaSyncService = deltaSyncService // Temporarily disabled
   }
 
   // MARK: - SwiftData Item Management
@@ -23,7 +21,7 @@ final class ItemService {
       let taskItems = try swiftDataManager.context.fetch(fetchDescriptor)
       return taskItems.map { self.convertTaskItemToItem($0) }
     } catch {
-      print("❌ ItemService: Failed to fetch items from local storage: \(error)")
+      Logger.error("ItemService: Failed to fetch items from local storage: \(error)", category: .database)
       return []
     }
   }
@@ -34,14 +32,14 @@ final class ItemService {
     do {
       return try self.swiftDataManager.context.fetch(fetchDescriptor)
     } catch {
-      print("❌ ItemService: Failed to fetch all items from local storage: \(error)")
+      Logger.error("ItemService: Failed to fetch all items from local storage: \(error)", category: .database)
       return []
     }
   }
 
   func syncItemsForList(listId: Int) async throws {
     // Fetch items from server and save to local storage
-    print("🔄 ItemService: Syncing items for list \(listId)")
+    Logger.debug("ItemService: Syncing items for list \(listId)", category: .database)
     let items = try await fetchItems(listId: listId)
 
     // Save items to local SwiftData storage
@@ -69,12 +67,12 @@ final class ItemService {
     }
 
     try? swiftDataManager.context.save()
-    print("✅ ItemService: Synced \(items.count) items for list \(listId)")
+    Logger.info("ItemService: Synced \(items.count) items for list \(listId)", category: .database)
   }
 
   func syncAllItems() async throws {
     // This method is deprecated - use SyncCoordinator.syncAll() instead
-    print("⚠️ ItemService.syncAllItems() is deprecated - use SyncCoordinator.syncAll() instead")
+    Logger.warning("ItemService.syncAllItems() is deprecated - use SyncCoordinator.syncAll() instead", category: .database)
   }
 
   // MARK: - Item Management
@@ -100,6 +98,7 @@ final class ItemService {
     recurrencePattern: String? = nil,
     recurrenceInterval: Int? = nil,
     recurrenceDays: [Int]? = nil,
+    recurrenceTime: String? = nil,
     locationBased: Bool = false,
     locationName: String? = nil,
     locationLatitude: Double? = nil,
@@ -117,6 +116,7 @@ final class ItemService {
       recurrencePattern: recurrencePattern,
       recurrenceInterval: recurrenceInterval,
       recurrenceDays: recurrenceDays,
+      recurrenceTime: recurrenceTime,
       locationBased: locationBased ? true : nil,
       locationName: locationName,
       locationLatitude: locationLatitude,
@@ -130,14 +130,14 @@ final class ItemService {
     do {
       let jsonData = try JSONEncoder().encode(request)
       if let jsonString = String(data: jsonData, encoding: .utf8) {
-        print("🔍 ItemService: Sending request payload: \(jsonString)")
+        Logger.debug("ItemService: Sending request payload: \(jsonString)", category: .database)
       }
     } catch {
-      print("❌ ItemService: Failed to encode request: \(error)")
+      Logger.error("ItemService: Failed to encode request: \(error)", category: .database)
     }
 
     let item: Item = try await apiClient.request("POST", "lists/\(listId)/tasks", body: request)
-    print("✅ ItemService: Successfully created item: \(item.title)")
+    Logger.info("ItemService: Successfully created item: \(item.title)", category: .database)
     return item
   }
 
@@ -152,6 +152,7 @@ final class ItemService {
     recurrencePattern: String? = nil,
     recurrenceInterval: Int? = nil,
     recurrenceDays: [Int]? = nil,
+    recurrenceTime: String? = nil,
     locationBased: Bool? = nil,
     locationName: String? = nil,
     locationLatitude: Double? = nil,
@@ -170,6 +171,7 @@ final class ItemService {
       recurrencePattern: recurrencePattern,
       recurrenceInterval: recurrenceInterval,
       recurrenceDays: recurrenceDays,
+      recurrenceTime: recurrenceTime,
       locationBased: locationBased,
       locationName: locationName,
       locationLatitude: locationLatitude,
@@ -183,10 +185,10 @@ final class ItemService {
     do {
       let jsonData = try JSONEncoder().encode(request)
       if let jsonString = String(data: jsonData, encoding: .utf8) {
-        print("🔍 ItemService: Sending update request for task \(id): \(jsonString)")
+        Logger.debug("ItemService: Sending update request for task \(id): \(jsonString)", category: .database)
       }
     } catch {
-      print("❌ ItemService: Failed to encode update request: \(error)")
+      Logger.error("ItemService: Failed to encode update request: \(error)", category: .database)
     }
 
     let item: Item = try await apiClient.request("PUT", "tasks/\(id)", body: request)
@@ -207,7 +209,7 @@ final class ItemService {
       existing.isVisible = taskItem.isVisible
       existing.updatedAt = taskItem.updatedAt
       try? swiftDataManager.context.save()
-      print("✅ ItemService: Updated item in local storage")
+      Logger.info("ItemService: Updated item in local storage", category: .database)
     }
 
     return item
@@ -222,15 +224,26 @@ final class ItemService {
 
   func completeItem(id: Int, completed: Bool, completionNotes: String?) async throws -> Item {
     let request = CompleteItemRequest(completed: completed, completionNotes: completionNotes)
-    print("🔍 ItemService: Completing task \(id) with completed=\(completed)")
-    let item: Item = try await apiClient.request("POST", "tasks/\(id)/complete", body: request)
-    print("🔍 ItemService: Received completion response - completed_at: \(item.completed_at ?? "nil")")
+    Logger.debug("ItemService: Completing task \(id) with completed=\(completed)", category: .database)
+
+    // Try PATCH method first (Rails standard), fall back to POST if needed
+    let item: Item = try await apiClient.request("PATCH", "tasks/\(id)/complete", body: request)
+    Logger.debug("ItemService: Received completion response - completed_at: \(item.completed_at ?? "nil")", category: .database)
     return item
   }
 
   func reassignItem(id: Int, newOwnerId: Int, reason: String?) async throws -> Item {
     let request = ReassignItemRequest(newOwnerId: newOwnerId, reason: reason)
     let item: Item = try await apiClient.request("PATCH", "tasks/\(id)/reassign", body: request)
+    return item
+  }
+
+  func snoozeItem(id: Int, snoozeUntil: Date) async throws -> Item {
+    let isoFormatter = ISO8601DateFormatter()
+    isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    let request = SnoozeItemRequest(snoozeUntil: isoFormatter.string(from: snoozeUntil))
+    let item: Item = try await apiClient.request("POST", "tasks/\(id)/snooze", body: request)
+    Logger.info("ItemService: Snoozed task \(id) until \(snoozeUntil)", category: .database)
     return item
   }
 
@@ -252,6 +265,7 @@ final class ItemService {
     let recurrencePattern: String?
     let recurrenceInterval: Int?
     let recurrenceDays: [Int]?
+    let recurrenceTime: String?
     let locationBased: Bool?
     let locationName: String?
     let locationLatitude: Double?
@@ -269,6 +283,7 @@ final class ItemService {
       case recurrencePattern = "recurrence_pattern"
       case recurrenceInterval = "recurrence_interval"
       case recurrenceDays = "recurrence_days"
+      case recurrenceTime = "recurrence_time"
       case locationBased = "location_based"
       case locationName = "location_name"
       case locationLatitude = "location_latitude"
@@ -285,12 +300,30 @@ final class ItemService {
   }
 
   struct ReassignItemRequest: Codable {
-    let newOwnerId: Int
+    let assigned_to: Int
     let reason: String?
+
+    enum CodingKeys: String, CodingKey {
+      case assigned_to
+      case reason
+    }
+
+    init(newOwnerId: Int, reason: String?) {
+      self.assigned_to = newOwnerId
+      self.reason = reason
+    }
   }
 
   struct AddExplanationRequest: Codable {
     let explanation: String
+  }
+
+  struct SnoozeItemRequest: Codable {
+    let snoozeUntil: String
+
+    enum CodingKeys: String, CodingKey {
+      case snoozeUntil = "snooze_until"
+    }
   }
 
   struct ItemResponse: Codable {
@@ -385,15 +418,17 @@ final class ItemService {
       can_delete: taskItem.canDelete,
       can_complete: taskItem.canComplete,
       is_visible: taskItem.isVisible,
-      escalation: taskItem.escalation != nil ? Escalation(
-        id: taskItem.escalation!.id,
-        level: taskItem.escalation!.level,
-        notification_count: taskItem.escalation!.notificationCount,
-        blocking_app: taskItem.escalation!.blockingApp,
-        coaches_notified: taskItem.escalation!.coachesNotified,
-        became_overdue_at: taskItem.escalation!.becameOverdueAt?.ISO8601Format(),
-        last_notification_at: taskItem.escalation!.lastNotificationAt?.ISO8601Format()
-      ) : nil,
+      escalation: taskItem.escalation.map { esc in
+        Escalation(
+          id: esc.id,
+          level: esc.level,
+          notification_count: esc.notificationCount,
+          blocking_app: esc.blockingApp,
+          coaches_notified: esc.coachesNotified,
+          became_overdue_at: esc.becameOverdueAt?.ISO8601Format(),
+          last_notification_at: esc.lastNotificationAt?.ISO8601Format()
+        )
+      },
       has_subtasks: taskItem.hasSubtasks,
       subtasks_count: taskItem.subtasksCount,
       subtasks_completed_count: taskItem.subtasksCompletedCount,

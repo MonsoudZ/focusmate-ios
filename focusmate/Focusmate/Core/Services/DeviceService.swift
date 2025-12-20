@@ -11,8 +11,8 @@ final class DeviceService {
   // MARK: - Device Management
 
   func registerDevice(pushToken: String? = nil) async throws -> DeviceRegistrationResponse {
-    print("📱 DeviceService: Registering device with platform: ios")
-    print("📱 DeviceService: Push token: \(pushToken ?? "nil")")
+    Logger.debug("DeviceService: Registering device with platform: ios", category: .notification)
+    Logger.debug("DeviceService: Push token: \(pushToken ?? "nil")", category: .notification)
 
     let deviceInfo = DeviceInfo(pushToken: pushToken)
 
@@ -20,42 +20,42 @@ final class DeviceService {
     do {
       let jsonData = try JSONEncoder().encode(deviceInfo)
       if let jsonString = String(data: jsonData, encoding: .utf8) {
-        print("🔍 DeviceService: Sending device registration payload: \(jsonString)")
+        Logger.debug("DeviceService: Sending device registration payload: \(jsonString)", category: .notification)
       }
     } catch {
-      print("❌ DeviceService: Failed to encode device info: \(error)")
+      Logger.error("DeviceService: Failed to encode device info: \(error)", category: .notification)
     }
 
     // If no push token is available, we need to handle this gracefully
     if pushToken == nil {
-      print("⚠️ DeviceService: No APNS token available - this may cause registration to fail")
-      print("⚠️ DeviceService: This is normal in simulator or when push notifications are not configured")
+      Logger.warning("DeviceService: No APNS token available - this may cause registration to fail", category: .notification)
+      Logger.warning("DeviceService: This is normal in simulator or when push notifications are not configured", category: .notification)
     }
 
     do {
       // Try to decode as wrapped response first
       do {
         let response: DeviceRegistrationResponse = try await apiClient.request("POST", "devices", body: deviceInfo)
-        print("✅ DeviceService: Device registered successfully with ID: \(response.device.id)")
+        Logger.info("DeviceService: Device registered successfully with ID: \(response.device.id)", category: .notification)
         return response
       } catch {
         // If wrapped response fails, try direct device object
-        print("⚠️ DeviceService: Wrapped response failed, trying direct device object")
+        Logger.warning("DeviceService: Wrapped response failed, trying direct device object", category: .notification)
         let device: Device = try await apiClient.request("POST", "devices", body: deviceInfo)
         let response = DeviceRegistrationResponse(device: device)
-        print("✅ DeviceService: Device registered successfully with ID: \(device.id)")
+        Logger.info("DeviceService: Device registered successfully with ID: \(device.id)", category: .notification)
         return response
       }
     } catch let apiError as APIError {
       // Suppress error logging for 422 validation errors (expected in development)
       if case .badStatus(422, _, _) = apiError {
-        print("ℹ️ DeviceService: Device registration skipped - validation failed")
+        Logger.debug("ℹ️ DeviceService: Device registration skipped - validation failed", category: .notification)
       } else {
-        print("⚠️ DeviceService: Device registration failed: \(apiError)")
+        Logger.warning("DeviceService: Device registration failed: \(apiError)", category: .notification)
       }
       throw apiError
     } catch {
-      print("⚠️ DeviceService: Device registration failed: \(error)")
+      Logger.warning("DeviceService: Device registration failed: \(error)", category: .notification)
       throw APIError.network(error)
     }
   }

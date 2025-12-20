@@ -21,16 +21,19 @@ struct RegisterView: View {
       TextField("Email", text: self.$email)
         .textInputAutocapitalization(.never)
         .autocorrectionDisabled()
+        .textContentType(.emailAddress)
         .foregroundColor(.black)
         .accentColor(.black)
         .textFieldStyle(.roundedBorder)
 
       SecureField("Password", text: self.$password)
+        .textContentType(.newPassword)
         .foregroundColor(.black)
         .accentColor(.black)
         .textFieldStyle(.roundedBorder)
 
       SecureField("Confirm Password", text: self.$confirmPassword)
+        .textContentType(.newPassword)
         .foregroundColor(.black)
         .accentColor(.black)
         .textFieldStyle(.roundedBorder)
@@ -57,8 +60,17 @@ struct RegisterView: View {
       .buttonStyle(.bordered)
       .disabled(self.state.auth.isLoading)
 
-      if let err = state.auth.error {
-        Text(err).foregroundColor(.red).font(.footnote)
+      if let error = state.auth.error {
+        ErrorBanner(
+          error: error,
+          onRetry: {
+            await self.register()
+          },
+          onDismiss: {
+            self.state.auth.error = nil
+          }
+        )
+        .padding(.top, 8)
       }
 
       Spacer()
@@ -67,14 +79,14 @@ struct RegisterView: View {
   }
 
   private func register() async {
-    print("🔄 RegisterView: Starting registration...")
+    Logger.debug("Starting registration...", category: .auth)
     // Clear any previous errors before starting registration
     self.state.auth.error = nil
     await self.state.auth.register(email: self.email, password: self.password, name: self.name)
 
     // If registration was successful, dismiss the modal
     if self.state.auth.jwt != nil, self.state.auth.currentUser != nil {
-      print("✅ RegisterView: Registration successful, dismissing modal...")
+      Logger.info("Registration successful, dismissing modal...", category: .auth)
       await MainActor.run {
         self.dismiss()
       }

@@ -14,10 +14,15 @@ struct FocusmateApp: App {
   init() {
     // Initialize Sentry if available (added via Xcode SPM)
     configureSentryIfAvailable()
-    
+
     let _swiftDataManager = SwiftDataManager.shared
     let _authSession = AuthSession()
-    let _apiClient = NewAPIClient(auth: _authSession)
+
+    // Create APIClient that gets token from AuthSession synchronously
+    let _apiClient = APIClient {
+      _authSession.getTokenSync()
+    }
+
     let _deltaSyncService = DeltaSyncService(
       apiClient: _apiClient,
       swiftDataManager: _swiftDataManager,
@@ -77,7 +82,7 @@ struct RootView: View {
           }
       }
       .task {
-        print("📋 ListsView loading...")
+        Logger.debug("ListsView loading...", category: .general)
         await self.auth.loadProfile()
       }
     }

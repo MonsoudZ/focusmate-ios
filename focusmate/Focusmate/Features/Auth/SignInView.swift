@@ -11,12 +11,10 @@ struct SignInView: View {
       TextField("Email", text: self.$email)
         .textInputAutocapitalization(.never)
         .autocorrectionDisabled()
-        .foregroundColor(.black)
-        .accentColor(.black)
+        .textContentType(.emailAddress)
         .textFieldStyle(.roundedBorder)
       SecureField("Password", text: self.$password)
-        .foregroundColor(.black)
-        .accentColor(.black)
+        .textContentType(.password)
         .textFieldStyle(.roundedBorder)
       Button {
         Task { await self.state.auth.signIn(email: self.email, password: self.password) }
@@ -37,7 +35,19 @@ struct SignInView: View {
       .buttonStyle(.bordered)
       .disabled(self.state.auth.isLoading)
 
-      if let err = state.auth.error { Text(err).foregroundColor(.red).font(.footnote) }
+      if let error = state.auth.error {
+        ErrorBanner(
+          error: error,
+          onRetry: {
+            await self.state.auth.signIn(email: self.email, password: self.password)
+          },
+          onDismiss: {
+            self.state.auth.error = nil
+          }
+        )
+        .padding(.top, 8)
+      }
+
       Spacer()
     }
     .padding()

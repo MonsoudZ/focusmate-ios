@@ -21,10 +21,10 @@ final class ListViewModel: ObservableObject {
     do {
       // Use the injected authenticated listService
       self.lists = try await listService.fetchLists()
-      print("✅ ListViewModel: Loaded \(self.lists.count) lists from API")
+      Logger.info("ListViewModel: Loaded \(self.lists.count) lists from API", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ ListViewModel: Failed to load lists: \(error)")
+      Logger.error("ListViewModel: Failed to load lists: \(error)", category: .database)
     }
 
     self.isLoading = false
@@ -39,10 +39,10 @@ final class ListViewModel: ObservableObject {
       let newList = try await listService.createList(name: name, description: description)
 
       self.lists.append(newList)
-      print("✅ ListViewModel: Created list: \(newList.title)")
+      Logger.info("ListViewModel: Created list: \(newList.title)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ ListViewModel: Failed to create list: \(error)")
+      Logger.error("ListViewModel: Failed to create list: \(error)", category: .database)
     }
 
     self.isLoading = false
@@ -57,10 +57,10 @@ final class ListViewModel: ObservableObject {
       if let index = lists.firstIndex(where: { $0.id == id }) {
         self.lists[index] = updatedList
       }
-      print("✅ ListViewModel: Updated list: \(updatedList.title)")
+      Logger.info("ListViewModel: Updated list: \(updatedList.title)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ ListViewModel: Failed to update list: \(error)")
+      Logger.error("ListViewModel: Failed to update list: \(error)", category: .database)
     }
 
     self.isLoading = false
@@ -73,10 +73,10 @@ final class ListViewModel: ObservableObject {
     do {
       try await self.listService.deleteList(id: id)
       self.lists.removeAll { $0.id == id }
-      print("✅ ListViewModel: Deleted list with id: \(id)")
+      Logger.info("ListViewModel: Deleted list with id: \(id)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ ListViewModel: Failed to delete list: \(error)")
+      Logger.error("ListViewModel: Failed to delete list: \(error)", category: .database)
     }
 
     self.isLoading = false

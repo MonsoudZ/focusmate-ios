@@ -31,10 +31,10 @@ final class SubtaskViewModel: ObservableObject {
 
     do {
       subtasks = try await subtaskService.fetchSubtasks(taskId: taskId)
-      print("✅ SubtaskViewModel: Loaded \(subtasks.count) subtasks for task \(taskId)")
+      Logger.info("SubtaskViewModel: Loaded \(subtasks.count) subtasks for task \(taskId)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ SubtaskViewModel: Failed to load subtasks: \(error)")
+      Logger.error("SubtaskViewModel: Failed to load subtasks: \(error)", category: .database)
     }
 
     isLoading = false
@@ -64,7 +64,7 @@ final class SubtaskViewModel: ObservableObject {
       subtasks.append(newSubtask)
       // Sort by position
       subtasks.sort { $0.position < $1.position }
-      print("✅ SubtaskViewModel: Created subtask: \(newSubtask.title)")
+      Logger.info("SubtaskViewModel: Created subtask: \(newSubtask.title)", category: .database)
     } catch let apiError as APIError {
       switch apiError {
       case let .badStatus(422, message, _):
@@ -74,10 +74,10 @@ final class SubtaskViewModel: ObservableObject {
       default:
         error = ErrorHandler.shared.handle(apiError)
       }
-      print("❌ SubtaskViewModel: Failed to create subtask: \(apiError)")
+      Logger.error("SubtaskViewModel: Failed to create subtask: \(apiError)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ SubtaskViewModel: Failed to create subtask: \(error)")
+      Logger.error("SubtaskViewModel: Failed to create subtask: \(error)", category: .database)
     }
 
     isLoading = false
@@ -95,10 +95,10 @@ final class SubtaskViewModel: ObservableObject {
         completed: !currentStatus
       )
       subtasks[index] = updatedSubtask
-      print("✅ SubtaskViewModel: Toggled subtask \(id) to \(!currentStatus)")
+      Logger.info("SubtaskViewModel: Toggled subtask \(id) to \(!currentStatus)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ SubtaskViewModel: Failed to toggle subtask: \(error)")
+      Logger.error("SubtaskViewModel: Failed to toggle subtask: \(error)", category: .database)
     }
   }
 
@@ -108,10 +108,10 @@ final class SubtaskViewModel: ObservableObject {
     do {
       try await subtaskService.deleteSubtask(id: id)
       subtasks.removeAll { $0.id == id }
-      print("✅ SubtaskViewModel: Deleted subtask \(id)")
+      Logger.info("SubtaskViewModel: Deleted subtask \(id)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ SubtaskViewModel: Failed to delete subtask: \(error)")
+      Logger.error("SubtaskViewModel: Failed to delete subtask: \(error)", category: .database)
     }
   }
 
@@ -126,12 +126,12 @@ final class SubtaskViewModel: ObservableObject {
 
     do {
       try await subtaskService.reorderSubtasks(taskId: taskId, subtaskIds: subtaskIds)
-      print("✅ SubtaskViewModel: Reordered subtasks")
+      Logger.info("SubtaskViewModel: Reordered subtasks", category: .database)
       // Reload to get correct positions from server
       await loadSubtasks()
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ SubtaskViewModel: Failed to reorder subtasks: \(error)")
+      Logger.error("SubtaskViewModel: Failed to reorder subtasks: \(error)", category: .database)
       // Reload to revert to server state
       await loadSubtasks()
     }

@@ -13,24 +13,13 @@ struct BlockingTasksView: View {
     NavigationStack {
       VStack {
         if self.escalationViewModel.isLoading {
-          ProgressView("Loading blocking tasks...")
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+          ItemsLoadingView()
         } else if self.escalationViewModel.blockingTasks.isEmpty {
-          VStack(spacing: 16) {
-            Image(systemName: "checkmark.shield")
-              .font(.system(size: 48))
-              .foregroundColor(.green)
-
-            Text("No Blocking Tasks")
-              .font(.title3)
-              .fontWeight(.medium)
-
-            Text("Great job! No tasks are currently blocking your progress.")
-              .font(.subheadline)
-              .foregroundColor(.secondary)
-              .multilineTextAlignment(.center)
-          }
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          EmptyStateView(
+            title: "No Blocking Tasks",
+            message: "Great job! No tasks are currently blocking your progress.",
+            icon: "checkmark.shield"
+          )
         } else {
           ScrollView {
             LazyVStack(spacing: 8) {
@@ -99,16 +88,13 @@ struct BlockingTaskRowView: View {
 
         Spacer()
 
-        VStack(alignment: .trailing, spacing: 4) {
+        VStack(alignment: .trailing, spacing: DesignSystem.Spacing.xs) {
           if self.task.escalationCount > 0 {
-            HStack(spacing: 2) {
-              Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption)
-                .foregroundColor(.orange)
-              Text("\(self.task.escalationCount)")
-                .font(.caption)
-                .fontWeight(.medium)
-            }
+            DSBadge(
+              "\(self.task.escalationCount)",
+              icon: "exclamationmark.triangle.fill",
+              color: DesignSystem.Colors.warning
+            )
           }
         }
       }
@@ -122,20 +108,20 @@ struct BlockingTaskRowView: View {
 
         if let dueDate = task.dueDate {
           Text(dueDate, style: .date)
-            .font(.caption)
-            .foregroundColor(dueDate < Date() ? .red : .secondary)
+            .font(DesignSystem.Typography.caption1)
+            .foregroundColor(dueDate < Date() ? DesignSystem.Colors.overdue : DesignSystem.Colors.textSecondary)
         }
       }
 
       if let blockingReason = task.blockingReason {
         HStack {
           Image(systemName: "hand.raised.fill")
-            .foregroundColor(.red)
+            .foregroundColor(DesignSystem.Colors.error)
           Text(blockingReason)
-            .font(.caption)
-            .foregroundColor(.red)
+            .font(DesignSystem.Typography.caption1)
+            .foregroundColor(DesignSystem.Colors.error)
         }
-        .padding(.top, 4)
+        .padding(.top, DesignSystem.Spacing.xs)
       }
 
       Button("Escalate Task") {

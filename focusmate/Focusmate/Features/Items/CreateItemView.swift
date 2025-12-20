@@ -8,7 +8,7 @@ struct CreateItemView: View {
 
   @State private var name = ""
   @State private var description = ""
-  @State private var dueDate = Date()
+  @State private var dueDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
   @State private var hasDueDate = false
   @State private var isVisible = true
   @State private var isRecurring = false
@@ -49,7 +49,7 @@ struct CreateItemView: View {
           Toggle("Set due date", isOn: self.$hasDueDate)
 
           if self.hasDueDate {
-            DatePicker("Due Date", selection: self.$dueDate, displayedComponents: [.date, .hourAndMinute])
+            DatePicker("Due Date", selection: self.$dueDate, in: Date()..., displayedComponents: [.date, .hourAndMinute])
           }
         }
 
@@ -188,16 +188,18 @@ struct CreateItemView: View {
   }
 
   private func createItem() async {
-    // Add client-side validation
+    // Client-side validation
     guard !self.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-      print("❌ CreateItemView: Title is required")
+      return
+    }
+
+    // Validate due date is not in the past
+    if self.hasDueDate && self.dueDate < Date() {
       return
     }
 
     let trimmedName = self.name.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedDescription = self.description.trimmingCharacters(in: .whitespacesAndNewlines)
-
-    print("🔍 CreateItemView: Creating item with title: '\(trimmedName)'")
 
     await self.itemViewModel.createItem(
       listId: self.listId,
@@ -209,6 +211,7 @@ struct CreateItemView: View {
       recurrencePattern: self.isRecurring ? self.recurrencePattern : nil,
       recurrenceInterval: self.isRecurring ? self.recurrenceInterval : nil,
       recurrenceDays: (self.isRecurring && self.recurrencePattern == "weekly") ? Array(self.selectedWeekdays).sorted() : nil,
+      recurrenceTime: self.isRecurring ? "09:00" : nil, // Default to 9 AM for recurring tasks
       locationBased: self.locationBased,
       locationName: self.locationBased ? self.locationName : nil,
       locationLatitude: self.locationBased ? self.locationLatitude : nil,

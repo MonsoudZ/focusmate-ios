@@ -50,7 +50,7 @@ struct ReassignView: View {
             Picker("Assign to", selection: self.$selectedOwnerId) {
               Text("Select a user").tag(nil as Int?)
               ForEach(self.availableUsers, id: \.id) { user in
-                Text(user.name ?? user.email).tag(Int(user.id) as Int?)
+                Text(user.name).tag(Int(user.id) as Int?)
               }
             }
             .pickerStyle(.menu)

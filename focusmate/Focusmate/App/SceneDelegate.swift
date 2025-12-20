@@ -14,7 +14,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   }
 
   private func handleNotificationLaunch(_: UNNotificationResponse) {
-    print("🔔 SceneDelegate: App launched from notification")
+    Logger.debug("App launched from notification", category: .ui)
     // The NotificationDelegate will handle the actual task opening
   }
 }
@@ -23,12 +23,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 extension SceneDelegate {
   func application(_: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    print("🔔 SceneDelegate: Device token received")
+    Logger.debug("Device token received", category: .ui)
     NotificationDelegate.shared.handlePushToken(deviceToken)
   }
 
   func application(_: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-    print("❌ SceneDelegate: Failed to register for remote notifications")
+    Logger.error("Failed to register for remote notifications", error: error, category: .ui)
     NotificationDelegate.shared.handlePushTokenError(error)
   }
 }

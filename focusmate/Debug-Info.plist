@@ -3,45 +3,58 @@
 <plist version="1.0">
 <dict>
 	<key>API_BASE_URL</key>
-	<string>http://localhost:3000/api/v1</string>
+	<string>https://focusmate-api-production.up.railway.app</string>
 	<key>CABLE_URL</key>
-	<string>ws://localhost:3000/cable</string>
-	<key>SENTRY_DSN</key>
-	<string>https://your-sentry-dsn@sentry.io/project-id</string>
+	<string>wss://focusmate-api-production.up.railway.app/cable</string>
 	<key>CFBundleDisplayName</key>
 	<string>Focusmate</string>
 	<key>CFBundleExecutable</key>
 	<string>focusmate</string>
 	<key>CFBundleIdentifier</key>
-	<string>dev.local.chace.focusmate</string>
+	<string>com.monsoudzanaty.focusmate</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>focusmate</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>2.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<false/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>localhost</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<false/>
-			</dict>
-		</dict>
+		<true/>
 	</dict>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Focusmate needs access to your calendar to create events for tasks with due dates and sync task updates.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Focusmate needs access to your location even when the app is in the background to notify you about location-based tasks when you arrive at or leave specific places.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Focusmate needs access to your location in the background to notify you about location-based tasks.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Focusmate needs your location to show you location-based tasks and remind you when you arrive at or leave specific places.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Focusmate needs access to your reminders to sync tasks with the Reminders app and keep them up to date.</string>
+	<key>NSSiriUsageDescription</key>
+	<string>Focusmate integrates with Siri to let you create tasks, complete tasks, and check your task list using voice commands.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>CreateTaskIntent</string>
+		<string>CompleteTaskIntent</string>
+		<string>ViewTasksIntent</string>
+	</array>
+	<key>SENTRY_DSN</key>
+	<string>https://your-sentry-dsn@sentry.io/project-id</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>location</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>

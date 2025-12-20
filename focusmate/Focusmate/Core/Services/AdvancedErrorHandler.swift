@@ -174,7 +174,7 @@ final class AdvancedErrorHandler: ObservableObject {
   // MARK: - Error Processing
 
   func handle(_ error: Error, context: String = "") -> FocusmateError {
-    print("🔍 AdvancedErrorHandler: Processing error in context '\(context)': \(error)")
+    Logger.debug("AdvancedErrorHandler: Processing error in context '\(context)': \(error)", category: .general)
 
     if let apiError = error as? APIError {
       return self.processAPIError(apiError, context: context)
@@ -253,12 +253,12 @@ final class AdvancedErrorHandler: ObservableObject {
 
   func handleUnauthorized() async -> Bool {
     guard !self.isReauthenticating else {
-      print("🔄 AdvancedErrorHandler: Already re-authenticating, skipping")
+      Logger.debug("AdvancedErrorHandler: Already re-authenticating, skipping", category: .general)
       return false
     }
 
     self.isReauthenticating = true
-    print("🔄 AdvancedErrorHandler: Starting re-authentication process")
+    Logger.debug("AdvancedErrorHandler: Starting re-authentication process", category: .general)
 
     // Clear stored credentials
     await self.clearStoredCredentials()
@@ -273,13 +273,13 @@ final class AdvancedErrorHandler: ObservableObject {
   private func clearStoredCredentials() async {
     // Clear JWT token and user data
     // This would integrate with your AuthStore
-    print("🧹 AdvancedErrorHandler: Clearing stored credentials")
+    Logger.debug("🧹 AdvancedErrorHandler: Clearing stored credentials", category: .general)
   }
 
   private func navigateToSignIn() async {
     // Navigate to sign-in screen
     // This would integrate with your navigation system
-    print("🔐 AdvancedErrorHandler: Navigating to sign-in")
+    Logger.debug("🔐 AdvancedErrorHandler: Navigating to sign-in", category: .general)
   }
 
   // MARK: - Rate Limiting and Backoff
@@ -291,7 +291,7 @@ final class AdvancedErrorHandler: ObservableObject {
     let currentRetries = self.retryCount[retryKey] ?? 0
 
     if currentRetries >= self.maxRetries {
-      print("⏰ AdvancedErrorHandler: Max retries exceeded for \(retryKey)")
+      Logger.debug("AdvancedErrorHandler: Max retries exceeded for \(retryKey)", category: .general)
       return false
     }
 
@@ -301,7 +301,7 @@ final class AdvancedErrorHandler: ObservableObject {
       let requiredDelay = self.calculateBackoffDelay(retryCount: currentRetries)
 
       if timeSinceLastRetry < requiredDelay {
-        print("⏰ AdvancedErrorHandler: Not enough time passed since last retry for \(retryKey)")
+        Logger.debug("AdvancedErrorHandler: Not enough time passed since last retry for \(retryKey)", category: .general)
         return false
       }
     }
@@ -314,7 +314,7 @@ final class AdvancedErrorHandler: ObservableObject {
     self.retryCount[retryKey, default: 0] += 1
     self.lastRetryTime[retryKey] = Date()
 
-    print("🔄 AdvancedErrorHandler: Recorded retry attempt \(self.retryCount[retryKey]!) for \(retryKey)")
+    Logger.debug("AdvancedErrorHandler: Recorded retry attempt \(self.retryCount[retryKey]!) for \(retryKey)", category: .general)
   }
 
   func resetRetryCount(context: String) {
@@ -323,7 +323,7 @@ final class AdvancedErrorHandler: ObservableObject {
       self.retryCount.removeValue(forKey: key)
       self.lastRetryTime.removeValue(forKey: key)
     }
-    print("🔄 AdvancedErrorHandler: Reset retry count for context: \(context)")
+    Logger.debug("AdvancedErrorHandler: Reset retry count for context: \(context)", category: .general)
   }
 
   private func calculateBackoffDelay(retryCount: Int) -> TimeInterval {
@@ -345,7 +345,7 @@ final class AdvancedErrorHandler: ObservableObject {
     self.recordRetryAttempt(context: context, error: error)
 
     let delay = self.calculateBackoffDelay(retryCount: self.retryCount["\(context)_\(error.code)"] ?? 0)
-    print("⏰ AdvancedErrorHandler: Waiting \(delay) seconds before retry for \(context)")
+    Logger.debug("AdvancedErrorHandler: Waiting \(delay) seconds before retry for \(context)", category: .general)
 
     try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
 

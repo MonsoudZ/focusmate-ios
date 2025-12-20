@@ -21,10 +21,10 @@ final class EscalationViewModel: ObservableObject {
 
     do {
       self.blockingTasks = try await self.escalationService.getBlockingTasks()
-      print("✅ EscalationViewModel: Loaded \(self.blockingTasks.count) blocking tasks")
+      Logger.info("EscalationViewModel: Loaded \(self.blockingTasks.count) blocking tasks", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ EscalationViewModel: Failed to load blocking tasks: \(error)")
+      Logger.error("EscalationViewModel: Failed to load blocking tasks: \(error)", category: .database)
     }
 
     self.isLoading = false
@@ -41,10 +41,10 @@ final class EscalationViewModel: ObservableObject {
         urgency: urgency
       )
       self.escalations.append(escalation)
-      print("✅ EscalationViewModel: Escalated task \(itemId) with urgency \(urgency.rawValue)")
+      Logger.info("EscalationViewModel: Escalated task \(itemId) with urgency \(urgency.rawValue)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ EscalationViewModel: Failed to escalate task: \(error)")
+      Logger.error("EscalationViewModel: Failed to escalate task: \(error)", category: .database)
     }
 
     self.isLoading = false
@@ -59,10 +59,10 @@ final class EscalationViewModel: ObservableObject {
         itemId: itemId,
         explanation: explanation
       )
-      print("✅ EscalationViewModel: Added explanation for task \(itemId)")
+      Logger.info("EscalationViewModel: Added explanation for task \(itemId)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ EscalationViewModel: Failed to add explanation: \(error)")
+      Logger.error("EscalationViewModel: Failed to add explanation: \(error)", category: .database)
     }
 
     self.isLoading = false
@@ -81,10 +81,10 @@ final class EscalationViewModel: ObservableObject {
       if let index = escalations.firstIndex(where: { $0.id == escalationId }) {
         self.escalations[index] = resolvedEscalation
       }
-      print("✅ EscalationViewModel: Resolved escalation \(escalationId)")
+      Logger.info("EscalationViewModel: Resolved escalation \(escalationId)", category: .database)
     } catch {
       self.error = ErrorHandler.shared.handle(error)
-      print("❌ EscalationViewModel: Failed to resolve escalation: \(error)")
+      Logger.error("EscalationViewModel: Failed to resolve escalation: \(error)", category: .database)
     }
 
     self.isLoading = false

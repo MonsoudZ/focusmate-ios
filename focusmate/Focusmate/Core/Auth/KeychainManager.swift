@@ -16,6 +16,8 @@ final class KeychainManager {
       kSecAttrService as String: self.service,
       kSecAttrAccount as String: self.tokenKey,
       kSecValueData as String: data,
+      // Security: Only accessible after first unlock, never backed up to iCloud
+      kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
     ]
 
     // Delete existing item first
@@ -24,9 +26,9 @@ final class KeychainManager {
     // Add new item
     let status = SecItemAdd(query as CFDictionary, nil)
     if status != errSecSuccess {
-      print("❌ KeychainManager: Failed to save token: \(status)")
+      Logger.error("Failed to save token to keychain (status: \(status))", category: .auth)
     } else {
-      print("✅ KeychainManager: Token saved successfully")
+      Logger.debug("Token saved to keychain successfully", category: .auth)
     }
   }
 
@@ -46,10 +48,12 @@ final class KeychainManager {
        let data = result as? Data,
        let token = String(data: data, encoding: .utf8)
     {
-      print("✅ KeychainManager: Token loaded successfully")
+      Logger.debug("Token loaded from keychain successfully", category: .auth)
       return token
     } else {
-      print("⚠️ KeychainManager: No token found or error: \(status)")
+      if status != errSecItemNotFound {
+        Logger.warning("Failed to load token from keychain (status: \(status))", category: .auth)
+      }
       return nil
     }
   }
@@ -62,10 +66,10 @@ final class KeychainManager {
     ]
 
     let status = SecItemDelete(query as CFDictionary)
-    if status == errSecSuccess {
-      print("✅ KeychainManager: Token cleared successfully")
+    if status == errSecSuccess || status == errSecItemNotFound {
+      Logger.debug("Token cleared from keychain successfully", category: .auth)
     } else {
-      print("⚠️ KeychainManager: Failed to clear token: \(status)")
+      Logger.warning("Failed to clear token from keychain (status: \(status))", category: .auth)
     }
   }
 }
