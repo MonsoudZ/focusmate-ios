@@ -207,3 +207,25 @@ struct DSSectionHeader: View {
             .padding(.vertical, DesignSystem.Spacing.xs)
     }
 }
+
+struct DSDivider: View {
+    let text: String
+    
+    init(_ text: String = "or") {
+        self.text = text
+    }
+    
+    var body: some View {
+        HStack {
+            Rectangle()
+                .fill(DesignSystem.Colors.border)
+                .frame(height: 1)
+            Text(text)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .font(DesignSystem.Typography.subheadline)
+            Rectangle()
+                .fill(DesignSystem.Colors.border)
+                .frame(height: 1)
+        }
+    }
+}

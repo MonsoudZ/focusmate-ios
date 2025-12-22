@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 struct SignInView: View {
     @EnvironmentObject var state: AppState
@@ -13,6 +14,18 @@ struct SignInView: View {
             Text("Focusmate")
                 .font(DesignSystem.Typography.largeTitle)
 
+            // Apple Sign In Button
+            SignInWithAppleButton(.signIn) { request in
+                request.requestedScopes = [.email, .fullName]
+            } onCompletion: { result in
+                state.auth.handleAppleSignIn(result)
+            }
+            .signInWithAppleButtonStyle(.black)
+            .frame(height: 50)
+
+            DSDivider("or")
+
+            // Email/Password fields
             VStack(spacing: DesignSystem.Spacing.md) {
                 TextField("Email", text: $email)
                     .textInputAutocapitalization(.never)

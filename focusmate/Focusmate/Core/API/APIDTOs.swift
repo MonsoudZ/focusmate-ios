@@ -25,6 +25,16 @@ struct AuthSignUpBody: Encodable {
     }
 }
 
+struct AppleAuthRequest: Encodable {
+    let idToken: String
+    let name: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case idToken = "id_token"
+        case name
+    }
+}
+
 struct AuthSignInResponse: Decodable {
     let user: UserDTO
     let token: String

@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import AuthenticationServices
 
 @MainActor
 final class AuthStore: ObservableObject {
@@ -91,5 +92,63 @@ final class AuthStore: ObservableObject {
         jwt = nil
         currentUser = nil
         KeychainManager.shared.clear()
+    }
+    
+    func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+               let identityToken = appleIDCredential.identityToken {
+                
+                let name = [
+                    appleIDCredential.fullName?.givenName,
+                    appleIDCredential.fullName?.familyName
+                ].compactMap { $0 }.joined(separator: " ")
+                
+                Task {
+                    await signInWithApple(
+                        identityToken: identityToken,
+                        name: name.isEmpty ? nil : name
+                    )
+                }
+            }
+        case .failure(let error):
+            Logger.error("Apple Sign In failed", error: error, category: .auth)
+            self.error = FocusmateError.custom("Apple Sign In Failed", error.localizedDescription)
+        }
+    }
+    
+    func signInWithApple(identityToken: Data, name: String?) async {
+        Logger.debug("Starting Apple Sign In", category: .auth)
+        isLoading = true
+        error = nil
+
+        guard let tokenString = String(data: identityToken, encoding: .utf8) else {
+            Logger.error("Failed to convert Apple identity token to string", category: .auth)
+            self.error = FocusmateError.custom("Sign In Failed", "Invalid Apple credentials")
+            isLoading = false
+            return
+        }
+
+        do {
+            let response: AuthSignInResponse = try await api.request(
+                "POST",
+                "api/v1/auth/apple",
+                body: AppleAuthRequest(idToken: tokenString, name: name)
+            )
+
+            Logger.info("Apple Sign In successful", category: .auth)
+
+            jwt = response.token
+            KeychainManager.shared.save(token: response.token)
+            currentUser = response.user
+        } catch {
+            Logger.error("Apple Sign In failed", error: error, category: .auth)
+            self.error = errorHandler.handle(error, context: "Apple Sign In")
+            jwt = nil
+            KeychainManager.shared.clear()
+        }
+
+        isLoading = false
     }
 }

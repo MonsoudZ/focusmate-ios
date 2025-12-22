@@ -1,8 +1,51 @@
 import Foundation
 
 enum API {
+    
+    // MARK: - Environment Configuration
+    
+    enum Environment {
+        case development  // localhost
+        case staging      // staging server
+        case production   // production server
+        
+        var baseURLString: String {
+            switch self {
+            case .development:
+                return "http://localhost:3000"
+            case .staging:
+                return "https://focusmate-api-focusmate-api-staging.up.railway.app"
+            case .production:
+                return "https://focusmate-api-production.up.railway.app"
+            }
+        }
+        
+        var webSocketURLString: String {
+            switch self {
+            case .development:
+                return "ws://localhost:3000/cable"
+            case .staging:
+                return "wss://focusmate-api-focusmate-api-staging.up.railway.app/cable"
+            case .production:
+                return "wss://focusmate-api-production.up.railway.app/cable"
+            }
+        }
+    }
+    
+    // MARK: - Current Environment
+    
+    static var current: Environment {
+        #if DEBUG
+        return .staging
+        #else
+        return .production
+        #endif
+    }
+    
+    // MARK: - Base URLs
+    
     static let base: URL = {
-        guard let url = URL(string: "https://focusmate-api-production.up.railway.app") else {
+        guard let url = URL(string: current.baseURLString) else {
             fatalError("Critical: Failed to create base URL")
         }
         return url
@@ -13,11 +56,13 @@ enum API {
     }
 
     static let webSocketURL: URL = {
-        guard let url = URL(string: "wss://focusmate-api-production.up.railway.app/cable") else {
+        guard let url = URL(string: current.webSocketURLString) else {
             fatalError("Critical: Failed to create WebSocket URL")
         }
         return url
     }()
+
+    // MARK: - Endpoints
 
     enum Auth {
         static let signIn  = "api/v1/auth/sign_in"
