@@ -1,0 +1,46 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+xcuserdata/
+
+# Swift Package Manager
+.build/
+Packages/
+.swiftpm/xcode/
+
+# CocoaPods
+Pods/
+
+# Secrets - never commit these
+*.p8
+*.p12
+*.pem
+*.key
+.env
+.env.*
+secrets/
+
+# IDE
+.idea/
+*.swp
+*.swo
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Archives
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+*.orig
