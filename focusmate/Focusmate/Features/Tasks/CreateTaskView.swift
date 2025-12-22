@@ -7,7 +7,7 @@ struct CreateTaskView: View {
 
     @State private var title = ""
     @State private var note = ""
-    @State private var dueDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+    @State private var dueDate = Date().addingTimeInterval(3600) // 1 hour from now
     @State private var hasDueDate = false
     @State private var isLoading = false
     @State private var error: FocusmateError?
@@ -26,25 +26,33 @@ struct CreateTaskView: View {
                     Toggle("Set due date", isOn: $hasDueDate)
 
                     if hasDueDate {
-                           // Quick options
-                           HStack(spacing: DesignSystem.Spacing.sm) {
-                               QuickDateButton(title: "Today", isSelected: isToday) {
-                                   dueDate = Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
-                               }
-                               QuickDateButton(title: "Tomorrow", isSelected: isTomorrow) {
-                                   dueDate = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()) ?? Date()
-                               }
-                               QuickDateButton(title: "Next Week", isSelected: isNextWeek) {
-                                   dueDate = Calendar.current.date(byAdding: .day, value: 7, to: Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()) ?? Date()
-                               }
-                           }
-                           .padding(.vertical, DesignSystem.Spacing.xs)
+                        // Quick options
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Button("Today") {
+                                setDueDate(daysFromNow: 0)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(isToday ? DesignSystem.Colors.primary : .gray)
+                            
+                            Button("Tomorrow") {
+                                setDueDate(daysFromNow: 1)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(isTomorrow ? DesignSystem.Colors.primary : .gray)
+                            
+                            Button("Next Week") {
+                                setDueDate(daysFromNow: 7)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(isNextWeek ? DesignSystem.Colors.primary : .gray)
+                        }
+                        .padding(.vertical, DesignSystem.Spacing.xs)
 
-                           DatePicker(
-                               "Due Date",
-                               selection: $dueDate,
-                               in: Date()...,
-                               displayedComponents: [.date, .hourAndMinute]
+                        DatePicker(
+                            "Due Date",
+                            selection: $dueDate,
+                            in: Date()...,
+                            displayedComponents: [.date, .hourAndMinute]
                         )
                     }
                 }
@@ -97,24 +105,6 @@ struct CreateTaskView: View {
         }
     }
     
-    struct QuickDateButton: View {
-        let title: String
-        let isSelected: Bool
-        let action: () -> Void
-        
-        var body: some View {
-            Button(action: action) {
-                Text(title)
-                    .font(DesignSystem.Typography.caption1)
-                    .padding(.horizontal, DesignSystem.Spacing.sm)
-                    .padding(.vertical, DesignSystem.Spacing.xs)
-                    .background(isSelected ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryBackground)
-                    .foregroundColor(isSelected ? .white : DesignSystem.Colors.textPrimary)
-                    .cornerRadius(DesignSystem.CornerRadius.sm)
-            }
-        }
-    }
-    
     private var isToday: Bool {
         Calendar.current.isDateInToday(dueDate)
     }
@@ -124,7 +114,19 @@ struct CreateTaskView: View {
     }
 
     private var isNextWeek: Bool {
-        guard let nextWeek = Calendar.current.date(byAdding: .day, value: 7, to: Date()) else { return false }
+        guard let nextWeek = Calendar.current.date(byAdding: .day, value: 7, to: Calendar.current.startOfDay(for: Date())) else { return false }
         return Calendar.current.isDate(dueDate, inSameDayAs: nextWeek)
+    }
+
+    private func setDueDate(daysFromNow: Int) {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        if daysFromNow == 0 {
+            dueDate = now.addingTimeInterval(3600)
+        } else {
+            let targetDay = calendar.date(byAdding: .day, value: daysFromNow, to: calendar.startOfDay(for: now)) ?? now
+            dueDate = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: targetDay) ?? targetDay
+        }
     }
 }
