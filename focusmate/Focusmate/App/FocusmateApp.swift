@@ -23,6 +23,12 @@ struct RootView: View {
                 SignInView()
             } else {
                 TabView {
+                    TodayView()
+                        .tabItem {
+                            Image(systemName: "sun.max.fill")
+                            Text("Today")
+                        }
+                    
                     ListsView()
                         .tabItem {
                             Image(systemName: DesignSystem.Icons.list)

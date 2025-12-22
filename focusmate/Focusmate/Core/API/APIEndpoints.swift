@@ -5,9 +5,9 @@ enum API {
     // MARK: - Environment Configuration
     
     enum Environment {
-        case development  // localhost
-        case staging      // staging server
-        case production   // production server
+        case development
+        case staging
+        case production
         
         var baseURLString: String {
             switch self {
@@ -87,5 +87,9 @@ enum API {
 
     enum Tasks {
         static let root = "api/v1/tasks"
+    }
+    
+    enum Today {
+        static let root = "api/v1/today"
     }
 }

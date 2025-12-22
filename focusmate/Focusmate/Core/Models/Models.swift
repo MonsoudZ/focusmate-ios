@@ -44,20 +44,51 @@ struct TaskDTO: Codable, Identifiable {
     let can_delete: Bool?
     let created_at: String?
     let updated_at: String?
+    
+    let overdue: Bool?
+       let minutes_overdue: Int?
+       let requires_explanation_if_missed: Bool?
+       let missed_reason: String?
+       let missed_reason_submitted_at: String?
+
 
     var isCompleted: Bool {
-        completed_at != nil
-    }
+            completed_at != nil
+        }
+        
+        var isOverdue: Bool {
+            overdue ?? false
+        }
+        
+        var needsReason: Bool {
+            isOverdue && (requires_explanation_if_missed ?? false) && missed_reason == nil
+        }
 
-    var dueDate: Date? {
-        guard let due_at else { return nil }
-        return ISO8601DateFormatter().date(from: due_at)
+        var dueDate: Date? {
+            guard let due_at else { return nil }
+            return ISO8601DateFormatter().date(from: due_at)
+        }
     }
-}
 
 struct TasksResponse: Codable {
     let tasks: [TaskDTO]
     let tombstones: [String]?
+}
+
+
+// MARK: - Today
+
+struct TodayResponse: Codable {
+    let overdue: [TaskDTO]
+    let due_today: [TaskDTO]
+    let completed_today: [TaskDTO]
+    let stats: TodayStats
+}
+
+struct TodayStats: Codable {
+    let overdue_count: Int
+    let due_today_count: Int
+    let completed_today_count: Int
 }
 
 // MARK: - Sharing
