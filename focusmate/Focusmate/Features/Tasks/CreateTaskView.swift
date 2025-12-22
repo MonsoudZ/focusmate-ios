@@ -26,11 +26,25 @@ struct CreateTaskView: View {
                     Toggle("Set due date", isOn: $hasDueDate)
 
                     if hasDueDate {
-                        DatePicker(
-                            "Due Date",
-                            selection: $dueDate,
-                            in: Date()...,
-                            displayedComponents: [.date, .hourAndMinute]
+                           // Quick options
+                           HStack(spacing: DesignSystem.Spacing.sm) {
+                               QuickDateButton(title: "Today", isSelected: isToday) {
+                                   dueDate = Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
+                               }
+                               QuickDateButton(title: "Tomorrow", isSelected: isTomorrow) {
+                                   dueDate = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()) ?? Date()
+                               }
+                               QuickDateButton(title: "Next Week", isSelected: isNextWeek) {
+                                   dueDate = Calendar.current.date(byAdding: .day, value: 7, to: Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()) ?? Date()
+                               }
+                           }
+                           .padding(.vertical, DesignSystem.Spacing.xs)
+
+                           DatePicker(
+                               "Due Date",
+                               selection: $dueDate,
+                               in: Date()...,
+                               displayedComponents: [.date, .hourAndMinute]
                         )
                     }
                 }
@@ -81,5 +95,36 @@ struct CreateTaskView: View {
         } catch {
             self.error = .custom("CREATE_ERROR", error.localizedDescription)
         }
+    }
+    
+    struct QuickDateButton: View {
+        let title: String
+        let isSelected: Bool
+        let action: () -> Void
+        
+        var body: some View {
+            Button(action: action) {
+                Text(title)
+                    .font(DesignSystem.Typography.caption1)
+                    .padding(.horizontal, DesignSystem.Spacing.sm)
+                    .padding(.vertical, DesignSystem.Spacing.xs)
+                    .background(isSelected ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryBackground)
+                    .foregroundColor(isSelected ? .white : DesignSystem.Colors.textPrimary)
+                    .cornerRadius(DesignSystem.CornerRadius.sm)
+            }
+        }
+    }
+    
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(dueDate)
+    }
+
+    private var isTomorrow: Bool {
+        Calendar.current.isDateInTomorrow(dueDate)
+    }
+
+    private var isNextWeek: Bool {
+        guard let nextWeek = Calendar.current.date(byAdding: .day, value: 7, to: Date()) else { return false }
+        return Calendar.current.isDate(dueDate, inSameDayAs: nextWeek)
     }
 }
