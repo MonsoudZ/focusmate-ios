@@ -6,6 +6,7 @@ struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var showingRegister = false
+    @State private var showingForgotPassword = false
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
@@ -36,6 +37,15 @@ struct SignInView: View {
                 SecureField("Password", text: $password)
                     .textContentType(.password)
                     .textFieldStyle(.roundedBorder)
+                
+                HStack {
+                    Spacer()
+                    Button("Forgot Password?") {
+                        showingForgotPassword = true
+                    }
+                    .font(DesignSystem.Typography.subheadline)
+                    .foregroundColor(DesignSystem.Colors.primary)
+                }
             }
 
             VStack(spacing: DesignSystem.Spacing.sm) {
@@ -76,6 +86,9 @@ struct SignInView: View {
         .padding(DesignSystem.Spacing.padding)
         .sheet(isPresented: $showingRegister) {
             RegisterView()
+        }
+        .sheet(isPresented: $showingForgotPassword) {
+            ForgotPasswordView()
         }
     }
 }

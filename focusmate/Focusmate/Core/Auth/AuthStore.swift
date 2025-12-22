@@ -151,4 +151,24 @@ final class AuthStore: ObservableObject {
 
         isLoading = false
     }
+    
+    func forgotPassword(email: String) async {
+        Logger.debug("Requesting password reset for \(Logger.sanitizeEmail(email))", category: .auth)
+        isLoading = true
+        error = nil
+
+        do {
+            let _: EmptyResponse = try await api.request(
+                "POST",
+                "api/v1/auth/password",
+                body: ForgotPasswordRequest(email: email)
+            )
+            Logger.info("Password reset email sent", category: .auth)
+        } catch {
+            Logger.error("Password reset failed", error: error, category: .auth)
+            self.error = errorHandler.handle(error, context: "Password Reset")
+        }
+
+        isLoading = false
+    }
 }

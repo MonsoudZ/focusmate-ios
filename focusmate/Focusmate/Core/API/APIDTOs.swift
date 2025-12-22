@@ -40,6 +40,18 @@ struct AuthSignInResponse: Decodable {
     let token: String
 }
 
+struct ForgotPasswordRequest: Encodable {
+    let user: User
+    
+    struct User: Encodable {
+        let email: String
+    }
+    
+    init(email: String) {
+        self.user = User(email: email)
+    }
+}
+
 // MARK: - Lists
 
 struct CreateListRequest: Encodable {
