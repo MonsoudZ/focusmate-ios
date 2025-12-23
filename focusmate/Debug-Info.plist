@@ -22,8 +22,6 @@
 	<string>2.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>LSApplicationCategoryType</key>
-	<string></string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -32,7 +30,9 @@
 		<true/>
 	</dict>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Focusmate needs access to your calendar to create events for tasks with due dates and sync task updates.</string>
+	<string>Intentia syncs your tasks to your calendar so you can see them alongside your other events.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>Intentia syncs your tasks to your calendar so you can see them alongside your other events.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Focusmate needs access to your location even when the app is in the background to notify you about location-based tasks when you arrive at or leave specific places.</string>
 	<key>NSLocationAlwaysUsageDescription</key>

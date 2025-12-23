@@ -13,6 +13,7 @@ struct ListDetailView: View {
     @State private var showingEditList = false
     @State private var showingDeleteConfirmation = false
     @State private var taskNeedingReason: TaskDTO?
+    @State private var taskToEdit: TaskDTO?
 
     var body: some View {
         Group {
@@ -35,6 +36,10 @@ struct ListDetailView: View {
                                 Task { await toggleComplete(task) }
                             }
                         )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            taskToEdit = task
+                        }
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button("Delete", role: .destructive) {
                                 Task { await deleteTask(task) }
@@ -80,6 +85,11 @@ struct ListDetailView: View {
         }
         .sheet(isPresented: $showingEditList) {
             EditListView(list: list, listService: listService)
+        }
+        .sheet(item: $taskToEdit) { task in
+            EditTaskView(listId: list.id, task: task, taskService: taskService, onSave: {
+                Task { await loadTasks() }
+            })
         }
         .sheet(item: $taskNeedingReason) { task in
             OverdueReasonSheet(task: task) { reason in

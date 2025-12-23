@@ -39,6 +39,8 @@ final class TaskService {
         
         // Schedule notifications
         NotificationService.shared.scheduleTaskNotifications(for: task)
+        CalendarService.shared.addTaskToCalendar(task)
+
         
         return task
     }
@@ -49,16 +51,25 @@ final class TaskService {
             note: note,
             due_at: dueAt
         ))
-        return try await apiClient.request(
+        let task: TaskDTO = try await apiClient.request(
             "PUT",
             API.Lists.task(String(listId), String(taskId)),
             body: request
         )
+        
+        // Update notifications
+        NotificationService.shared.scheduleTaskNotifications(for: task)
+        
+        // Update calendar
+        CalendarService.shared.updateTaskInCalendar(task)
+        
+        return task
     }
 
     func deleteTask(listId: Int, taskId: Int) async throws {
         // Cancel notifications before deleting
         NotificationService.shared.cancelTaskNotifications(for: taskId)
+        CalendarService.shared.removeTaskFromCalendar(taskId: taskId)
         
         _ = try await apiClient.request(
             "DELETE",
@@ -66,6 +77,7 @@ final class TaskService {
             body: nil as String?
         ) as EmptyResponse
     }
+    
 
     func completeTask(listId: Int, taskId: Int, reason: String? = nil) async throws -> TaskDTO {
         let body: CompleteTaskRequest? = reason != nil ? CompleteTaskRequest(missed_reason: reason!) : nil
@@ -77,16 +89,25 @@ final class TaskService {
         
         // Cancel notifications for completed task
         NotificationService.shared.cancelTaskNotifications(for: taskId)
+        CalendarService.shared.removeTaskFromCalendar(taskId: taskId)
         
         return task
     }
 
     func reopenTask(listId: Int, taskId: Int) async throws -> TaskDTO {
-        return try await apiClient.request(
+        let task: TaskDTO = try await apiClient.request(
             "PATCH",
             API.Lists.taskAction(String(listId), String(taskId), "reopen"),
             body: nil as String?
         )
+        
+        // Re-add notifications
+        NotificationService.shared.scheduleTaskNotifications(for: task)
+        
+        // Re-add to calendar
+        CalendarService.shared.addTaskToCalendar(task)
+        
+        return task
     }
 
     func snoozeTask(listId: Int, taskId: Int, until: Date) async throws -> TaskDTO {

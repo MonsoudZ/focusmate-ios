@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct EditTaskView: View {
-    let task: TaskDTO
     let listId: Int
+    let task: TaskDTO
     let taskService: TaskService
+    var onSave: (() -> Void)? = nil
     @Environment(\.dismiss) var dismiss
 
     @State private var title: String
@@ -13,10 +14,11 @@ struct EditTaskView: View {
     @State private var isLoading = false
     @State private var error: FocusmateError?
 
-    init(task: TaskDTO, listId: Int, taskService: TaskService) {
-        self.task = task
+    init(listId: Int, task: TaskDTO, taskService: TaskService, onSave: (() -> Void)? = nil) {
         self.listId = listId
+        self.task = task
         self.taskService = taskService
+        self.onSave = onSave
 
         _title = State(initialValue: task.title)
         _note = State(initialValue: task.note ?? "")
@@ -88,6 +90,7 @@ struct EditTaskView: View {
                 note: note.isEmpty ? nil : note,
                 dueAt: hasDueDate ? dueDate.ISO8601Format() : nil
             )
+            onSave?()
             dismiss()
         } catch let err as FocusmateError {
             error = err

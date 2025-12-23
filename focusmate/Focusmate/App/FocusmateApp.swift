@@ -17,7 +17,7 @@ struct RootView: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var auth: AuthStore
     @State private var overdueCount: Int = 0
-
+    
     var body: some View {
         Group {
             if auth.jwt == nil {
@@ -38,7 +38,7 @@ struct RootView: View {
                             Image(systemName: DesignSystem.Icons.list)
                             Text("Lists")
                         }
-
+                    
                     SettingsView()
                         .tabItem {
                             Image(systemName: DesignSystem.Icons.settings)
@@ -46,8 +46,9 @@ struct RootView: View {
                         }
                 }
                 .task {
-                                    await NotificationService.shared.requestPermission()
-                                }
+                    await NotificationService.shared.requestPermission()
+                    await CalendarService.shared.requestPermission()
+                }
             }
         }
     }
