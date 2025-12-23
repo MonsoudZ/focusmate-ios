@@ -5,6 +5,9 @@ struct TodayView: View {
     @State private var todayData: TodayResponse?
     @State private var isLoading = true
     @State private var error: FocusmateError?
+    @State private var showingQuickAdd = false
+    
+    var onOverdueCountChange: ((Int) -> Void)? = nil
     
     private var todayService: TodayService {
         TodayService(api: state.auth.api)
@@ -26,6 +29,20 @@ struct TodayView: View {
             .navigationTitle("Today")
             .refreshable {
                 await loadToday()
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingQuickAdd = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingQuickAdd) {
+                QuickAddTaskView(onTaskCreated: {
+                    await loadToday()
+                })
             }
         }
         .task {
@@ -169,6 +186,7 @@ struct TodayView: View {
         
         do {
             todayData = try await todayService.fetchToday()
+            onOverdueCountChange?(todayData?.stats.overdue_count ?? 0)
         } catch {
             self.error = ErrorHandler.shared.handle(error, context: "Loading Today")
         }

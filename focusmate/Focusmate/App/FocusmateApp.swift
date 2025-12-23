@@ -16,6 +16,7 @@ struct FocusmateApp: App {
 struct RootView: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var auth: AuthStore
+    @State private var overdueCount: Int = 0
 
     var body: some View {
         Group {
@@ -23,11 +24,14 @@ struct RootView: View {
                 SignInView()
             } else {
                 TabView {
-                    TodayView()
-                        .tabItem {
-                            Image(systemName: "sun.max.fill")
-                            Text("Today")
-                        }
+                    TodayView(onOverdueCountChange: { count in
+                        overdueCount = count
+                    })
+                    .tabItem {
+                        Image(systemName: "sun.max.fill")
+                        Text("Today")
+                    }
+                    .badge(overdueCount)
                     
                     ListsView()
                         .tabItem {

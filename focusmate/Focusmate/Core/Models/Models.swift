@@ -13,7 +13,7 @@ struct UserDTO: Codable, Identifiable, Hashable {
 
 // MARK: - List
 
-struct ListDTO: Codable, Identifiable {
+struct ListDTO: Codable, Identifiable, Hashable {
     let id: Int
     let name: String
     let description: String?
