@@ -12,6 +12,7 @@ struct ListDetailView: View {
     @State private var showingCreateTask = false
     @State private var showingEditList = false
     @State private var showingDeleteConfirmation = false
+    @State private var taskNeedingReason: TaskDTO?
 
     var body: some View {
         Group {
@@ -34,7 +35,7 @@ struct ListDetailView: View {
                                 Task { await toggleComplete(task) }
                             }
                         )
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button("Delete", role: .destructive) {
                                 Task { await deleteTask(task) }
                             }
@@ -44,7 +45,7 @@ struct ListDetailView: View {
                                 Task { await toggleComplete(task) }
                             } label: {
                                 Label(
-                                    task.isCompleted ? "Reopen" : "Complete",
+                                    task.isCompleted ? "Undo" : "Done",
                                     systemImage: task.isCompleted ? "arrow.uturn.backward" : "checkmark"
                                 )
                             }
@@ -79,6 +80,14 @@ struct ListDetailView: View {
         }
         .sheet(isPresented: $showingEditList) {
             EditListView(list: list, listService: listService)
+        }
+        .sheet(item: $taskNeedingReason) { task in
+            OverdueReasonSheet(task: task) { reason in
+                Task {
+                    await completeWithReason(task, reason: reason)
+                    taskNeedingReason = nil
+                }
+            }
         }
         .alert("Delete List", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -120,12 +129,34 @@ struct ListDetailView: View {
     }
 
     private func toggleComplete(_ task: TaskDTO) async {
-        do {
-            if task.isCompleted {
+        // If reopening, just do it
+        if task.isCompleted {
+            do {
                 _ = try await taskService.reopenTask(listId: list.id, taskId: task.id)
-            } else {
-                _ = try await taskService.completeTask(listId: list.id, taskId: task.id)
+                await loadTasks()
+            } catch {
+                self.error = ErrorHandler.shared.handle(error)
             }
+            return
+        }
+        
+        // If completing and overdue, need reason
+        if task.isOverdue {
+            taskNeedingReason = task
+        } else {
+            // Not overdue, complete directly
+            do {
+                _ = try await taskService.completeTask(listId: list.id, taskId: task.id)
+                await loadTasks()
+            } catch {
+                self.error = ErrorHandler.shared.handle(error)
+            }
+        }
+    }
+    
+    private func completeWithReason(_ task: TaskDTO, reason: String) async {
+        do {
+            _ = try await taskService.completeTask(listId: list.id, taskId: task.id, reason: reason)
             await loadTasks()
         } catch {
             self.error = ErrorHandler.shared.handle(error)

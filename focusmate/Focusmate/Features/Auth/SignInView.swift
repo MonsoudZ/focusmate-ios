@@ -12,7 +12,7 @@ struct SignInView: View {
         VStack(spacing: DesignSystem.Spacing.lg) {
             Spacer()
 
-            Text("Focusmate")
+            Text("Intentia")
                 .font(DesignSystem.Typography.largeTitle)
 
             // Apple Sign In Button

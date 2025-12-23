@@ -5,7 +5,7 @@ final class KeychainManager {
   static let shared = KeychainManager()
   private init() {}
 
-  private let service = "com.focusmate.app"
+  private let service = "com.intentia.app"
   private let tokenKey = "jwt_token"
 
   func save(token: String) {

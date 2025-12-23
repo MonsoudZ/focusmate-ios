@@ -59,11 +59,12 @@ final class TaskService {
         ) as EmptyResponse
     }
 
-    func completeTask(listId: Int, taskId: Int) async throws -> TaskDTO {
+    func completeTask(listId: Int, taskId: Int, reason: String? = nil) async throws -> TaskDTO {
+        let body: CompleteTaskRequest? = reason != nil ? CompleteTaskRequest(missed_reason: reason!) : nil
         return try await apiClient.request(
             "PATCH",
             API.Lists.taskAction(String(listId), String(taskId), "complete"),
-            body: nil as String?
+            body: body
         )
     }
 
@@ -107,4 +108,8 @@ private struct UpdateTaskRequest: Encodable {
 
 private struct SnoozeRequest: Encodable {
     let snooze_until: String
+}
+
+private struct CompleteTaskRequest: Encodable {
+    let missed_reason: String
 }

@@ -37,7 +37,7 @@ enum LogCategory: String {
     case general = "General"
 
     var osLog: OSLog {
-        OSLog(subsystem: "com.focusmate.app", category: rawValue)
+        OSLog(subsystem: "com.intentia.app", category: rawValue)
     }
 }
 
