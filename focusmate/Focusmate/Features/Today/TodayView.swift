@@ -187,6 +187,10 @@ struct TodayView: View {
         do {
             todayData = try await todayService.fetchToday()
             onOverdueCountChange?(todayData?.stats.overdue_count ?? 0)
+            
+            // Schedule morning briefing for tomorrow
+            let totalDueToday = (todayData?.stats.due_today_count ?? 0) + (todayData?.stats.overdue_count ?? 0)
+            NotificationService.shared.scheduleMorningBriefing(taskCount: totalDueToday)
         } catch {
             self.error = ErrorHandler.shared.handle(error, context: "Loading Today")
         }

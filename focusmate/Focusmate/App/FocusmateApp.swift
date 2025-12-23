@@ -45,6 +45,9 @@ struct RootView: View {
                             Text("Settings")
                         }
                 }
+                .task {
+                                    await NotificationService.shared.requestPermission()
+                                }
             }
         }
     }

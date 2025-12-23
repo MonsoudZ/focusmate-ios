@@ -31,11 +31,16 @@ final class TaskService {
             note: note,
             due_at: dueAt?.ISO8601Format()
         ))
-        return try await apiClient.request(
+        let task: TaskDTO = try await apiClient.request(
             "POST",
             API.Lists.tasks(String(listId)),
             body: request
         )
+        
+        // Schedule notifications
+        NotificationService.shared.scheduleTaskNotifications(for: task)
+        
+        return task
     }
 
     func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?) async throws -> TaskDTO {
@@ -52,6 +57,9 @@ final class TaskService {
     }
 
     func deleteTask(listId: Int, taskId: Int) async throws {
+        // Cancel notifications before deleting
+        NotificationService.shared.cancelTaskNotifications(for: taskId)
+        
         _ = try await apiClient.request(
             "DELETE",
             API.Lists.task(String(listId), String(taskId)),
@@ -61,11 +69,16 @@ final class TaskService {
 
     func completeTask(listId: Int, taskId: Int, reason: String? = nil) async throws -> TaskDTO {
         let body: CompleteTaskRequest? = reason != nil ? CompleteTaskRequest(missed_reason: reason!) : nil
-        return try await apiClient.request(
+        let task: TaskDTO = try await apiClient.request(
             "PATCH",
             API.Lists.taskAction(String(listId), String(taskId), "complete"),
             body: body
         )
+        
+        // Cancel notifications for completed task
+        NotificationService.shared.cancelTaskNotifications(for: taskId)
+        
+        return task
     }
 
     func reopenTask(listId: Int, taskId: Int) async throws -> TaskDTO {
