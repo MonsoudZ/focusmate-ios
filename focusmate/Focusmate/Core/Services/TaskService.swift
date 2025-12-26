@@ -1,7 +1,7 @@
 import Foundation
 
 final class TaskService {
-    private let apiClient: APIClient
+     let apiClient: APIClient
 
     init(apiClient: APIClient) {
         self.apiClient = apiClient

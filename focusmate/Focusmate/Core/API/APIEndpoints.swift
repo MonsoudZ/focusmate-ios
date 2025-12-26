@@ -36,7 +36,7 @@ enum API {
     
     static var current: Environment {
         #if DEBUG
-        return .staging
+        return .development
         #else
         return .production
         #endif
@@ -84,6 +84,8 @@ enum API {
         static func taskAction(_ listId: String, _ taskId: String, _ action: String) -> String {
             "api/v1/lists/\(listId)/tasks/\(taskId)/\(action)"
         }
+        static func memberships(_ listId: String) -> String { "api/v1/lists/\(listId)/memberships" }
+        static func membership(_ listId: String, _ membershipId: String) -> String { "api/v1/lists/\(listId)/memberships/\(membershipId)" }
     }
 
     enum Tasks {

@@ -12,8 +12,34 @@ struct ListDetailView: View {
     @State private var showingCreateTask = false
     @State private var showingEditList = false
     @State private var showingDeleteConfirmation = false
+    @State private var showingMembers = false
     @State private var taskNeedingReason: TaskDTO?
     @State private var taskToEdit: TaskDTO?
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                Button {
+                    showingMembers = true
+                } label: {
+                    Image(systemName: "person.2")
+                }
+                
+                Button {
+                    showingEditList = true
+                } label: {
+                    Image(systemName: DesignSystem.Icons.edit)
+                }
+
+                Button {
+                    showingCreateTask = true
+                } label: {
+                    Image(systemName: DesignSystem.Icons.add)
+                }
+            }
+        }
+    }
 
     var body: some View {
         Group {
@@ -28,63 +54,20 @@ struct ListDetailView: View {
                     action: { showingCreateTask = true }
                 )
             } else {
-                List {
-                    ForEach(tasks, id: \.id) { task in
-                        TaskRowView(
-                            task: task,
-                            onToggleComplete: {
-                                Task { await toggleComplete(task) }
-                            }
-                        )
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            taskToEdit = task
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button("Delete", role: .destructive) {
-                                Task { await deleteTask(task) }
-                            }
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                            Button {
-                                Task { await toggleComplete(task) }
-                            } label: {
-                                Label(
-                                    task.isCompleted ? "Undo" : "Done",
-                                    systemImage: task.isCompleted ? "arrow.uturn.backward" : "checkmark"
-                                )
-                            }
-                            .tint(task.isCompleted ? .orange : .green)
-                        }
-                    }
-                }
-                .listStyle(.plain)
+                taskListView
             }
         }
         .navigationTitle(list.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: DesignSystem.Spacing.sm) {
-                    Button {
-                        showingEditList = true
-                    } label: {
-                        Image(systemName: DesignSystem.Icons.edit)
-                    }
-
-                    Button {
-                        showingCreateTask = true
-                    } label: {
-                        Image(systemName: DesignSystem.Icons.add)
-                    }
-                }
-            }
-        }
+        .toolbar { toolbarContent }
         .sheet(isPresented: $showingCreateTask) {
             CreateTaskView(listId: list.id, taskService: taskService)
         }
         .sheet(isPresented: $showingEditList) {
             EditListView(list: list, listService: listService)
+        }
+        .sheet(isPresented: $showingMembers) {
+            ListMembersView(list: list, apiClient: taskService.apiClient)
         }
         .sheet(item: $taskToEdit) { task in
             EditTaskView(listId: list.id, task: task, taskService: taskService, onSave: {
@@ -121,6 +104,40 @@ struct ListDetailView: View {
             await loadTasks()
         }
     }
+    
+    private var taskListView: some View {
+        List {
+            ForEach(tasks, id: \.id) { task in
+                TaskRowView(
+                    task: task,
+                    onToggleComplete: {
+                        Task { await toggleComplete(task) }
+                    }
+                )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    taskToEdit = task
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button("Delete", role: .destructive) {
+                        Task { await deleteTask(task) }
+                    }
+                }
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    Button {
+                        Task { await toggleComplete(task) }
+                    } label: {
+                        Label(
+                            task.isCompleted ? "Undo" : "Done",
+                            systemImage: task.isCompleted ? "arrow.uturn.backward" : "checkmark"
+                        )
+                    }
+                    .tint(task.isCompleted ? .orange : .green)
+                }
+            }
+        }
+        .listStyle(.plain)
+    }
 
     private func loadTasks() async {
         isLoading = true
@@ -139,7 +156,6 @@ struct ListDetailView: View {
     }
 
     private func toggleComplete(_ task: TaskDTO) async {
-        // If reopening, just do it
         if task.isCompleted {
             do {
                 _ = try await taskService.reopenTask(listId: list.id, taskId: task.id)
@@ -150,11 +166,9 @@ struct ListDetailView: View {
             return
         }
         
-        // If completing and overdue, need reason
         if task.isOverdue {
             taskNeedingReason = task
         } else {
-            // Not overdue, complete directly
             do {
                 _ = try await taskService.completeTask(listId: list.id, taskId: task.id)
                 await loadTasks()
