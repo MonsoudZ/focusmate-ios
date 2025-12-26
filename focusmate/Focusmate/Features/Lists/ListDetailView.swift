@@ -90,12 +90,8 @@ struct ListDetailView: View {
         } message: {
             Text("Are you sure you want to delete '\(list.name)'? This action cannot be undone.")
         }
-        .alert("Error", isPresented: .constant(error != nil)) {
-            Button("OK") { error = nil }
-        } message: {
-            if let error = error {
-                Text(error.message)
-            }
+        .errorBanner($error) {
+            Task { await loadTasks() }
         }
         .task {
             await loadTasks()

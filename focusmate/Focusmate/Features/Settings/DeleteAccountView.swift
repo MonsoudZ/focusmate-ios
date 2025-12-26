@@ -7,7 +7,7 @@ struct DeleteAccountView: View {
     @State private var password = ""
     @State private var confirmText = ""
     @State private var isLoading = false
-    @State private var error: String?
+    @State private var error: FocusmateError?
     @State private var showFinalConfirmation = false
     
     private let requiredConfirmText = "DELETE"
@@ -74,13 +74,7 @@ struct DeleteAccountView: View {
                     }
                 }
             }
-            .alert("Error", isPresented: .constant(error != nil)) {
-                Button("OK") { error = nil }
-            } message: {
-                if let error {
-                    Text(error)
-                }
-            }
+            .errorBanner($error)
             .alert("Are you absolutely sure?", isPresented: $showFinalConfirmation) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete Forever", role: .destructive) {
@@ -105,9 +99,9 @@ struct DeleteAccountView: View {
             
             await appState.auth.signOut()
         } catch let err as FocusmateError {
-            error = err.message
+            error = err
         } catch {
-            self.error = error.localizedDescription
+            self.error = ErrorHandler.shared.handle(error)
         }
         
         isLoading = false

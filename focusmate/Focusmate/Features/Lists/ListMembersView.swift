@@ -7,7 +7,7 @@ struct ListMembersView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var memberships: [MembershipDTO] = []
     @State private var isLoading = true
-    @State private var error: String?
+    @State private var error: FocusmateError?
     @State private var showingInvite = false
     @State private var memberToRemove: MembershipDTO?
     
@@ -82,12 +82,8 @@ struct ListMembersView: View {
                     Text("Remove \(member.user.name ?? member.user.email ?? "this member") from the list?")
                 }
             }
-            .alert("Error", isPresented: .constant(error != nil)) {
-                Button("OK") { error = nil }
-            } message: {
-                if let error {
-                    Text(error)
-                }
+            .errorBanner($error) {
+                Task { await loadMembers() }
             }
             .task {
                 await loadMembers()
@@ -104,8 +100,10 @@ struct ListMembersView: View {
                 body: nil as String?
             )
             memberships = response.memberships
+        } catch let err as FocusmateError {
+            error = err
         } catch {
-            self.error = error.localizedDescription
+            self.error = ErrorHandler.shared.handle(error)
         }
         isLoading = false
     }
@@ -119,8 +117,10 @@ struct ListMembersView: View {
             )
             memberships.removeAll { $0.id == membership.id }
             memberToRemove = nil
+        } catch let err as FocusmateError {
+            error = err
         } catch {
-            self.error = error.localizedDescription
+            self.error = ErrorHandler.shared.handle(error)
         }
     }
 }

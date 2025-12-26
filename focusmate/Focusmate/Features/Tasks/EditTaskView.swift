@@ -65,13 +65,7 @@ struct EditTaskView: View {
                     .disabled(title.isEmpty || isLoading)
                 }
             }
-            .alert("Error", isPresented: .constant(error != nil)) {
-                Button("OK") { error = nil }
-            } message: {
-                if let error = error {
-                    Text(error.message)
-                }
-            }
+            .errorBanner($error)
         }
     }
 

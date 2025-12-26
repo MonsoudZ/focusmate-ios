@@ -8,7 +8,7 @@ struct ChangePasswordView: View {
     @State private var newPassword = ""
     @State private var confirmPassword = ""
     @State private var isLoading = false
-    @State private var error: String?
+    @State private var error: FocusmateError?
     @State private var showSuccess = false
     
     private var isValid: Bool {
@@ -76,13 +76,7 @@ struct ChangePasswordView: View {
                         .background(Color.black.opacity(0.2))
                 }
             }
-            .alert("Error", isPresented: .constant(error != nil)) {
-                Button("OK") { error = nil }
-            } message: {
-                if let error {
-                    Text(error)
-                }
-            }
+            .errorBanner($error)
             .alert("Success", isPresented: $showSuccess) {
                 Button("OK") { dismiss() }
             } message: {
@@ -107,9 +101,9 @@ struct ChangePasswordView: View {
             )
             showSuccess = true
         } catch let err as FocusmateError {
-            error = err.message
+            error = err
         } catch {
-            self.error = error.localizedDescription
+            self.error = ErrorHandler.shared.handle(error)
         }
         
         isLoading = false
@@ -127,4 +121,3 @@ struct ChangePasswordRequest: Encodable {
         case passwordConfirmation = "password_confirmation"
     }
 }
-

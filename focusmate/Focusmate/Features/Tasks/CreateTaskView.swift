@@ -7,7 +7,7 @@ struct CreateTaskView: View {
 
     @State private var title = ""
     @State private var note = ""
-    @State private var dueDate = Date().addingTimeInterval(3600) // 1 hour from now
+    @State private var dueDate = Date().addingTimeInterval(3600)
     @State private var hasDueDate = false
     @State private var isLoading = false
     @State private var error: FocusmateError?
@@ -26,7 +26,6 @@ struct CreateTaskView: View {
                     Toggle("Set due date", isOn: $hasDueDate)
 
                     if hasDueDate {
-                        // Quick options
                         HStack(spacing: DesignSystem.Spacing.sm) {
                             Button("Today") {
                                 setDueDate(daysFromNow: 0)
@@ -73,13 +72,7 @@ struct CreateTaskView: View {
                     .disabled(title.isEmpty || isLoading)
                 }
             }
-            .alert("Error", isPresented: .constant(error != nil)) {
-                Button("OK") { error = nil }
-            } message: {
-                if let error = error {
-                    Text(error.message)
-                }
-            }
+            .errorBanner($error)
         }
     }
 

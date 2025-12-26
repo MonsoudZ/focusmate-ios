@@ -34,13 +34,7 @@ struct CreateListView: View {
                     .disabled(name.isEmpty || isLoading)
                 }
             }
-            .alert("Error", isPresented: .constant(error != nil)) {
-                Button("OK") { error = nil }
-            } message: {
-                if let error = error {
-                    Text(error.message)
-                }
-            }
+            .errorBanner($error)
         }
     }
 

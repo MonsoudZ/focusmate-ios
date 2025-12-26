@@ -9,7 +9,7 @@ struct InviteMemberView: View {
     @State private var email = ""
     @State private var role = "editor"
     @State private var isLoading = false
-    @State private var error: String?
+    @State private var error: FocusmateError?
     
     private var isValid: Bool {
         !email.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -66,13 +66,7 @@ struct InviteMemberView: View {
                         .background(Color.black.opacity(0.2))
                 }
             }
-            .alert("Error", isPresented: .constant(error != nil)) {
-                Button("OK") { error = nil }
-            } message: {
-                if let error {
-                    Text(error)
-                }
-            }
+            .errorBanner($error)
         }
     }
     
@@ -94,9 +88,9 @@ struct InviteMemberView: View {
             onInvited()
             dismiss()
         } catch let err as FocusmateError {
-            error = err.message
+            error = err
         } catch {
-            self.error = error.localizedDescription
+            self.error = ErrorHandler.shared.handle(error)
         }
         
         isLoading = false

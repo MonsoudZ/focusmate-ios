@@ -59,19 +59,14 @@ struct ListsView: View {
             .sheet(isPresented: $showingCreateList) {
                 CreateListView(listService: state.listService)
             }
+            .errorBanner($error) {
+                Task { await loadLists() }
+            }
             .task {
                 await loadLists()
             }
             .refreshable {
                 await loadLists()
-            }
-            .alert("Error", isPresented: .constant(error != nil)) {
-                Button("OK") { error = nil }
-                Button("Retry") { Task { await loadLists() } }
-            } message: {
-                if let error = error {
-                    Text(error.message)
-                }
             }
         }
     }

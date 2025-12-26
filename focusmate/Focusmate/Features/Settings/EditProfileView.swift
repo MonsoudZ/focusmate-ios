@@ -56,50 +56,43 @@ struct EditProfileView: View {
                         .background(Color.black.opacity(0.2))
                 }
             }
-            .alert("Error", isPresented: .constant(error != nil)) {
-                Button("OK") { error = nil }
-            } message: {
-                if let error = error {
-                    Text(error.message)
-                }
-            }
+            .errorBanner($error)
         }
     }
 
     private func saveProfile() async {
-            isLoading = true
-            error = nil
+        isLoading = true
+        error = nil
 
-            do {
-                let response: UserResponse = try await appState.auth.api.request(
-                    "PATCH",
-                    API.Users.profile,
-                    body: UpdateProfileRequest(name: name, timezone: timezone)
-                )
+        do {
+            let response: UserResponse = try await appState.auth.api.request(
+                "PATCH",
+                API.Users.profile,
+                body: UpdateProfileRequest(name: name, timezone: timezone)
+            )
 
-                await MainActor.run {
-                    appState.auth.currentUser = response.user
-                }
-                
-                // Small delay to let SwiftUI process the update
-                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-                
-                dismiss()
-            } catch let err as FocusmateError {
-                error = err
-            } catch {
-                self.error = .custom("PROFILE_ERROR", error.localizedDescription)
+            await MainActor.run {
+                appState.auth.currentUser = response.user
             }
-
-            isLoading = false
+            
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            
+            dismiss()
+        } catch let err as FocusmateError {
+            error = err
+        } catch {
+            self.error = .custom("PROFILE_ERROR", error.localizedDescription)
         }
-    }  // <-- This closing brace was missing
 
-    struct UpdateProfileRequest: Encodable {
-        let name: String
-        let timezone: String
+        isLoading = false
     }
+}
 
-    struct UserResponse: Codable {
-        let user: UserDTO
-    }
+struct UpdateProfileRequest: Encodable {
+    let name: String
+    let timezone: String
+}
+
+struct UserResponse: Codable {
+    let user: UserDTO
+}
