@@ -67,29 +67,39 @@ struct EditProfileView: View {
     }
 
     private func saveProfile() async {
-        isLoading = true
-        error = nil
+            isLoading = true
+            error = nil
 
-        do {
-            let updatedUser: UserDTO = try await appState.auth.api.request(
-                "PATCH",
-                API.Users.profile,
-                body: UpdateProfileRequest(name: name, timezone: timezone)
-            )
+            do {
+                let response: UserResponse = try await appState.auth.api.request(
+                    "PATCH",
+                    API.Users.profile,
+                    body: UpdateProfileRequest(name: name, timezone: timezone)
+                )
 
-            appState.auth.currentUser = updatedUser
-            dismiss()
-        } catch let err as FocusmateError {
-            error = err
-        } catch {
-            self.error = .custom("PROFILE_ERROR", error.localizedDescription)
+                await MainActor.run {
+                    appState.auth.currentUser = response.user
+                }
+                
+                // Small delay to let SwiftUI process the update
+                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+                
+                dismiss()
+            } catch let err as FocusmateError {
+                error = err
+            } catch {
+                self.error = .custom("PROFILE_ERROR", error.localizedDescription)
+            }
+
+            isLoading = false
         }
+    }  // <-- This closing brace was missing
 
-        isLoading = false
+    struct UpdateProfileRequest: Encodable {
+        let name: String
+        let timezone: String
     }
-}
 
-struct UpdateProfileRequest: Encodable {
-    let name: String
-    let timezone: String
-}
+    struct UserResponse: Codable {
+        let user: UserDTO
+    }

@@ -6,6 +6,20 @@ final class NotificationService {
     
     private init() {}
     
+    // MARK: - Preferences
+    
+    private var dueSoonEnabled: Bool {
+        UserDefaults.standard.object(forKey: "dueSoonReminders") as? Bool ?? true
+    }
+    
+    private var overdueEnabled: Bool {
+        UserDefaults.standard.object(forKey: "overdueAlerts") as? Bool ?? true
+    }
+    
+    private var morningBriefingEnabled: Bool {
+        UserDefaults.standard.object(forKey: "morningBriefing") as? Bool ?? true
+    }
+    
     // MARK: - Permission
     
     func requestPermission() async -> Bool {
@@ -36,36 +50,42 @@ final class NotificationService {
         
         let now = Date()
         
-        // Due soon - 1 hour before
-        let dueSoonDate = dueDate.addingTimeInterval(-3600)
-        if dueSoonDate > now {
-            scheduleNotification(
-                id: "task-\(task.id)-due-soon",
-                title: "Task Due Soon",
-                body: "📋 \(task.title) is due in 1 hour",
-                date: dueSoonDate
-            )
+        // Due soon - 1 hour before (check preference)
+        if dueSoonEnabled {
+            let dueSoonDate = dueDate.addingTimeInterval(-3600)
+            if dueSoonDate > now {
+                scheduleNotification(
+                    id: "task-\(task.id)-due-soon",
+                    title: "Task Due Soon",
+                    body: "📋 \(task.title) is due in 1 hour",
+                    date: dueSoonDate
+                )
+            }
         }
         
-        // Due now - at due time
-        if dueDate > now {
-            scheduleNotification(
-                id: "task-\(task.id)-due-now",
-                title: "Task Due Now",
-                body: "⏰ \(task.title) is due now",
-                date: dueDate
-            )
+        // Due now - at due time (also controlled by dueSoon preference)
+        if dueSoonEnabled {
+            if dueDate > now {
+                scheduleNotification(
+                    id: "task-\(task.id)-due-now",
+                    title: "Task Due Now",
+                    body: "⏰ \(task.title) is due now",
+                    date: dueDate
+                )
+            }
         }
         
-        // Overdue - 1 hour after
-        let overdueDate = dueDate.addingTimeInterval(3600)
-        if overdueDate > now {
-            scheduleNotification(
-                id: "task-\(task.id)-overdue",
-                title: "Task Overdue!",
-                body: "🚨 \(task.title) is overdue!",
-                date: overdueDate
-            )
+        // Overdue - 1 hour after (check preference)
+        if overdueEnabled {
+            let overdueDate = dueDate.addingTimeInterval(3600)
+            if overdueDate > now {
+                scheduleNotification(
+                    id: "task-\(task.id)-overdue",
+                    title: "Task Overdue!",
+                    body: "🚨 \(task.title) is overdue!",
+                    date: overdueDate
+                )
+            }
         }
         
         Logger.debug("Scheduled notifications for task: \(task.title)", category: .general)
@@ -86,6 +106,8 @@ final class NotificationService {
         // Cancel existing
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["morning-briefing"])
         
+        // Check preference
+        guard morningBriefingEnabled else { return }
         guard taskCount > 0 else { return }
         
         // Schedule for 8am tomorrow

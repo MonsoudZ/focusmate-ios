@@ -8,6 +8,8 @@ final class AppState: ObservableObject {
     @Published var isLoading = false
     @Published var error: FocusmateError?
 
+    private var cancellables = Set<AnyCancellable>()
+
     // Services
     private(set) lazy var listService = ListService(apiClient: auth.api)
     private(set) lazy var taskService = TaskService(apiClient: auth.api)
@@ -15,6 +17,14 @@ final class AppState: ObservableObject {
 
     init() {
         SentryService.shared.initialize()
+        
+        // Forward auth changes to trigger AppState updates
+        auth.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
         
         Task {
             await setupServices()
@@ -24,7 +34,6 @@ final class AppState: ObservableObject {
     private func setupServices() async {
         guard auth.jwt != nil else { return }
         
-        // Defer device registration to improve app launch time
         Task {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             await registerDevice()

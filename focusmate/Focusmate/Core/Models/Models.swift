@@ -9,6 +9,12 @@ struct UserDTO: Codable, Identifiable, Hashable {
     let name: String
     let role: String
     let timezone: String?
+    let hasPassword: Bool?
+    
+    enum CodingKeys: String, CodingKey {
+            case id, email, name, role, timezone
+            case hasPassword = "has_password"
+        }
 }
 
 // MARK: - List
