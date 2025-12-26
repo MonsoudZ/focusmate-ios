@@ -33,12 +33,16 @@ enum API {
     }
     
     // MARK: - Current Environment
-    
+
     static var current: Environment {
         #if DEBUG
-        return .development
+            #if targetEnvironment(simulator)
+                return .development  // Simulator → local
+            #else
+                return .staging      // Physical device → staging
+            #endif
         #else
-        return .production
+            return .production       // Release build → production
         #endif
     }
     
