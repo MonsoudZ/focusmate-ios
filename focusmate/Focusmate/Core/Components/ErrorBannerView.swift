@@ -104,9 +104,7 @@ struct ErrorBannerModifier: ViewModifier {
     let onRetry: (() -> Void)?
     
     func body(content: Content) -> some View {
-        ZStack(alignment: .top) {
-            content
-            
+        VStack(spacing: 0) {
             if let error {
                 ErrorBannerView(
                     error: error,
@@ -114,9 +112,12 @@ struct ErrorBannerModifier: ViewModifier {
                     onRetry: onRetry
                 )
                 .transition(.move(edge: .top).combined(with: .opacity))
-                .zIndex(100)
                 .padding(.top, 8)
+                .padding(.bottom, 8)
             }
+            
+            content
+                .frame(maxHeight: .infinity)
         }
         .animation(.easeInOut(duration: 0.3), value: error != nil)
     }
