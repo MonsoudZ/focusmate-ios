@@ -40,6 +40,21 @@ struct ListDetailView: View {
             }
         }
     }
+    
+    // Sort: incomplete first (by due date), then completed
+    private var sortedTasks: [TaskDTO] {
+        tasks.sorted { task1, task2 in
+            // Completed tasks go to bottom
+            if task1.isCompleted != task2.isCompleted {
+                return !task1.isCompleted
+            }
+            
+            // Both incomplete or both completed - sort by due date
+            guard let date1 = task1.dueDate else { return false }
+            guard let date2 = task2.dueDate else { return true }
+            return date1 < date2
+        }
+    }
 
     var body: some View {
         Group {
@@ -97,13 +112,14 @@ struct ListDetailView: View {
             await loadTasks()
         }
         .refreshable {
+            HapticManager.light()
             await loadTasks()
         }
     }
     
     private var taskListView: some View {
         List {
-            ForEach(tasks, id: \.id) { task in
+            ForEach(sortedTasks, id: \.id) { task in
                 TaskRowView(
                     task: task,
                     onToggleComplete: {
@@ -112,10 +128,12 @@ struct ListDetailView: View {
                 )
                 .contentShape(Rectangle())
                 .onTapGesture {
+                    HapticManager.selection()
                     taskToEdit = task
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button("Delete", role: .destructive) {
+                        HapticManager.warning()
                         Task { await deleteTask(task) }
                     }
                 }
@@ -144,8 +162,10 @@ struct ListDetailView: View {
             tasks = response
         } catch let err as FocusmateError {
             error = err
+            HapticManager.error()
         } catch {
             self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
         }
 
         isLoading = false
@@ -155,9 +175,11 @@ struct ListDetailView: View {
         if task.isCompleted {
             do {
                 _ = try await taskService.reopenTask(listId: list.id, taskId: task.id)
+                HapticManager.light()
                 await loadTasks()
             } catch {
                 self.error = ErrorHandler.shared.handle(error)
+                HapticManager.error()
             }
             return
         }
@@ -167,9 +189,11 @@ struct ListDetailView: View {
         } else {
             do {
                 _ = try await taskService.completeTask(listId: list.id, taskId: task.id)
+                HapticManager.success()
                 await loadTasks()
             } catch {
                 self.error = ErrorHandler.shared.handle(error)
+                HapticManager.error()
             }
         }
     }
@@ -177,30 +201,36 @@ struct ListDetailView: View {
     private func completeWithReason(_ task: TaskDTO, reason: String) async {
         do {
             _ = try await taskService.completeTask(listId: list.id, taskId: task.id, reason: reason)
+            HapticManager.success()
             await loadTasks()
         } catch {
             self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
         }
     }
 
     private func deleteTask(_ task: TaskDTO) async {
         let originalTasks = tasks
         tasks.removeAll { $0.id == task.id }
+        HapticManager.medium()
 
         do {
             try await taskService.deleteTask(listId: list.id, taskId: task.id)
         } catch {
             tasks = originalTasks
             self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
         }
     }
 
     private func deleteList() async {
         do {
             try await listService.deleteList(id: list.id)
+            HapticManager.medium()
             dismiss()
         } catch {
             self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
         }
     }
 }

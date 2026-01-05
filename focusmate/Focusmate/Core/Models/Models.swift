@@ -24,10 +24,26 @@ struct ListDTO: Codable, Identifiable, Hashable {
     let name: String
     let description: String?
     let visibility: String
+    let color: String?
     let role: String?
     let tasks_count: Int?
     let created_at: String?
     let updated_at: String?
+    
+    var listColor: Color {
+        switch color ?? "blue" {
+        case "blue": return .blue
+        case "green": return .green
+        case "orange": return .orange
+        case "red": return .red
+        case "purple": return .purple
+        case "pink": return .pink
+        case "teal": return .teal
+        case "yellow": return .yellow
+        case "gray": return .gray
+        default: return .blue
+        }
+    }
 }
 
 struct ListsResponse: Codable {
@@ -40,6 +56,7 @@ struct ListsResponse: Codable {
 struct TaskDTO: Codable, Identifiable {
     let id: Int
     let list_id: Int
+    let color: String?
     let title: String
     let note: String?
     let due_at: String?
@@ -52,29 +69,43 @@ struct TaskDTO: Codable, Identifiable {
     let updated_at: String?
     
     let overdue: Bool?
-       let minutes_overdue: Int?
-       let requires_explanation_if_missed: Bool?
-       let missed_reason: String?
-       let missed_reason_submitted_at: String?
-
+    let minutes_overdue: Int?
+    let requires_explanation_if_missed: Bool?
+    let missed_reason: String?
+    let missed_reason_submitted_at: String?
 
     var isCompleted: Bool {
-            completed_at != nil
-        }
-        
-        var isOverdue: Bool {
-            overdue ?? false
-        }
-        
-        var needsReason: Bool {
-            isOverdue && (requires_explanation_if_missed ?? false) && missed_reason == nil
-        }
+        completed_at != nil
+    }
+    
+    var isOverdue: Bool {
+        overdue ?? false
+    }
+    
+    var needsReason: Bool {
+        isOverdue && (requires_explanation_if_missed ?? false) && missed_reason == nil
+    }
 
-        var dueDate: Date? {
-            guard let due_at else { return nil }
-            return ISO8601DateFormatter().date(from: due_at)
+    var dueDate: Date? {
+        guard let due_at else { return nil }
+        return ISO8601DateFormatter().date(from: due_at)
+    }
+    
+    var taskColor: Color {
+        switch color {
+        case "blue": return .blue
+        case "green": return .green
+        case "orange": return .orange
+        case "red": return .red
+        case "purple": return .purple
+        case "pink": return .pink
+        case "teal": return .teal
+        case "yellow": return .yellow
+        case "gray": return .gray
+        default: return .blue
         }
     }
+}
 
 struct TasksResponse: Codable {
     let tasks: [TaskDTO]

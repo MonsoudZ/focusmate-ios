@@ -19,13 +19,13 @@ final class ListService {
         return try await apiClient.request("GET", API.Lists.id(String(id)), body: nil as String?)
     }
 
-    func createList(name: String, description: String?) async throws -> ListDTO {
-        let request = CreateListRequest(list: .init(name: name, description: description))
+    func createList(name: String, description: String?, color: String = "blue") async throws -> ListDTO {
+        let request = CreateListRequest(list: .init(name: name, description: description, color: color))
         return try await apiClient.request("POST", API.Lists.root, body: request)
     }
 
-    func updateList(id: Int, name: String?, description: String?) async throws -> ListDTO {
-        let request = UpdateListRequest(list: .init(name: name, description: description, visibility: nil))
+    func updateList(id: Int, name: String?, description: String?, color: String? = nil) async throws -> ListDTO {
+        let request = UpdateListRequest(list: .init(name: name, description: description, visibility: nil, color: color))
         return try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
     }
 

@@ -25,11 +25,12 @@ final class TaskService {
         )
     }
 
-    func createTask(listId: Int, title: String, note: String?, dueAt: Date?) async throws -> TaskDTO {
+    func createTask(listId: Int, title: String, note: String?, dueAt: Date?, color: String? = nil) async throws -> TaskDTO {
         let request = CreateTaskRequest(task: .init(
             title: title,
             note: note,
-            due_at: dueAt?.ISO8601Format()
+            due_at: dueAt?.ISO8601Format(),
+            color: color
         ))
         let task: TaskDTO = try await apiClient.request(
             "POST",
@@ -40,16 +41,16 @@ final class TaskService {
         // Schedule notifications
         NotificationService.shared.scheduleTaskNotifications(for: task)
         CalendarService.shared.addTaskToCalendar(task)
-
         
         return task
     }
 
-    func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?) async throws -> TaskDTO {
+    func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil) async throws -> TaskDTO {
         let request = UpdateTaskRequest(task: .init(
             title: title,
             note: note,
-            due_at: dueAt
+            due_at: dueAt,
+            color: color
         ))
         let task: TaskDTO = try await apiClient.request(
             "PUT",
@@ -128,6 +129,7 @@ private struct CreateTaskRequest: Encodable {
         let title: String
         let note: String?
         let due_at: String?
+        let color: String?
     }
 }
 
@@ -137,6 +139,7 @@ private struct UpdateTaskRequest: Encodable {
         let title: String?
         let note: String?
         let due_at: String?
+        let color: String?
     }
 }
 

@@ -60,11 +60,13 @@ struct CreateListRequest: Encodable {
         let name: String
         let description: String?
         let visibility: String
+        let color: String
 
-        init(name: String, description: String? = nil, visibility: String = "private") {
+        init(name: String, description: String? = nil, visibility: String = "private", color: String = "blue") {
             self.name = name
             self.description = description
             self.visibility = visibility
+            self.color = color
         }
     }
 }
@@ -75,5 +77,6 @@ struct UpdateListRequest: Encodable {
         let name: String?
         let description: String?
         let visibility: String?
+        let color: String?
     }
 }

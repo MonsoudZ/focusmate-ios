@@ -9,8 +9,11 @@ struct CreateTaskView: View {
     @State private var note = ""
     @State private var dueDate = Date().addingTimeInterval(3600)
     @State private var hasDueDate = false
+    @State private var selectedColor: String? = nil
     @State private var isLoading = false
     @State private var error: FocusmateError?
+    
+    private let colors = ["blue", "green", "orange", "red", "purple", "pink", "teal", "yellow", "gray"]
 
     var body: some View {
         NavigationStack {
@@ -55,6 +58,29 @@ struct CreateTaskView: View {
                         )
                     }
                 }
+                
+                Section("Color (Optional)") {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
+                        ForEach(colors, id: \.self) { color in
+                            Circle()
+                                .fill(colorFor(color))
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.primary, lineWidth: selectedColor == color ? 3 : 0)
+                                )
+                                .onTapGesture {
+                                    HapticManager.selection()
+                                    if selectedColor == color {
+                                        selectedColor = nil
+                                    } else {
+                                        selectedColor = color
+                                    }
+                                }
+                        }
+                    }
+                    .padding(.vertical, 8)
+                }
             }
             .navigationTitle("New Task")
             .navigationBarTitleDisplayMode(.inline)
@@ -75,6 +101,21 @@ struct CreateTaskView: View {
             .errorBanner($error)
         }
     }
+    
+    private func colorFor(_ name: String) -> Color {
+        switch name {
+        case "blue": return .blue
+        case "green": return .green
+        case "orange": return .orange
+        case "red": return .red
+        case "purple": return .purple
+        case "pink": return .pink
+        case "teal": return .teal
+        case "yellow": return .yellow
+        case "gray": return .gray
+        default: return .blue
+        }
+    }
 
     private func createTask() async {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -88,13 +129,17 @@ struct CreateTaskView: View {
                 listId: listId,
                 title: trimmedTitle,
                 note: note.isEmpty ? nil : note,
-                dueAt: hasDueDate ? dueDate : nil
+                dueAt: hasDueDate ? dueDate : nil,
+                color: selectedColor
             )
+            HapticManager.success()
             dismiss()
         } catch let err as FocusmateError {
             error = err
+            HapticManager.error()
         } catch {
             self.error = .custom("CREATE_ERROR", error.localizedDescription)
+            HapticManager.error()
         }
     }
     
