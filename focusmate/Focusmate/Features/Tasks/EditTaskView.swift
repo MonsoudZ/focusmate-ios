@@ -41,10 +41,8 @@ struct EditTaskView: View {
             
             // Check if it's midnight (anytime task)
             let calendar = Calendar.current
-            // Check if it's end of day (anytime task)
             let hour = calendar.component(.hour, from: existingDueDate)
             let minute = calendar.component(.minute, from: existingDueDate)
-            // Check if it's midnight (anytime task)
             _hasSpecificTime = State(initialValue: !(hour == 0 && minute == 0))
         } else {
             _dueDate = State(initialValue: Date())
@@ -70,6 +68,7 @@ struct EditTaskView: View {
                         DatePicker(
                             "Date",
                             selection: $dueDate,
+                            in: Calendar.current.startOfDay(for: Date())...,
                             displayedComponents: [.date]
                         )
                         
@@ -79,6 +78,7 @@ struct EditTaskView: View {
                             DatePicker(
                                 "Time",
                                 selection: $dueTime,
+                                in: minimumTime...,
                                 displayedComponents: [.hourAndMinute]
                             )
                         }
@@ -151,7 +151,26 @@ struct EditTaskView: View {
                 }
             }
             .errorBanner($error)
+            .onChange(of: dueDate) { oldValue, newValue in
+                // If today is selected and time is in the past, reset to now
+                if Calendar.current.isDateInToday(newValue) && hasSpecificTime && dueTime < Date() {
+                    dueTime = Date()
+                }
+            }
+            .onChange(of: hasSpecificTime) { oldValue, newValue in
+                // When enabling specific time on today, ensure time is not in past
+                if newValue && Calendar.current.isDateInToday(dueDate) && dueTime < Date() {
+                    dueTime = Date()
+                }
+            }
         }
+    }
+    
+    private var minimumTime: Date {
+        if Calendar.current.isDateInToday(dueDate) {
+            return Date()
+        }
+        return Calendar.current.startOfDay(for: dueDate)
     }
     
     private var finalDueDate: Date? {
