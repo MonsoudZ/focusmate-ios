@@ -12,6 +12,7 @@ struct EditTaskView: View {
     @State private var dueDate: Date
     @State private var hasDueDate: Bool
     @State private var selectedColor: String?
+    @State private var selectedPriority: TaskPriority
     @State private var isLoading = false
     @State private var error: FocusmateError?
     
@@ -28,6 +29,7 @@ struct EditTaskView: View {
         _hasDueDate = State(initialValue: task.due_at != nil)
         _dueDate = State(initialValue: task.dueDate ?? Date())
         _selectedColor = State(initialValue: task.color)
+        _selectedPriority = State(initialValue: TaskPriority(rawValue: task.priority ?? 0) ?? .none)
     }
 
     var body: some View {
@@ -51,6 +53,22 @@ struct EditTaskView: View {
                             displayedComponents: [.date, .hourAndMinute]
                         )
                     }
+                }
+                
+                Section("Priority") {
+                    Picker("Priority", selection: $selectedPriority) {
+                        ForEach(TaskPriority.allCases, id: \.self) { priority in
+                            HStack {
+                                if let icon = priority.icon {
+                                    Image(systemName: icon)
+                                        .foregroundColor(priority.color)
+                                }
+                                Text(priority.label)
+                            }
+                            .tag(priority)
+                        }
+                    }
+                    .pickerStyle(.menu)
                 }
                 
                 Section("Color (Optional)") {
@@ -125,7 +143,8 @@ struct EditTaskView: View {
                 title: trimmedTitle,
                 note: note.isEmpty ? nil : note,
                 dueAt: hasDueDate ? dueDate.ISO8601Format() : nil,
-                color: selectedColor
+                color: selectedColor,
+                priority: selectedPriority
             )
             HapticManager.success()
             onSave?()

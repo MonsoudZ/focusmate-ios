@@ -44,7 +44,13 @@ struct TaskRowView: View {
             .buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                HStack {
+                HStack(spacing: 4) {
+                    if let icon = task.taskPriority.icon {
+                        Image(systemName: icon)
+                            .foregroundColor(task.taskPriority.color)
+                            .font(.caption)
+                    }
+                    
                     Text(task.title)
                         .font(DesignSystem.Typography.body)
                         .fontWeight(task.isCompleted ? .regular : .medium)

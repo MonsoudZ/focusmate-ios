@@ -10,6 +10,7 @@ struct CreateTaskView: View {
     @State private var dueDate = Date().addingTimeInterval(3600)
     @State private var hasDueDate = false
     @State private var selectedColor: String? = nil
+    @State private var selectedPriority: TaskPriority = .none
     @State private var isLoading = false
     @State private var error: FocusmateError?
     
@@ -57,6 +58,22 @@ struct CreateTaskView: View {
                             displayedComponents: [.date, .hourAndMinute]
                         )
                     }
+                }
+                
+                Section("Priority") {
+                    Picker("Priority", selection: $selectedPriority) {
+                        ForEach(TaskPriority.allCases, id: \.self) { priority in
+                            HStack {
+                                if let icon = priority.icon {
+                                    Image(systemName: icon)
+                                        .foregroundColor(priority.color)
+                                }
+                                Text(priority.label)
+                            }
+                            .tag(priority)
+                        }
+                    }
+                    .pickerStyle(.menu)
                 }
                 
                 Section("Color (Optional)") {
@@ -130,7 +147,8 @@ struct CreateTaskView: View {
                 title: trimmedTitle,
                 note: note.isEmpty ? nil : note,
                 dueAt: hasDueDate ? dueDate : nil,
-                color: selectedColor
+                color: selectedColor,
+                priority: selectedPriority
             )
             HapticManager.success()
             dismiss()

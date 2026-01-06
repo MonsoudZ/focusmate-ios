@@ -41,19 +41,10 @@ struct ListDetailView: View {
         }
     }
     
-    // Sort: incomplete first (by due date), then completed
     private var sortedTasks: [TaskDTO] {
-        tasks.sorted { task1, task2 in
-            // Completed tasks go to bottom
-            if task1.isCompleted != task2.isCompleted {
-                return !task1.isCompleted
-            }
-            
-            // Both incomplete or both completed - sort by due date
-            guard let date1 = task1.dueDate else { return false }
-            guard let date2 = task2.dueDate else { return true }
-            return date1 < date2
-        }
+        let incomplete = tasks.filter { !$0.isCompleted }
+        let completed = tasks.filter { $0.isCompleted }
+        return incomplete + completed
     }
 
     var body: some View {
