@@ -10,7 +10,9 @@ struct EditTaskView: View {
     @State private var title: String
     @State private var note: String
     @State private var dueDate: Date
+    @State private var dueTime: Date
     @State private var hasDueDate: Bool
+    @State private var hasSpecificTime: Bool
     @State private var selectedColor: String?
     @State private var selectedPriority: TaskPriority
     @State private var isStarred: Bool
@@ -28,10 +30,27 @@ struct EditTaskView: View {
         _title = State(initialValue: task.title)
         _note = State(initialValue: task.note ?? "")
         _hasDueDate = State(initialValue: task.due_at != nil)
-        _dueDate = State(initialValue: task.dueDate ?? Date())
         _selectedColor = State(initialValue: task.color)
         _selectedPriority = State(initialValue: TaskPriority(rawValue: task.priority ?? 0) ?? .none)
         _isStarred = State(initialValue: task.starred ?? false)
+        
+        // Parse existing due date
+        if let existingDueDate = task.dueDate {
+            _dueDate = State(initialValue: existingDueDate)
+            _dueTime = State(initialValue: existingDueDate)
+            
+            // Check if it's midnight (anytime task)
+            let calendar = Calendar.current
+            // Check if it's end of day (anytime task)
+            let hour = calendar.component(.hour, from: existingDueDate)
+            let minute = calendar.component(.minute, from: existingDueDate)
+            // Check if it's midnight (anytime task)
+            _hasSpecificTime = State(initialValue: !(hour == 0 && minute == 0))
+        } else {
+            _dueDate = State(initialValue: Date())
+            _dueTime = State(initialValue: Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date())
+            _hasSpecificTime = State(initialValue: false)
+        }
     }
 
     var body: some View {
@@ -49,11 +68,20 @@ struct EditTaskView: View {
 
                     if hasDueDate {
                         DatePicker(
-                            "Due Date",
+                            "Date",
                             selection: $dueDate,
-                            in: Date()...,
-                            displayedComponents: [.date, .hourAndMinute]
+                            displayedComponents: [.date]
                         )
+                        
+                        Toggle("Specific time", isOn: $hasSpecificTime)
+                        
+                        if hasSpecificTime {
+                            DatePicker(
+                                "Time",
+                                selection: $dueTime,
+                                displayedComponents: [.hourAndMinute]
+                            )
+                        }
                     }
                 }
                 
@@ -126,6 +154,24 @@ struct EditTaskView: View {
         }
     }
     
+    private var finalDueDate: Date? {
+        guard hasDueDate else { return nil }
+        
+        let calendar = Calendar.current
+        
+        if hasSpecificTime {
+            // Combine date and time
+            let timeComponents = calendar.dateComponents([.hour, .minute], from: dueTime)
+            return calendar.date(bySettingHour: timeComponents.hour ?? 17,
+                                  minute: timeComponents.minute ?? 0,
+                                  second: 0,
+                                  of: dueDate)
+        } else {
+            // Set to midnight (00:00) for "anytime" tasks
+            return calendar.startOfDay(for: dueDate)
+        }
+    }
+    
     private func colorFor(_ name: String) -> Color {
         switch name {
         case "blue": return .blue
@@ -154,7 +200,7 @@ struct EditTaskView: View {
                 taskId: task.id,
                 title: trimmedTitle,
                 note: note.isEmpty ? nil : note,
-                dueAt: hasDueDate ? dueDate.ISO8601Format() : nil,
+                dueAt: finalDueDate?.ISO8601Format(),
                 color: selectedColor,
                 priority: selectedPriority,
                 starred: isStarred

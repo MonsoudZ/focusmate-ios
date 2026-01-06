@@ -8,6 +8,10 @@ struct TodayTaskRow: View {
     @State private var showingReasonSheet = false
     @State private var selectedReason: String?
     
+    private var isOverdue: Bool {
+        task.isActuallyOverdue
+    }
+    
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
             // Complete button
@@ -34,10 +38,10 @@ struct TodayTaskRow: View {
                     if let dueDate = task.dueDate {
                         Label(formatTime(dueDate), systemImage: "clock")
                             .font(DesignSystem.Typography.caption1)
-                            .foregroundColor(task.isOverdue ? DesignSystem.Colors.error : DesignSystem.Colors.textSecondary)
+                            .foregroundColor(isOverdue ? DesignSystem.Colors.error : DesignSystem.Colors.textSecondary)
                     }
                     
-                    if task.isOverdue, let minutes = task.minutes_overdue {
+                    if isOverdue, let minutes = task.minutes_overdue {
                         Text(formatOverdue(minutes))
                             .font(DesignSystem.Typography.caption1)
                             .foregroundColor(DesignSystem.Colors.error)
@@ -81,6 +85,10 @@ struct TodayTaskRow: View {
     }
     
     private func formatTime(_ date: Date) -> String {
+        // Don't show time for anytime tasks
+        if task.isAnytime {
+            return "Anytime"
+        }
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter.string(from: date)

@@ -7,8 +7,10 @@ struct CreateTaskView: View {
 
     @State private var title = ""
     @State private var note = ""
-    @State private var dueDate = Date().addingTimeInterval(3600)
+    @State private var dueDate = Date()
+    @State private var dueTime = Date()
     @State private var hasDueDate = false
+    @State private var hasSpecificTime = false
     @State private var selectedColor: String? = nil
     @State private var selectedPriority: TaskPriority = .none
     @State private var isStarred = false
@@ -53,11 +55,22 @@ struct CreateTaskView: View {
                         .padding(.vertical, DesignSystem.Spacing.xs)
 
                         DatePicker(
-                            "Due Date",
+                            "Date",
                             selection: $dueDate,
-                            in: Date()...,
-                            displayedComponents: [.date, .hourAndMinute]
+                            in: Calendar.current.startOfDay(for: Date())...,
+                            displayedComponents: [.date]
                         )
+                        
+                        Toggle("Specific time", isOn: $hasSpecificTime)
+                        
+                        if hasSpecificTime {
+                            DatePicker(
+                                "Time",
+                                selection: $dueTime,
+                                in: minimumTime...,
+                                displayedComponents: [.hourAndMinute]
+                            )
+                        }
                     }
                 }
                 
@@ -127,7 +140,49 @@ struct CreateTaskView: View {
                 }
             }
             .errorBanner($error)
+            .onAppear {
+                // Default time to 5pm
+                let calendar = Calendar.current
+                dueTime = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
+            }
+            .onChange(of: dueDate) { oldValue, newValue in
+                // If today is selected and time is in the past, reset to now
+                if Calendar.current.isDateInToday(newValue) && hasSpecificTime && dueTime < Date() {
+                    dueTime = Date()
+                }
+            }
+            .onChange(of: hasSpecificTime) { oldValue, newValue in
+                // When enabling specific time on today, ensure time is not in past
+                if newValue && Calendar.current.isDateInToday(dueDate) && dueTime < Date() {
+                    dueTime = Date()
+                }
+            }
         }
+    }
+    
+    private var finalDueDate: Date? {
+        guard hasDueDate else { return nil }
+        
+        let calendar = Calendar.current
+        
+        if hasSpecificTime {
+            // Combine date and time
+            let timeComponents = calendar.dateComponents([.hour, .minute], from: dueTime)
+            return calendar.date(bySettingHour: timeComponents.hour ?? 17,
+                                  minute: timeComponents.minute ?? 0,
+                                  second: 0,
+                                  of: dueDate)
+        } else {
+            // Set to midnight (00:00) for "anytime" tasks
+            return calendar.startOfDay(for: dueDate)
+        }
+    }
+    
+    private var minimumTime: Date {
+        if Calendar.current.isDateInToday(dueDate) {
+            return Date()
+        }
+        return Calendar.current.startOfDay(for: dueDate)
     }
     
     private func colorFor(_ name: String) -> Color {
@@ -157,7 +212,7 @@ struct CreateTaskView: View {
                 listId: listId,
                 title: trimmedTitle,
                 note: note.isEmpty ? nil : note,
-                dueAt: hasDueDate ? dueDate : nil,
+                dueAt: finalDueDate,
                 color: selectedColor,
                 priority: selectedPriority,
                 starred: isStarred
@@ -191,10 +246,9 @@ struct CreateTaskView: View {
         let now = Date()
         
         if daysFromNow == 0 {
-            dueDate = now.addingTimeInterval(3600)
+            dueDate = now
         } else {
-            let targetDay = calendar.date(byAdding: .day, value: daysFromNow, to: calendar.startOfDay(for: now)) ?? now
-            dueDate = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: targetDay) ?? targetDay
+            dueDate = calendar.date(byAdding: .day, value: daysFromNow, to: calendar.startOfDay(for: now)) ?? now
         }
     }
 }

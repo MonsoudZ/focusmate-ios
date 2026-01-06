@@ -153,6 +153,27 @@ struct TaskDTO: Codable, Identifiable {
         default: return .blue
         }
     }
+    
+    var isAnytime: Bool {
+        guard let dueDate = dueDate else { return false }
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: dueDate)
+        let minute = calendar.component(.minute, from: dueDate)
+        return hour == 0 && minute == 0
+    }
+
+    var isActuallyOverdue: Bool {
+        guard let dueDate = dueDate, !isCompleted else { return false }
+        
+        // Anytime tasks are only overdue after end of day
+        if isAnytime {
+            let calendar = Calendar.current
+            let endOfDueDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: dueDate) ?? dueDate
+            return Date() > endOfDueDay
+        }
+        
+        return dueDate < Date()
+    }
 }
 
 struct TasksResponse: Codable {
@@ -168,12 +189,18 @@ struct TodayResponse: Codable {
     let due_today: [TaskDTO]
     let completed_today: [TaskDTO]
     let stats: TodayStats
+    let streak: StreakInfo?
 }
 
 struct TodayStats: Codable {
     let overdue_count: Int
     let due_today_count: Int
     let completed_today_count: Int
+}
+
+struct StreakInfo: Codable {
+    let current: Int
+    let longest: Int
 }
 
 // MARK: - Sharing

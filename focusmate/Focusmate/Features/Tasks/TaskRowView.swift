@@ -6,12 +6,27 @@ struct TaskRowView: View {
     let onToggleStar: () -> Void
 
     private var isOverdue: Bool {
-        guard let dueDate = task.dueDate, !task.isCompleted else { return false }
-        return dueDate < Date()
+        task.isActuallyOverdue
     }
     
     private var dueDateText: String? {
         guard let dueDate = task.dueDate else { return nil }
+        
+        // Don't show time for anytime tasks
+        if task.isAnytime {
+            let calendar = Calendar.current
+            if calendar.isDateInToday(dueDate) {
+                return "Today"
+            } else if calendar.isDateInTomorrow(dueDate) {
+                return "Tomorrow"
+            } else if calendar.isDateInYesterday(dueDate) {
+                return "Yesterday"
+            } else {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "MMM d"
+                return formatter.string(from: dueDate)
+            }
+        }
         
         let calendar = Calendar.current
         

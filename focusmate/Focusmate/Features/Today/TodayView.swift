@@ -13,6 +13,69 @@ struct TodayView: View {
         TodayService(api: state.auth.api)
     }
     
+    // MARK: - Progress Calculation
+    
+    private var totalTasks: Int {
+        guard let data = todayData else { return 0 }
+        return data.overdue.count + data.due_today.count + data.completed_today.count
+    }
+    
+    private var completedCount: Int {
+        todayData?.completed_today.count ?? 0
+    }
+    
+    private var progress: Double {
+        guard totalTasks > 0 else { return 0 }
+        return Double(completedCount) / Double(totalTasks)
+    }
+    
+    private var isAllComplete: Bool {
+        guard let data = todayData else { return false }
+        return data.overdue.isEmpty && data.due_today.isEmpty && !data.completed_today.isEmpty
+    }
+    
+    // MARK: - Time-Based Grouping
+    
+    private var anytimeTasks: [TaskDTO] {
+        guard let data = todayData else { return [] }
+        return data.due_today.filter { task in
+            guard let dueDate = task.dueDate else { return true }
+            let hour = Calendar.current.component(.hour, from: dueDate)
+            let minute = Calendar.current.component(.minute, from: dueDate)
+            // Tasks due at midnight (00:00) are "anytime" tasks
+            return hour == 0 && minute == 0
+        }
+    }
+    
+    private var morningTasks: [TaskDTO] {
+        guard let data = todayData else { return [] }
+        return data.due_today.filter { task in
+            guard let dueDate = task.dueDate else { return false }
+            let hour = Calendar.current.component(.hour, from: dueDate)
+            let minute = Calendar.current.component(.minute, from: dueDate)
+            // Exclude midnight tasks, include tasks before noon
+            return !(hour == 0 && minute == 0) && hour < 12
+        }
+    }
+    
+    private var afternoonTasks: [TaskDTO] {
+        guard let data = todayData else { return [] }
+        return data.due_today.filter { task in
+            guard let dueDate = task.dueDate else { return false }
+            let hour = Calendar.current.component(.hour, from: dueDate)
+            return hour >= 12 && hour < 17
+        }
+    }
+    
+    private var eveningTasks: [TaskDTO] {
+        guard let data = todayData else { return [] }
+        return data.due_today.filter { task in
+            guard let dueDate = task.dueDate else { return false }
+            let hour = Calendar.current.component(.hour, from: dueDate)
+            return hour >= 17
+        }
+    }
+    
     var body: some View {
         NavigationStack {
             Group {
@@ -53,10 +116,10 @@ struct TodayView: View {
     private func contentView(_ data: TodayResponse) -> some View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.lg) {
-                // Stats summary
-                statsCard(data.stats)
+                // Progress circle and streak
+                progressSection(data)
                 
-                // Overdue section
+                // Overdue section (always at top)
                 if !data.overdue.isEmpty {
                     taskSection(
                         title: "Overdue",
@@ -66,20 +129,50 @@ struct TodayView: View {
                     )
                 }
                 
-                // Due today section
-                if !data.due_today.isEmpty {
+                // Anytime section
+                if !anytimeTasks.isEmpty {
                     taskSection(
-                        title: "Due Today",
-                        icon: "clock.fill",
-                        iconColor: DesignSystem.Colors.warning,
-                        tasks: data.due_today
+                        title: "Anytime Today",
+                        icon: "calendar",
+                        iconColor: DesignSystem.Colors.primary,
+                        tasks: anytimeTasks
+                    )
+                }
+                
+                // Morning section
+                if !morningTasks.isEmpty {
+                    taskSection(
+                        title: "Morning",
+                        icon: "sunrise.fill",
+                        iconColor: .orange,
+                        tasks: morningTasks
+                    )
+                }
+                
+                // Afternoon section
+                if !afternoonTasks.isEmpty {
+                    taskSection(
+                        title: "Afternoon",
+                        icon: "sun.max.fill",
+                        iconColor: .yellow,
+                        tasks: afternoonTasks
+                    )
+                }
+                
+                // Evening section
+                if !eveningTasks.isEmpty {
+                    taskSection(
+                        title: "Evening",
+                        icon: "moon.fill",
+                        iconColor: .indigo,
+                        tasks: eveningTasks
                     )
                 }
                 
                 // Completed section
                 if !data.completed_today.isEmpty {
                     taskSection(
-                        title: "Completed Today",
+                        title: "Completed",
                         icon: "checkmark.circle.fill",
                         iconColor: DesignSystem.Colors.success,
                         tasks: data.completed_today
@@ -87,35 +180,104 @@ struct TodayView: View {
                 }
                 
                 // All clear message
-                if data.overdue.isEmpty && data.due_today.isEmpty {
+                if isAllComplete {
                     allClearView
+                } else if data.overdue.isEmpty && data.due_today.isEmpty && data.completed_today.isEmpty {
+                    nothingDueView
                 }
             }
             .padding(DesignSystem.Spacing.padding)
         }
     }
     
-    private func statsCard(_ stats: TodayStats) -> some View {
+    private func progressSection(_ data: TodayResponse) -> some View {
         HStack(spacing: DesignSystem.Spacing.lg) {
-            statItem(count: stats.overdue_count, label: "Overdue", color: DesignSystem.Colors.error)
-            statItem(count: stats.due_today_count, label: "Due", color: DesignSystem.Colors.warning)
-            statItem(count: stats.completed_today_count, label: "Done", color: DesignSystem.Colors.success)
+            // Progress Circle
+            ZStack {
+                // Background circle
+                Circle()
+                    .stroke(
+                        DesignSystem.Colors.secondaryBackground,
+                        lineWidth: 12
+                    )
+                
+                // Progress arc
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(
+                        isAllComplete ? DesignSystem.Colors.success : DesignSystem.Colors.primary,
+                        style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 0.5), value: progress)
+                
+                // Center content
+                VStack(spacing: 2) {
+                    if isAllComplete {
+                        Image(systemName: "checkmark")
+                            .font(.title2.bold())
+                            .foregroundColor(DesignSystem.Colors.success)
+                    } else {
+                        Text("\(Int(progress * 100))%")
+                            .font(DesignSystem.Typography.title2)
+                            .fontWeight(.bold)
+                    }
+                }
+            }
+            .frame(width: 80, height: 80)
+            
+            // Stats and streak
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                // Task counts
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    miniStat(count: completedCount, total: totalTasks, label: "Done")
+                    
+                    if data.stats.overdue_count > 0 {
+                        miniStat(count: data.stats.overdue_count, label: "Overdue", color: DesignSystem.Colors.error)
+                    }
+                }
+                
+                // Streak
+                if let streak = data.streak {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Text("🔥")
+                        if streak.current > 0 {
+                            Text("\(streak.current) day streak")
+                                .font(DesignSystem.Typography.subheadline)
+                                .fontWeight(.medium)
+                        } else {
+                            Text("Complete all tasks to start a streak!")
+                                .font(DesignSystem.Typography.caption1)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                    }
+                }
+            }
+            
+            Spacer()
         }
         .padding(DesignSystem.Spacing.md)
         .background(DesignSystem.Colors.secondaryBackground)
         .cornerRadius(DesignSystem.CornerRadius.md)
     }
     
-    private func statItem(count: Int, label: String, color: Color) -> some View {
-        VStack(spacing: DesignSystem.Spacing.xs) {
-            Text("\(count)")
-                .font(DesignSystem.Typography.title1)
-                .foregroundColor(color)
+    private func miniStat(count: Int, total: Int? = nil, label: String, color: Color = DesignSystem.Colors.textPrimary) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if let total = total {
+                Text("\(count)/\(total)")
+                    .font(DesignSystem.Typography.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(color)
+            } else {
+                Text("\(count)")
+                    .font(DesignSystem.Typography.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(color)
+            }
             Text(label)
-                .font(DesignSystem.Typography.caption1)
+                .font(DesignSystem.Typography.caption2)
                 .foregroundColor(DesignSystem.Colors.textSecondary)
         }
-        .frame(maxWidth: .infinity)
     }
     
     private func taskSection(title: String, icon: String, iconColor: Color, tasks: [TaskDTO]) -> some View {
@@ -146,7 +308,22 @@ struct TodayView: View {
                 .foregroundColor(DesignSystem.Colors.success)
             Text("All Clear!")
                 .font(DesignSystem.Typography.title2)
-            Text("No tasks due today. Enjoy your day!")
+            Text("You've completed all your tasks for today!")
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(DesignSystem.Spacing.xl)
+    }
+    
+    private var nothingDueView: some View {
+        VStack(spacing: DesignSystem.Spacing.md) {
+            Image(systemName: "calendar")
+                .font(.system(size: 60))
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+            Text("Nothing Due Today")
+                .font(DesignSystem.Typography.title2)
+            Text("Enjoy your free day or plan ahead!")
                 .font(DesignSystem.Typography.body)
                 .foregroundColor(DesignSystem.Colors.textSecondary)
         }
