@@ -19,6 +19,8 @@ struct RootView: View {
     @EnvironmentObject var auth: AuthStore
     @State private var overdueCount: Int = 0
     @State private var selectedTab: Int = 0
+    @State private var hasTrackedInitialOpen = false
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         Group {
@@ -53,6 +55,15 @@ struct RootView: View {
                 .task {
                     await NotificationService.shared.requestPermission()
                     await CalendarService.shared.requestPermission()
+                    if !hasTrackedInitialOpen {
+                        hasTrackedInitialOpen = true
+                        await trackAppOpened()
+                    }
+                }
+                .onChange(of: scenePhase) { oldPhase, newPhase in
+                    if newPhase == .active && oldPhase == .background {
+                        Task { await trackAppOpened() }
+                    }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .openToday)) { _ in
                     selectedTab = 0
@@ -63,4 +74,22 @@ struct RootView: View {
             }
         }
     }
+    
+    private func trackAppOpened() async {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        do {
+            _ = try await auth.api.request(
+                "POST",
+                "/api/v1/analytics/app_opened",
+                body: AppOpenedRequest(platform: "ios", version: version)
+            ) as EmptyResponse
+        } catch {
+            Logger.debug("Failed to track app opened: \(error)", category: .api)
+        }
+    }
+}
+
+private struct AppOpenedRequest: Encodable {
+    let platform: String
+    let version: String?
 }
