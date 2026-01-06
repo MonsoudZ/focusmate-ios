@@ -13,6 +13,7 @@ struct EditTaskView: View {
     @State private var hasDueDate: Bool
     @State private var selectedColor: String?
     @State private var selectedPriority: TaskPriority
+    @State private var isStarred: Bool
     @State private var isLoading = false
     @State private var error: FocusmateError?
     
@@ -30,6 +31,7 @@ struct EditTaskView: View {
         _dueDate = State(initialValue: task.dueDate ?? Date())
         _selectedColor = State(initialValue: task.color)
         _selectedPriority = State(initialValue: TaskPriority(rawValue: task.priority ?? 0) ?? .none)
+        _isStarred = State(initialValue: task.starred ?? false)
     }
 
     var body: some View {
@@ -69,6 +71,16 @@ struct EditTaskView: View {
                         }
                     }
                     .pickerStyle(.menu)
+                }
+                
+                Section {
+                    Toggle(isOn: $isStarred) {
+                        HStack {
+                            Image(systemName: "star.fill")
+                                .foregroundColor(.yellow)
+                            Text("Starred")
+                        }
+                    }
                 }
                 
                 Section("Color (Optional)") {
@@ -144,7 +156,8 @@ struct EditTaskView: View {
                 note: note.isEmpty ? nil : note,
                 dueAt: hasDueDate ? dueDate.ISO8601Format() : nil,
                 color: selectedColor,
-                priority: selectedPriority
+                priority: selectedPriority,
+                starred: isStarred
             )
             HapticManager.success()
             onSave?()

@@ -3,6 +3,7 @@ import SwiftUI
 struct TaskRowView: View {
     let task: TaskDTO
     let onToggleComplete: () -> Void
+    let onToggleStar: () -> Void
 
     private var isOverdue: Bool {
         guard let dueDate = task.dueDate, !task.isCompleted else { return false }
@@ -83,6 +84,16 @@ struct TaskRowView: View {
             }
 
             Spacer()
+            
+            Button {
+                HapticManager.selection()
+                onToggleStar()
+            } label: {
+                Image(systemName: task.isStarred ? "star.fill" : "star")
+                    .foregroundColor(task.isStarred ? .yellow : .gray.opacity(0.4))
+                    .font(.subheadline)
+            }
+            .buttonStyle(.plain)
             
             if task.color != nil {
                 Circle()

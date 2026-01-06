@@ -44,7 +44,27 @@ struct ListDetailView: View {
     private var sortedTasks: [TaskDTO] {
         let incomplete = tasks.filter { !$0.isCompleted }
         let completed = tasks.filter { $0.isCompleted }
-        return incomplete + completed
+        
+        let sortedIncomplete = incomplete.sorted { task1, task2 in
+            // Urgent first
+            let isUrgent1 = task1.taskPriority == .urgent
+            let isUrgent2 = task2.taskPriority == .urgent
+            if isUrgent1 != isUrgent2 {
+                return isUrgent1
+            }
+            
+            // Starred second
+            if task1.isStarred != task2.isStarred {
+                return task1.isStarred
+            }
+            
+            // Then by due date
+            guard let date1 = task1.dueDate else { return false }
+            guard let date2 = task2.dueDate else { return true }
+            return date1 < date2
+        }
+        
+        return sortedIncomplete + completed
     }
 
     var body: some View {
@@ -115,6 +135,9 @@ struct ListDetailView: View {
                     task: task,
                     onToggleComplete: {
                         Task { await toggleComplete(task) }
+                    },
+                    onToggleStar: {
+                        Task { await toggleStar(task) }
                     }
                 )
                 .contentShape(Rectangle())
@@ -143,7 +166,7 @@ struct ListDetailView: View {
         }
         .listStyle(.plain)
     }
-
+    
     private func loadTasks() async {
         isLoading = true
         error = nil
@@ -161,7 +184,25 @@ struct ListDetailView: View {
 
         isLoading = false
     }
-
+    
+    private func toggleStar(_ task: TaskDTO) async {
+        do {
+            let updatedTask = try await taskService.updateTask(
+                listId: task.list_id,
+                taskId: task.id,
+                title: nil,
+                note: nil,
+                dueAt: nil,
+                starred: !task.isStarred
+            )
+            
+            if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+                tasks[index] = updatedTask
+            }
+        } catch {
+            Logger.error("Failed to toggle star: \(error)", category: .api)
+        }
+    }
     private func toggleComplete(_ task: TaskDTO) async {
         if task.isCompleted {
             do {

@@ -101,6 +101,7 @@ struct TaskDTO: Codable, Identifiable {
     let due_at: String?
     let completed_at: String?
     let priority: Int?
+    let starred: Bool?
     let status: String?
     let can_edit: Bool?
     let can_delete: Bool?
@@ -119,6 +120,10 @@ struct TaskDTO: Codable, Identifiable {
     
     var isOverdue: Bool {
         overdue ?? false
+    }
+    
+    var isStarred: Bool {
+        starred ?? false
     }
     
     var needsReason: Bool {

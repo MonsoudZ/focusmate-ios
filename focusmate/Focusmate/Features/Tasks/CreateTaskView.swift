@@ -11,6 +11,7 @@ struct CreateTaskView: View {
     @State private var hasDueDate = false
     @State private var selectedColor: String? = nil
     @State private var selectedPriority: TaskPriority = .none
+    @State private var isStarred = false
     @State private var isLoading = false
     @State private var error: FocusmateError?
     
@@ -74,6 +75,16 @@ struct CreateTaskView: View {
                         }
                     }
                     .pickerStyle(.menu)
+                }
+                
+                Section {
+                    Toggle(isOn: $isStarred) {
+                        HStack {
+                            Image(systemName: "star.fill")
+                                .foregroundColor(.yellow)
+                            Text("Starred")
+                        }
+                    }
                 }
                 
                 Section("Color (Optional)") {
@@ -148,7 +159,8 @@ struct CreateTaskView: View {
                 note: note.isEmpty ? nil : note,
                 dueAt: hasDueDate ? dueDate : nil,
                 color: selectedColor,
-                priority: selectedPriority
+                priority: selectedPriority,
+                starred: isStarred
             )
             HapticManager.success()
             dismiss()

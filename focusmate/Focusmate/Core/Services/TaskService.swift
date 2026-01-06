@@ -25,13 +25,14 @@ final class TaskService {
         )
     }
 
-    func createTask(listId: Int, title: String, note: String?, dueAt: Date?, color: String? = nil, priority: TaskPriority = .none) async throws -> TaskDTO {
+    func createTask(listId: Int, title: String, note: String?, dueAt: Date?, color: String? = nil, priority: TaskPriority = .none, starred: Bool = false) async throws -> TaskDTO {
         let request = CreateTaskRequest(task: .init(
             title: title,
             note: note,
             due_at: dueAt?.ISO8601Format(),
             color: color,
-            priority: priority.rawValue
+            priority: priority.rawValue,
+            starred: starred
         ))
         let task: TaskDTO = try await apiClient.request(
             "POST",
@@ -46,13 +47,14 @@ final class TaskService {
         return task
     }
 
-    func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil, priority: TaskPriority? = nil) async throws -> TaskDTO {
+    func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil, priority: TaskPriority? = nil, starred: Bool? = nil) async throws -> TaskDTO {
         let request = UpdateTaskRequest(task: .init(
             title: title,
             note: note,
             due_at: dueAt,
             color: color,
-            priority: priority?.rawValue
+            priority: priority?.rawValue,
+            starred: starred
         ))
         let task: TaskDTO = try await apiClient.request(
             "PUT",
@@ -133,6 +135,7 @@ private struct CreateTaskRequest: Encodable {
         let due_at: String?
         let color: String?
         let priority: Int
+        let starred: Bool
     }
 }
 
@@ -144,9 +147,9 @@ private struct UpdateTaskRequest: Encodable {
         let due_at: String?
         let color: String?
         let priority: Int?
+        let starred: Bool?
     }
 }
-
 private struct SnoozeRequest: Encodable {
     let snooze_until: String
 }
