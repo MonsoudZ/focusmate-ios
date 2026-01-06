@@ -41,30 +41,26 @@ struct ListDetailView: View {
         }
     }
     
-    private var sortedTasks: [TaskDTO] {
-        let incomplete = tasks.filter { !$0.isCompleted }
-        let completed = tasks.filter { $0.isCompleted }
-        
-        let sortedIncomplete = incomplete.sorted { task1, task2 in
-            // Urgent first
-            let isUrgent1 = task1.taskPriority == .urgent
-            let isUrgent2 = task2.taskPriority == .urgent
-            if isUrgent1 != isUrgent2 {
-                return isUrgent1
-            }
-            
-            // Starred second
-            if task1.isStarred != task2.isStarred {
-                return task1.isStarred
-            }
-            
-            // Then by due date
-            guard let date1 = task1.dueDate else { return false }
-            guard let date2 = task2.dueDate else { return true }
-            return date1 < date2
-        }
-        
-        return sortedIncomplete + completed
+    // MARK: - Sorted Task Groups
+    
+    private var urgentTasks: [TaskDTO] {
+        tasks.filter { !$0.isCompleted && $0.taskPriority == .urgent }
+            .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
+    }
+    
+    private var starredTasks: [TaskDTO] {
+        tasks.filter { !$0.isCompleted && $0.taskPriority != .urgent && $0.isStarred }
+            .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
+    }
+    
+    private var normalTasks: [TaskDTO] {
+        tasks.filter { !$0.isCompleted && $0.taskPriority != .urgent && !$0.isStarred }
+            .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
+    }
+    
+    private var completedTasks: [TaskDTO] {
+        tasks.filter { $0.isCompleted }
+            .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
     }
 
     var body: some View {
@@ -130,41 +126,153 @@ struct ListDetailView: View {
     
     private var taskListView: some View {
         List {
-            ForEach(sortedTasks, id: \.id) { task in
-                TaskRowView(
-                    task: task,
-                    onToggleComplete: {
-                        Task { await toggleComplete(task) }
-                    },
-                    onToggleStar: {
-                        Task { await toggleStar(task) }
+            // Urgent section
+            if !urgentTasks.isEmpty {
+                Section {
+                    ForEach(urgentTasks, id: \.id) { task in
+                        taskRow(for: task)
                     }
-                )
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    HapticManager.selection()
-                    taskToEdit = task
+                    .onMove { source, destination in
+                        moveTask(in: .urgent, from: source, to: destination)
+                    }
+                } header: {
+                    Label("Urgent", systemImage: "flag.fill")
+                        .foregroundColor(.red)
+                        .font(.caption)
                 }
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    Button("Delete", role: .destructive) {
-                        HapticManager.warning()
-                        Task { await deleteTask(task) }
+            }
+            
+            // Starred section
+            if !starredTasks.isEmpty {
+                Section {
+                    ForEach(starredTasks, id: \.id) { task in
+                        taskRow(for: task)
                     }
+                    .onMove { source, destination in
+                        moveTask(in: .starred, from: source, to: destination)
+                    }
+                } header: {
+                    Label("Starred", systemImage: "star.fill")
+                        .foregroundColor(.yellow)
+                        .font(.caption)
                 }
-                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    Button {
-                        Task { await toggleComplete(task) }
-                    } label: {
-                        Label(
-                            task.isCompleted ? "Undo" : "Done",
-                            systemImage: task.isCompleted ? "arrow.uturn.backward" : "checkmark"
-                        )
+            }
+            
+            // Normal tasks section
+            if !normalTasks.isEmpty {
+                Section {
+                    ForEach(normalTasks, id: \.id) { task in
+                        taskRow(for: task)
                     }
-                    .tint(task.isCompleted ? .orange : .green)
+                    .onMove { source, destination in
+                        moveTask(in: .normal, from: source, to: destination)
+                    }
+                } header: {
+                    Text("Tasks")
+                        .font(.caption)
+                }
+            }
+            
+            // Completed section
+            if !completedTasks.isEmpty {
+                Section {
+                    ForEach(completedTasks, id: \.id) { task in
+                        taskRow(for: task)
+                    }
+                } header: {
+                    Text("Completed")
+                        .font(.caption)
                 }
             }
         }
         .listStyle(.plain)
+        .environment(\.editMode, .constant(.active))
+    }
+    
+    @ViewBuilder
+    private func taskRow(for task: TaskDTO) -> some View {
+        TaskRowView(
+            task: task,
+            onToggleComplete: {
+                Task { await toggleComplete(task) }
+            },
+            onToggleStar: {
+                Task { await toggleStar(task) }
+            }
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            HapticManager.selection()
+            taskToEdit = task
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button("Delete", role: .destructive) {
+                HapticManager.warning()
+                Task { await deleteTask(task) }
+            }
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button {
+                Task { await toggleComplete(task) }
+            } label: {
+                Label(
+                    task.isCompleted ? "Undo" : "Done",
+                    systemImage: task.isCompleted ? "arrow.uturn.backward" : "checkmark"
+                )
+            }
+            .tint(task.isCompleted ? .orange : .green)
+        }
+    }
+    
+    // MARK: - Task Group Enum
+    
+    private enum TaskGroup {
+        case urgent, starred, normal
+    }
+    
+    private func moveTask(in group: TaskGroup, from source: IndexSet, to destination: Int) {
+        var groupTasks: [TaskDTO]
+        
+        switch group {
+        case .urgent:
+            groupTasks = urgentTasks
+        case .starred:
+            groupTasks = starredTasks
+        case .normal:
+            groupTasks = normalTasks
+        }
+        
+        groupTasks.move(fromOffsets: source, toOffset: destination)
+        
+        // Update positions
+        let updates = groupTasks.enumerated().map { (index, task) in
+            (id: task.id, position: index)
+        }
+        
+        // Optimistic update
+        for (id, position) in updates {
+            if let index = tasks.firstIndex(where: { $0.id == id }) {
+                // We can't mutate TaskDTO directly, so we'll just sync after API call
+            }
+        }
+        
+        HapticManager.selection()
+        
+        // Sync to server
+        Task {
+            await reorderTasks(updates)
+        }
+    }
+    
+    private func reorderTasks(_ updates: [(id: Int, position: Int)]) async {
+        do {
+            try await taskService.reorderTasks(listId: list.id, tasks: updates)
+            await loadTasks() // Refresh to get updated positions
+        } catch {
+            Logger.error("Failed to reorder tasks: \(error)", category: .api)
+            self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
+        }
     }
     
     private func loadTasks() async {
@@ -203,6 +311,7 @@ struct ListDetailView: View {
             Logger.error("Failed to toggle star: \(error)", category: .api)
         }
     }
+    
     private func toggleComplete(_ task: TaskDTO) async {
         if task.isCompleted {
             do {

@@ -102,6 +102,7 @@ struct TaskDTO: Codable, Identifiable {
     let completed_at: String?
     let priority: Int?
     let starred: Bool?
+    let position: Int?
     let status: String?
     let can_edit: Bool?
     let can_delete: Bool?

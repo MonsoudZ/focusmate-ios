@@ -123,6 +123,25 @@ final class TaskService {
             body: request
         )
     }
+
+    func reorderTasks(listId: Int, tasks: [(id: Int, position: Int)]) async throws {
+        let request = ReorderTasksRequest(tasks: tasks.map { ReorderTask(id: $0.id, position: $0.position) })
+        _ = try await apiClient.request(
+            "POST",
+            API.Lists.tasksReorder(String(listId)),
+            body: request
+        ) as EmptyResponse
+    }
+    
+    func searchTasks(query: String) async throws -> [TaskDTO] {
+        let response: TasksResponse = try await apiClient.request(
+            "GET",
+            API.Tasks.search,
+            body: nil as String?,
+            queryParameters: ["q": query]
+        )
+        return response.tasks
+    }
 }
 
 // MARK: - Request Models (local to TaskService)
@@ -150,10 +169,20 @@ private struct UpdateTaskRequest: Encodable {
         let starred: Bool?
     }
 }
+
 private struct SnoozeRequest: Encodable {
     let snooze_until: String
 }
 
 private struct CompleteTaskRequest: Encodable {
     let missed_reason: String
+}
+
+private struct ReorderTasksRequest: Encodable {
+    let tasks: [ReorderTask]
+}
+
+private struct ReorderTask: Encodable {
+    let id: Int
+    let position: Int
 }

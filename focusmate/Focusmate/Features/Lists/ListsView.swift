@@ -3,9 +3,11 @@ import SwiftUI
 struct ListsView: View {
     @EnvironmentObject var state: AppState
     @State private var showingCreateList = false
+    @State private var showingSearch = false
     @State private var lists: [ListDTO] = []
     @State private var isLoading = false
     @State private var error: FocusmateError?
+    @State private var selectedList: ListDTO?
 
     var body: some View {
         NavigationStack {
@@ -49,15 +51,39 @@ struct ListsView: View {
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingCreateList = true
-                    } label: {
-                        Image(systemName: DesignSystem.Icons.add)
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Button {
+                            showingSearch = true
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                        }
+                        
+                        Button {
+                            showingCreateList = true
+                        } label: {
+                            Image(systemName: DesignSystem.Icons.add)
+                        }
                     }
                 }
             }
             .sheet(isPresented: $showingCreateList) {
                 CreateListView(listService: state.listService)
+            }
+            .sheet(isPresented: $showingSearch) {
+                SearchView(
+                    taskService: state.taskService,
+                    listService: state.listService,
+                    onSelectList: { list in
+                        selectedList = list
+                    }
+                )
+            }
+            .navigationDestination(item: $selectedList) { list in
+                ListDetailView(
+                    list: list,
+                    taskService: state.taskService,
+                    listService: state.listService
+                )
             }
             .errorBanner($error) {
                 Task { await loadLists() }
