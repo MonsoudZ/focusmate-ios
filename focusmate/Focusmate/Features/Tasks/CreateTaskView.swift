@@ -3,6 +3,7 @@ import SwiftUI
 struct CreateTaskView: View {
     let listId: Int
     let taskService: TaskService
+    let tagService: TagService
     @Environment(\.dismiss) var dismiss
 
     @State private var title = ""
@@ -14,8 +15,19 @@ struct CreateTaskView: View {
     @State private var selectedColor: String? = nil
     @State private var selectedPriority: TaskPriority = .none
     @State private var isStarred = false
+    @State private var selectedTagIds: Set<Int> = []
+    @State private var availableTags: [TagDTO] = []
+    @State private var showingCreateTag = false
     @State private var isLoading = false
     @State private var error: FocusmateError?
+    
+    // Recurrence state
+    @State private var isRecurring = false
+    @State private var recurrencePattern: RecurrencePattern = .none
+    @State private var recurrenceInterval = 1
+    @State private var selectedRecurrenceDays: Set<Int> = [1] // Monday default
+    @State private var recurrenceEndDate: Date? = nil
+    @State private var hasRecurrenceEndDate = false
     
     private let colors = ["blue", "green", "orange", "red", "purple", "pink", "teal", "yellow", "gray"]
 
@@ -71,6 +83,62 @@ struct CreateTaskView: View {
                                 displayedComponents: [.hourAndMinute]
                             )
                         }
+                        
+                        // Recurrence picker
+                        Picker("Repeat", selection: $recurrencePattern) {
+                            ForEach(RecurrencePattern.allCases, id: \.self) { pattern in
+                                Text(pattern.label).tag(pattern)
+                            }
+                        }
+                        
+                        if recurrencePattern != .none {
+                            Stepper("Every \(recurrenceInterval) \(recurrenceIntervalUnit)", value: $recurrenceInterval, in: 1...99)
+                            
+                            if recurrencePattern == .weekly {
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                                    Text("On these days")
+                                        .font(DesignSystem.Typography.caption1)
+                                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                                    
+                                    HStack(spacing: 6) {
+                                        ForEach([(0, "S"), (1, "M"), (2, "T"), (3, "W"), (4, "T"), (5, "F"), (6, "S")], id: \.0) { day, label in
+                                            Button {
+                                                HapticManager.selection()
+                                                if selectedRecurrenceDays.contains(day) {
+                                                    if selectedRecurrenceDays.count > 1 {
+                                                        selectedRecurrenceDays.remove(day)
+                                                    }
+                                                } else {
+                                                    selectedRecurrenceDays.insert(day)
+                                                }
+                                            } label: {
+                                                Text(label)
+                                                    .font(.caption.bold())
+                                                    .frame(width: 32, height: 32)
+                                                    .background(selectedRecurrenceDays.contains(day) ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryBackground)
+                                                    .foregroundColor(selectedRecurrenceDays.contains(day) ? .white : DesignSystem.Colors.textPrimary)
+                                                    .clipShape(Circle())
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            Toggle("End date", isOn: $hasRecurrenceEndDate)
+                            
+                            if hasRecurrenceEndDate {
+                                DatePicker(
+                                    "Ends on",
+                                    selection: Binding(
+                                        get: { recurrenceEndDate ?? Date().addingTimeInterval(86400 * 30) },
+                                        set: { recurrenceEndDate = $0 }
+                                    ),
+                                    in: dueDate...,
+                                    displayedComponents: [.date]
+                                )
+                            }
+                        }
                     }
                 }
                 
@@ -98,6 +166,14 @@ struct CreateTaskView: View {
                             Text("Starred")
                         }
                     }
+                }
+                
+                Section("Tags") {
+                    TagPickerView(
+                        selectedTagIds: $selectedTagIds,
+                        availableTags: availableTags,
+                        onCreateTag: { showingCreateTag = true }
+                    )
                 }
                 
                 Section("Color (Optional)") {
@@ -140,23 +216,41 @@ struct CreateTaskView: View {
                 }
             }
             .errorBanner($error)
+            .task {
+                await loadTags()
+            }
             .onAppear {
-                // Default time to 5pm
                 let calendar = Calendar.current
                 dueTime = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
             }
             .onChange(of: dueDate) { oldValue, newValue in
-                // If today is selected and time is in the past, reset to now
                 if Calendar.current.isDateInToday(newValue) && hasSpecificTime && dueTime < Date() {
                     dueTime = Date()
                 }
             }
             .onChange(of: hasSpecificTime) { oldValue, newValue in
-                // When enabling specific time on today, ensure time is not in past
                 if newValue && Calendar.current.isDateInToday(dueDate) && dueTime < Date() {
                     dueTime = Date()
                 }
             }
+            .onChange(of: recurrencePattern) { oldValue, newValue in
+                isRecurring = newValue != .none
+            }
+            .sheet(isPresented: $showingCreateTag) {
+                CreateTagView(tagService: tagService) {
+                    Task { await loadTags() }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func loadTags() async {
+        do {
+            availableTags = try await tagService.fetchTags()
+        } catch {
+            Logger.error("Failed to load tags: \(error)", category: .api)
         }
     }
     
@@ -166,14 +260,12 @@ struct CreateTaskView: View {
         let calendar = Calendar.current
         
         if hasSpecificTime {
-            // Combine date and time
             let timeComponents = calendar.dateComponents([.hour, .minute], from: dueTime)
             return calendar.date(bySettingHour: timeComponents.hour ?? 17,
                                   minute: timeComponents.minute ?? 0,
                                   second: 0,
                                   of: dueDate)
         } else {
-            // Set to midnight (00:00) for "anytime" tasks
             return calendar.startOfDay(for: dueDate)
         }
     }
@@ -183,6 +275,16 @@ struct CreateTaskView: View {
             return Date()
         }
         return Calendar.current.startOfDay(for: dueDate)
+    }
+    
+    private var recurrenceIntervalUnit: String {
+        switch recurrencePattern {
+        case .none: return ""
+        case .daily: return recurrenceInterval == 1 ? "day" : "days"
+        case .weekly: return recurrenceInterval == 1 ? "week" : "weeks"
+        case .monthly: return recurrenceInterval == 1 ? "month" : "months"
+        case .yearly: return recurrenceInterval == 1 ? "year" : "years"
+        }
     }
     
     private func colorFor(_ name: String) -> Color {
@@ -215,7 +317,14 @@ struct CreateTaskView: View {
                 dueAt: finalDueDate,
                 color: selectedColor,
                 priority: selectedPriority,
-                starred: isStarred
+                starred: isStarred,
+                tagIds: Array(selectedTagIds),
+                isRecurring: isRecurring,
+                recurrencePattern: recurrencePattern == .none ? nil : recurrencePattern.rawValue,
+                recurrenceInterval: isRecurring ? recurrenceInterval : nil,
+                recurrenceDays: isRecurring && recurrencePattern == .weekly ? Array(selectedRecurrenceDays) : nil,
+                recurrenceEndDate: hasRecurrenceEndDate ? recurrenceEndDate : nil,
+                recurrenceCount: nil
             )
             HapticManager.success()
             dismiss()
@@ -249,6 +358,26 @@ struct CreateTaskView: View {
             dueDate = now
         } else {
             dueDate = calendar.date(byAdding: .day, value: daysFromNow, to: calendar.startOfDay(for: now)) ?? now
+        }
+    }
+}
+
+// MARK: - Recurrence Pattern Enum
+
+enum RecurrencePattern: String, CaseIterable {
+    case none = ""
+    case daily = "daily"
+    case weekly = "weekly"
+    case monthly = "monthly"
+    case yearly = "yearly"
+    
+    var label: String {
+        switch self {
+        case .none: return "Never"
+        case .daily: return "Daily"
+        case .weekly: return "Weekly"
+        case .monthly: return "Monthly"
+        case .yearly: return "Yearly"
         }
     }
 }

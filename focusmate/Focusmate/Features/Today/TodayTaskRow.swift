@@ -34,6 +34,31 @@ struct TodayTaskRow: View {
                     .strikethrough(task.isCompleted)
                     .foregroundColor(task.isCompleted ? DesignSystem.Colors.textSecondary : DesignSystem.Colors.textPrimary)
                 
+                // Tags row
+                if let tags = task.tags, !tags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(tags.prefix(3)) { tag in
+                            HStack(spacing: 2) {
+                                Circle()
+                                    .fill(tag.tagColor)
+                                    .frame(width: 6, height: 6)
+                                Text(tag.name)
+                                    .font(.caption2)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(tag.tagColor.opacity(0.15))
+                            .cornerRadius(8)
+                        }
+                        
+                        if tags.count > 3 {
+                            Text("+\(tags.count - 3)")
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                    }
+                }
+                
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     if let dueDate = task.dueDate {
                         Label(formatTime(dueDate), systemImage: "clock")
@@ -85,7 +110,6 @@ struct TodayTaskRow: View {
     }
     
     private func formatTime(_ date: Date) -> String {
-        // Don't show time for anytime tasks
         if task.isAnytime {
             return "Anytime"
         }

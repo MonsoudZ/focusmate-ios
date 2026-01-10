@@ -4,6 +4,7 @@ struct ListDetailView: View {
     let list: ListDTO
     let taskService: TaskService
     let listService: ListService
+    let tagService: TagService
     @Environment(\.dismiss) private var dismiss
 
     @State private var tasks: [TaskDTO] = []
@@ -83,7 +84,7 @@ struct ListDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showingCreateTask) {
-            CreateTaskView(listId: list.id, taskService: taskService)
+            CreateTaskView(listId: list.id, taskService: taskService, tagService: tagService)
         }
         .sheet(isPresented: $showingEditList) {
             EditListView(list: list, listService: listService)
@@ -92,7 +93,7 @@ struct ListDetailView: View {
             ListMembersView(list: list, apiClient: taskService.apiClient)
         }
         .sheet(item: $taskToEdit) { task in
-            EditTaskView(listId: list.id, task: task, taskService: taskService, onSave: {
+            EditTaskView(listId: list.id, task: task, taskService: taskService, tagService: tagService, onSave: {
                 Task { await loadTasks() }
             })
         }

@@ -86,6 +86,31 @@ struct TaskRowView: View {
                         .foregroundColor(DesignSystem.Colors.textSecondary)
                         .lineLimit(1)
                 }
+                
+                // Tags row
+                if let tags = task.tags, !tags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(tags.prefix(3)) { tag in
+                            HStack(spacing: 2) {
+                                Circle()
+                                    .fill(tag.tagColor)
+                                    .frame(width: 6, height: 6)
+                                Text(tag.name)
+                                    .font(.caption2)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(tag.tagColor.opacity(0.15))
+                            .cornerRadius(8)
+                        }
+                        
+                        if tags.count > 3 {
+                            Text("+\(tags.count - 3)")
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                    }
+                }
 
                 if let dueDateText {
                     HStack(spacing: 4) {

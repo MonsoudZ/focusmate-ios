@@ -6,10 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		99A8F0752EFA19B700A75CF9 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 99A8F0742EFA19B700A75CF9 /* Launch Screen.storyboard */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		99C4FB372E9E05B2003F8E91 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -28,7 +24,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		99A8F0742EFA19B700A75CF9 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		99C4FB292E9E05B1003F8E91 /* focusmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = focusmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99C4FB362E9E05B2003F8E91 /* focusmateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = focusmateTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		99C4FB402E9E05B2003F8E91 /* focusmateUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = focusmateUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -94,7 +89,6 @@
 		99C4FB202E9E05B1003F8E91 = {
 			isa = PBXGroup;
 			children = (
-				99A8F0742EFA19B700A75CF9 /* Launch Screen.storyboard */,
 				99C4FB2B2E9E05B1003F8E91 /* focusmate */,
 				99C4FB392E9E05B2003F8E91 /* focusmateTests */,
 				99C4FB432E9E05B2003F8E91 /* focusmateUITests */,
@@ -232,7 +226,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				99A8F0752EFA19B700A75CF9 /* Launch Screen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -4,6 +4,7 @@ struct EditTaskView: View {
     let listId: Int
     let task: TaskDTO
     let taskService: TaskService
+    let tagService: TagService
     var onSave: (() -> Void)? = nil
     @Environment(\.dismiss) var dismiss
 
@@ -16,15 +17,19 @@ struct EditTaskView: View {
     @State private var selectedColor: String?
     @State private var selectedPriority: TaskPriority
     @State private var isStarred: Bool
+    @State private var selectedTagIds: Set<Int>
+    @State private var availableTags: [TagDTO] = []
+    @State private var showingCreateTag = false
     @State private var isLoading = false
     @State private var error: FocusmateError?
     
     private let colors = ["blue", "green", "orange", "red", "purple", "pink", "teal", "yellow", "gray"]
 
-    init(listId: Int, task: TaskDTO, taskService: TaskService, onSave: (() -> Void)? = nil) {
+    init(listId: Int, task: TaskDTO, taskService: TaskService, tagService: TagService, onSave: (() -> Void)? = nil) {
         self.listId = listId
         self.task = task
         self.taskService = taskService
+        self.tagService = tagService
         self.onSave = onSave
 
         _title = State(initialValue: task.title)
@@ -33,13 +38,13 @@ struct EditTaskView: View {
         _selectedColor = State(initialValue: task.color)
         _selectedPriority = State(initialValue: TaskPriority(rawValue: task.priority ?? 0) ?? .none)
         _isStarred = State(initialValue: task.starred ?? false)
+        _selectedTagIds = State(initialValue: Set(task.tags?.map { $0.id } ?? []))
         
         // Parse existing due date
         if let existingDueDate = task.dueDate {
             _dueDate = State(initialValue: existingDueDate)
             _dueTime = State(initialValue: existingDueDate)
             
-            // Check if it's midnight (anytime task)
             let calendar = Calendar.current
             let hour = calendar.component(.hour, from: existingDueDate)
             let minute = calendar.component(.minute, from: existingDueDate)
@@ -111,6 +116,14 @@ struct EditTaskView: View {
                     }
                 }
                 
+                Section("Tags") {
+                    TagPickerView(
+                        selectedTagIds: $selectedTagIds,
+                        availableTags: availableTags,
+                        onCreateTag: { showingCreateTag = true }
+                    )
+                }
+                
                 Section("Color (Optional)") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
                         ForEach(colors, id: \.self) { color in
@@ -151,18 +164,32 @@ struct EditTaskView: View {
                 }
             }
             .errorBanner($error)
+            .task {
+                await loadTags()
+            }
             .onChange(of: dueDate) { oldValue, newValue in
-                // If today is selected and time is in the past, reset to now
                 if Calendar.current.isDateInToday(newValue) && hasSpecificTime && dueTime < Date() {
                     dueTime = Date()
                 }
             }
             .onChange(of: hasSpecificTime) { oldValue, newValue in
-                // When enabling specific time on today, ensure time is not in past
                 if newValue && Calendar.current.isDateInToday(dueDate) && dueTime < Date() {
                     dueTime = Date()
                 }
             }
+            .sheet(isPresented: $showingCreateTag) {
+                CreateTagView(tagService: tagService) {
+                    Task { await loadTags() }
+                }
+            }
+        }
+    }
+    
+    private func loadTags() async {
+        do {
+            availableTags = try await tagService.fetchTags()
+        } catch {
+            Logger.error("Failed to load tags: \(error)", category: .api)
         }
     }
     
@@ -179,14 +206,12 @@ struct EditTaskView: View {
         let calendar = Calendar.current
         
         if hasSpecificTime {
-            // Combine date and time
             let timeComponents = calendar.dateComponents([.hour, .minute], from: dueTime)
             return calendar.date(bySettingHour: timeComponents.hour ?? 17,
                                   minute: timeComponents.minute ?? 0,
                                   second: 0,
                                   of: dueDate)
         } else {
-            // Set to midnight (00:00) for "anytime" tasks
             return calendar.startOfDay(for: dueDate)
         }
     }
@@ -222,7 +247,8 @@ struct EditTaskView: View {
                 dueAt: finalDueDate?.ISO8601Format(),
                 color: selectedColor,
                 priority: selectedPriority,
-                starred: isStarred
+                starred: isStarred,
+                tagIds: Array(selectedTagIds)
             )
             HapticManager.success()
             onSave?()

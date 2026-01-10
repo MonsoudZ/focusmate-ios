@@ -28,7 +28,8 @@ struct ListsView: View {
                             NavigationLink(destination: ListDetailView(
                                 list: list,
                                 taskService: state.taskService,
-                                listService: state.listService
+                                listService: state.listService,
+                                tagService: state.tagService
                             )) {
                                 ListRowView(list: list)
                             }
@@ -73,6 +74,7 @@ struct ListsView: View {
                 SearchView(
                     taskService: state.taskService,
                     listService: state.listService,
+                    tagService: state.tagService,
                     onSelectList: { list in
                         selectedList = list
                     }
@@ -82,7 +84,8 @@ struct ListsView: View {
                 ListDetailView(
                     list: list,
                     taskService: state.taskService,
-                    listService: state.listService
+                    listService: state.listService,
+                    tagService: state.tagService
                 )
             }
             .errorBanner($error) {

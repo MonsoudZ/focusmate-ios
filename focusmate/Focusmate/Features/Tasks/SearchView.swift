@@ -3,6 +3,7 @@ import SwiftUI
 struct SearchView: View {
     let taskService: TaskService
     let listService: ListService
+    let tagService: TagService
     var onSelectList: ((ListDTO) -> Void)?
     @Environment(\.dismiss) private var dismiss
     
@@ -50,6 +51,7 @@ struct SearchView: View {
                     listId: task.list_id,
                     task: task,
                     taskService: taskService,
+                    tagService: tagService,
                     onSave: {
                         Task { await search() }
                     }

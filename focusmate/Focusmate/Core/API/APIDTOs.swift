@@ -80,3 +80,4 @@ struct UpdateListRequest: Encodable {
         let color: String?
     }
 }
+

@@ -1,7 +1,7 @@
 import Foundation
 
 final class TaskService {
-     let apiClient: APIClient
+    let apiClient: APIClient
 
     init(apiClient: APIClient) {
         self.apiClient = apiClient
@@ -25,14 +25,36 @@ final class TaskService {
         )
     }
 
-    func createTask(listId: Int, title: String, note: String?, dueAt: Date?, color: String? = nil, priority: TaskPriority = .none, starred: Bool = false) async throws -> TaskDTO {
+    func createTask(
+        listId: Int,
+        title: String,
+        note: String?,
+        dueAt: Date?,
+        color: String? = nil,
+        priority: TaskPriority = .none,
+        starred: Bool = false,
+        tagIds: [Int] = [],
+        isRecurring: Bool = false,
+        recurrencePattern: String? = nil,
+        recurrenceInterval: Int? = nil,
+        recurrenceDays: [Int]? = nil,
+        recurrenceEndDate: Date? = nil,
+        recurrenceCount: Int? = nil
+    ) async throws -> TaskDTO {
         let request = CreateTaskRequest(task: .init(
             title: title,
             note: note,
             due_at: dueAt?.ISO8601Format(),
             color: color,
             priority: priority.rawValue,
-            starred: starred
+            starred: starred,
+            tag_ids: tagIds.isEmpty ? nil : tagIds,
+            is_recurring: isRecurring ? true : nil,
+            recurrence_pattern: recurrencePattern,
+            recurrence_interval: recurrenceInterval,
+            recurrence_days: recurrenceDays,
+            recurrence_end_date: recurrenceEndDate?.ISO8601Format(),
+            recurrence_count: recurrenceCount
         ))
         let task: TaskDTO = try await apiClient.request(
             "POST",
@@ -47,14 +69,15 @@ final class TaskService {
         return task
     }
 
-    func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil, priority: TaskPriority? = nil, starred: Bool? = nil) async throws -> TaskDTO {
+    func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil, priority: TaskPriority? = nil, starred: Bool? = nil, tagIds: [Int]? = nil) async throws -> TaskDTO {
         let request = UpdateTaskRequest(task: .init(
             title: title,
             note: note,
             due_at: dueAt,
             color: color,
             priority: priority?.rawValue,
-            starred: starred
+            starred: starred,
+            tag_ids: tagIds
         ))
         let task: TaskDTO = try await apiClient.request(
             "PUT",
@@ -155,6 +178,13 @@ private struct CreateTaskRequest: Encodable {
         let color: String?
         let priority: Int
         let starred: Bool
+        let tag_ids: [Int]?
+        let is_recurring: Bool?
+        let recurrence_pattern: String?
+        let recurrence_interval: Int?
+        let recurrence_days: [Int]?
+        let recurrence_end_date: String?
+        let recurrence_count: Int?
     }
 }
 
@@ -167,6 +197,7 @@ private struct UpdateTaskRequest: Encodable {
         let color: String?
         let priority: Int?
         let starred: Bool?
+        let tag_ids: [Int]?
     }
 }
 

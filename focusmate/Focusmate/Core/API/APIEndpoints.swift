@@ -101,4 +101,9 @@ enum API {
     enum Today {
         static let root = "api/v1/today"
     }
+    
+    enum Tags {
+        static let root = "api/v1/tags"
+        static func id(_ id: String) -> String { "api/v1/tags/\(id)" }
+    }
 }

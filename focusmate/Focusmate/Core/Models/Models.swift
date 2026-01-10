@@ -108,13 +108,24 @@ struct TaskDTO: Codable, Identifiable {
     let can_delete: Bool?
     let created_at: String?
     let updated_at: String?
+    let tags: [TagDTO]?
+    
+    // Recurring fields
+    let is_recurring: Bool?
+    let recurrence_pattern: String?
+    let recurrence_interval: Int?
+    let recurrence_days: [Int]?
+    let recurrence_end_date: String?
+    let recurrence_count: Int?
+    let template_id: Int?
+    let instance_date: String?
+    let instance_number: Int?
     
     let overdue: Bool?
     let minutes_overdue: Int?
     let requires_explanation_if_missed: Bool?
     let missed_reason: String?
     let missed_reason_submitted_at: String?
-
     var isCompleted: Bool {
         completed_at != nil
     }
@@ -125,6 +136,15 @@ struct TaskDTO: Codable, Identifiable {
     
     var isStarred: Bool {
         starred ?? false
+    }
+    
+
+    var isRecurring: Bool {
+        is_recurring ?? false
+    }
+
+    var isRecurringInstance: Bool {
+        template_id != nil
     }
     
     var needsReason: Bool {
@@ -174,11 +194,76 @@ struct TaskDTO: Codable, Identifiable {
         
         return dueDate < Date()
     }
-}
+    
+    var recurrenceDescription: String? {
+            guard isRecurringInstance || isRecurring else { return nil }
+            
+            let interval = recurrence_interval ?? 1
+            
+            switch recurrence_pattern {
+            case "daily":
+                return interval == 1 ? "Daily" : "Every \(interval) days"
+            case "weekly":
+                if let days = recurrence_days, !days.isEmpty {
+                    let dayNames = days.compactMap { dayName(for: $0) }
+                    return interval == 1 ? "Weekly on \(dayNames.joined(separator: ", "))" : "Every \(interval) weeks"
+                }
+                return interval == 1 ? "Weekly" : "Every \(interval) weeks"
+            case "monthly":
+                return interval == 1 ? "Monthly" : "Every \(interval) months"
+            case "yearly":
+                return interval == 1 ? "Yearly" : "Every \(interval) years"
+            default:
+                return nil
+            }
+        }
+        
+        private func dayName(for day: Int) -> String? {
+            switch day {
+            case 0: return "Sun"
+            case 1: return "Mon"
+            case 2: return "Tue"
+            case 3: return "Wed"
+            case 4: return "Thu"
+            case 5: return "Fri"
+            case 6: return "Sat"
+            default: return nil
+            }
+        }
+    }
+
 
 struct TasksResponse: Codable {
     let tasks: [TaskDTO]
     let tombstones: [String]?
+}
+
+
+struct TagDTO: Codable, Identifiable, Hashable {
+    let id: Int
+    let name: String
+    let color: String?
+    let tasks_count: Int?
+    let created_at: String?
+    
+    var tagColor: Color {
+        switch color {
+        case "blue": return .blue
+        case "green": return .green
+        case "orange": return .orange
+        case "red": return .red
+        case "purple": return .purple
+        case "pink": return .pink
+        case "teal": return .teal
+        case "yellow": return .yellow
+        case "gray": return .gray
+        default: return .blue
+        }
+    }
+}
+
+struct TagsResponse: Codable {
+    let tags: [TagDTO]
 }
 
 

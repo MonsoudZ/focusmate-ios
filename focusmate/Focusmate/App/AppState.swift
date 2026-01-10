@@ -14,6 +14,7 @@ final class AppState: ObservableObject {
     private(set) lazy var listService = ListService(apiClient: auth.api)
     private(set) lazy var taskService = TaskService(apiClient: auth.api)
     private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
+    private(set) lazy var tagService = TagService(apiClient: auth.api)
 
     init() {
         SentryService.shared.initialize()
