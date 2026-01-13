@@ -17,6 +17,7 @@ final class AuthStore: ObservableObject {
     }
 
     @Published var isLoading = false
+    @Published var isValidatingSession = false
     @Published var error: FocusmateError?
 
     private(set) lazy var api: APIClient = APIClient { [weak self] in self?.jwt }
@@ -31,8 +32,33 @@ final class AuthStore: ObservableObject {
         if let token = loadedJWT {
             Task {
                 await authSession.set(token: token)
+                await validateSession()
             }
         }
+    }
+    
+    func validateSession() async {
+        guard jwt != nil else { return }
+        
+        isValidatingSession = true
+        
+        do {
+            let user: UserDTO = try await api.request(
+                "GET",
+                API.Users.profile,
+                body: nil as String?
+            )
+            currentUser = user
+            Logger.info("Session validated", category: .auth)
+        } catch {
+            Logger.warning("Session invalid, clearing: \(error)", category: .auth)
+            jwt = nil
+            currentUser = nil
+            KeychainManager.shared.clear()
+            await authSession.clear()
+        }
+        
+        isValidatingSession = false
     }
 
     func signIn(email: String, password: String) async {

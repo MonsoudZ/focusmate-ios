@@ -24,7 +24,15 @@ struct RootView: View {
     
     var body: some View {
         Group {
-            if auth.jwt == nil {
+            if auth.isValidatingSession {
+                VStack {
+                    ProgressView()
+                    Text("Loading...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                }
+            } else if auth.jwt == nil {
                 SignInView()
             } else {
                 TabView(selection: $selectedTab) {
@@ -55,7 +63,6 @@ struct RootView: View {
                 .task {
                     await NotificationService.shared.requestPermission()
                     await CalendarService.shared.requestPermission()
-                    // Initialize escalation service to restore any saved state
                     _ = EscalationService.shared
                     if !hasTrackedInitialOpen {
                         hasTrackedInitialOpen = true
