@@ -11,8 +11,9 @@ struct OverdueReasonSheet: View {
     private let reasons = [
         ("forgot", "I forgot"),
         ("too_busy", "Too busy"),
-        ("blocked", "Was blocked/waiting"),
+        ("blocked", "Waiting on someone/something"),
         ("deprioritized", "Deprioritized"),
+        ("didnt_feel_like_it", "Didn't feel like it"),
         ("other", "Other")
     ]
     

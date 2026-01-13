@@ -95,6 +95,7 @@ enum TaskPriority: Int, Codable, CaseIterable {
 struct TaskDTO: Codable, Identifiable {
     let id: Int
     let list_id: Int
+    let list_name: String?
     let color: String?
     let title: String
     let note: String?

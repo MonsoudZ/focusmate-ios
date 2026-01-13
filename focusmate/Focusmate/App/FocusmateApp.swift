@@ -55,6 +55,8 @@ struct RootView: View {
                 .task {
                     await NotificationService.shared.requestPermission()
                     await CalendarService.shared.requestPermission()
+                    // Initialize escalation service to restore any saved state
+                    _ = EscalationService.shared
                     if !hasTrackedInitialOpen {
                         hasTrackedInitialOpen = true
                         await trackAppOpened()

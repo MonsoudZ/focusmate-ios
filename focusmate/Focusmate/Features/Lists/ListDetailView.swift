@@ -14,8 +14,7 @@ struct ListDetailView: View {
     @State private var showingEditList = false
     @State private var showingDeleteConfirmation = false
     @State private var showingMembers = false
-    @State private var taskNeedingReason: TaskDTO?
-    @State private var taskToEdit: TaskDTO?
+    @State private var selectedTask: TaskDTO?
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
@@ -92,18 +91,25 @@ struct ListDetailView: View {
         .sheet(isPresented: $showingMembers) {
             ListMembersView(list: list, apiClient: taskService.apiClient)
         }
-        .sheet(item: $taskToEdit) { task in
-            EditTaskView(listId: list.id, task: task, taskService: taskService, tagService: tagService, onSave: {
-                Task { await loadTasks() }
-            })
-        }
-        .sheet(item: $taskNeedingReason) { task in
-            OverdueReasonSheet(task: task) { reason in
-                Task {
-                    await completeWithReason(task, reason: reason)
-                    taskNeedingReason = nil
-                }
-            }
+        .sheet(item: $selectedTask) { task in
+            TaskDetailView(
+                task: task,
+                listName: list.name,
+                onComplete: {
+                    await toggleComplete(task)
+                    selectedTask = nil
+                },
+                onDelete: {
+                    await deleteTask(task)
+                    selectedTask = nil
+                },
+                onUpdate: {
+                    await loadTasks()
+                },
+                taskService: taskService,
+                tagService: tagService,
+                listId: list.id
+            )
         }
         .alert("Delete List", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -192,36 +198,20 @@ struct ListDetailView: View {
     
     @ViewBuilder
     private func taskRow(for task: TaskDTO) -> some View {
-        TaskRowView(
+        TaskRow(
             task: task,
-            onToggleComplete: {
-                Task { await toggleComplete(task) }
-            },
-            onToggleStar: {
-                Task { await toggleStar(task) }
-            }
+            onComplete: { await loadTasks() },
+            onStar: { await toggleStar(task) },
+            onTap: { selectedTask = task }
         )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            HapticManager.selection()
-            taskToEdit = task
-        }
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button("Delete", role: .destructive) {
                 HapticManager.warning()
                 Task { await deleteTask(task) }
             }
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button {
-                Task { await toggleComplete(task) }
-            } label: {
-                Label(
-                    task.isCompleted ? "Undo" : "Done",
-                    systemImage: task.isCompleted ? "arrow.uturn.backward" : "checkmark"
-                )
-            }
-            .tint(task.isCompleted ? .orange : .green)
         }
     }
     
@@ -245,21 +235,12 @@ struct ListDetailView: View {
         
         groupTasks.move(fromOffsets: source, toOffset: destination)
         
-        // Update positions
         let updates = groupTasks.enumerated().map { (index, task) in
             (id: task.id, position: index)
         }
         
-        // Optimistic update
-        for (id, position) in updates {
-            if let index = tasks.firstIndex(where: { $0.id == id }) {
-                // We can't mutate TaskDTO directly, so we'll just sync after API call
-            }
-        }
-        
         HapticManager.selection()
         
-        // Sync to server
         Task {
             await reorderTasks(updates)
         }
@@ -268,9 +249,56 @@ struct ListDetailView: View {
     private func reorderTasks(_ updates: [(id: Int, position: Int)]) async {
         do {
             try await taskService.reorderTasks(listId: list.id, tasks: updates)
-            await loadTasks() // Refresh to get updated positions
+            await loadTasks()
         } catch {
             Logger.error("Failed to reorder tasks: \(error)", category: .api)
+            self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
+        }
+    }
+    
+    // MARK: - Task Actions
+    
+    private func toggleStar(_ task: TaskDTO) async {
+        do {
+            _ = try await taskService.updateTask(
+                listId: task.list_id,
+                taskId: task.id,
+                title: nil,
+                note: nil,
+                dueAt: nil,
+                starred: !task.isStarred
+            )
+            await loadTasks()
+        } catch {
+            Logger.error("Failed to toggle star: \(error)", category: .api)
+        }
+    }
+    
+    private func toggleComplete(_ task: TaskDTO) async {
+        if task.isCompleted {
+            do {
+                _ = try await taskService.reopenTask(listId: list.id, taskId: task.id)
+                HapticManager.light()
+                await loadTasks()
+            } catch {
+                self.error = ErrorHandler.shared.handle(error)
+                HapticManager.error()
+            }
+        } else {
+            await loadTasks()
+        }
+    }
+
+    private func deleteTask(_ task: TaskDTO) async {
+        let originalTasks = tasks
+        tasks.removeAll { $0.id == task.id }
+        HapticManager.medium()
+
+        do {
+            try await taskService.deleteTask(listId: list.id, taskId: task.id)
+        } catch {
+            tasks = originalTasks
             self.error = ErrorHandler.shared.handle(error)
             HapticManager.error()
         }
@@ -292,77 +320,6 @@ struct ListDetailView: View {
         }
 
         isLoading = false
-    }
-    
-    private func toggleStar(_ task: TaskDTO) async {
-        do {
-            let updatedTask = try await taskService.updateTask(
-                listId: task.list_id,
-                taskId: task.id,
-                title: nil,
-                note: nil,
-                dueAt: nil,
-                starred: !task.isStarred
-            )
-            
-            if let index = tasks.firstIndex(where: { $0.id == task.id }) {
-                tasks[index] = updatedTask
-            }
-        } catch {
-            Logger.error("Failed to toggle star: \(error)", category: .api)
-        }
-    }
-    
-    private func toggleComplete(_ task: TaskDTO) async {
-        if task.isCompleted {
-            do {
-                _ = try await taskService.reopenTask(listId: list.id, taskId: task.id)
-                HapticManager.light()
-                await loadTasks()
-            } catch {
-                self.error = ErrorHandler.shared.handle(error)
-                HapticManager.error()
-            }
-            return
-        }
-        
-        if task.isOverdue {
-            taskNeedingReason = task
-        } else {
-            do {
-                _ = try await taskService.completeTask(listId: list.id, taskId: task.id)
-                HapticManager.success()
-                await loadTasks()
-            } catch {
-                self.error = ErrorHandler.shared.handle(error)
-                HapticManager.error()
-            }
-        }
-    }
-    
-    private func completeWithReason(_ task: TaskDTO, reason: String) async {
-        do {
-            _ = try await taskService.completeTask(listId: list.id, taskId: task.id, reason: reason)
-            HapticManager.success()
-            await loadTasks()
-        } catch {
-            self.error = ErrorHandler.shared.handle(error)
-            HapticManager.error()
-        }
-    }
-
-    private func deleteTask(_ task: TaskDTO) async {
-        let originalTasks = tasks
-        tasks.removeAll { $0.id == task.id }
-        HapticManager.medium()
-
-        do {
-            try await taskService.deleteTask(listId: list.id, taskId: task.id)
-        } catch {
-            tasks = originalTasks
-            self.error = ErrorHandler.shared.handle(error)
-            HapticManager.error()
-        }
     }
 
     private func deleteList() async {

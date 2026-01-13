@@ -98,6 +98,15 @@ struct SettingsView: View {
                     }
                 }
                 
+                // MARK: - App Blocking
+                Section("App Blocking") {
+                    NavigationLink {
+                        AppBlockingSettingsView()
+                    } label: {
+                        Label("Blocked Apps", systemImage: "shield")
+                    }
+                }
+                
                 // MARK: - About
                 Section("About") {
                     HStack {

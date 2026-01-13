@@ -17,42 +17,34 @@ struct ListsView: View {
                 } else if lists.isEmpty {
                     EmptyStateView(
                         title: "No lists yet",
-                        message: "Tap the + button to create your first list",
+                        message: "Create a list to organize your tasks",
                         icon: DesignSystem.Icons.list,
                         actionTitle: "Create List",
                         action: { showingCreateList = true }
                     )
                 } else {
-                    List {
-                        ForEach(lists, id: \.id) { list in
-                            NavigationLink(destination: ListDetailView(
-                                list: list,
-                                taskService: state.taskService,
-                                listService: state.listService,
-                                tagService: state.tagService
-                            )) {
-                                ListRowView(list: list)
-                            }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button("Delete", role: .destructive) {
-                                    Task { await deleteList(list) }
+                    ScrollView {
+                        LazyVStack(spacing: DesignSystem.Spacing.sm) {
+                            ForEach(lists, id: \.id) { list in
+                                NavigationLink(destination: ListDetailView(
+                                    list: list,
+                                    taskService: state.taskService,
+                                    listService: state.listService,
+                                    tagService: state.tagService
+                                )) {
+                                    ListRowView(list: list)
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
+                        .padding(DesignSystem.Spacing.md)
                     }
-                    .listStyle(.plain)
                 }
             }
             .navigationTitle("Lists")
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Sign Out") {
-                        Task { await state.auth.signOut() }
-                    }
-                }
-
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
+                    HStack(spacing: DesignSystem.Spacing.md) {
                         Button {
                             showingSearch = true
                         } label: {

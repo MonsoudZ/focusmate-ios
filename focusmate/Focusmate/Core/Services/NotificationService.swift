@@ -95,9 +95,35 @@ final class NotificationService {
         let ids = [
             "task-\(taskId)-due-soon",
             "task-\(taskId)-due-now",
-            "task-\(taskId)-overdue"
+            "task-\(taskId)-overdue",
+            "escalation-\(taskId)-start",
+            "escalation-\(taskId)-warning"
         ]
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+    }
+    
+    // MARK: - Escalation Notifications
+    
+    func scheduleEscalationNotification(id: String, title: String, body: String, date: Date) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.interruptionLevel = .timeSensitive
+        
+        let timeInterval = max(date.timeIntervalSinceNow, 1)
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: timeInterval,
+            repeats: false
+        )
+        
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                Logger.error("Failed to schedule escalation notification: \(id)", error: error, category: .general)
+            }
+        }
     }
     
     // MARK: - Morning Briefing
