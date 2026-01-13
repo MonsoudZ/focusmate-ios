@@ -85,16 +85,22 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         case 401:
             Logger.warning("401 Unauthorized for \(method) \(path)", category: .api)
             throw APIError.unauthorized
+        case 422:
+            Logger.warning("422 Validation error for \(method) \(path)", category: .api)
+            if let details = errorResponse?.validationDetails, !details.isEmpty {
+                throw APIError.validation(details)
+            }
+            throw APIError.badStatus(http.statusCode, errorResponse?.errorMessage, nil)
         case 429:
             let retryAfter = extractRetryAfter(from: http.allHeaderFields)
             Logger.warning("429 Rate Limited for \(method) \(path)", category: .api)
             throw APIError.rateLimited(retryAfter)
         case 500...599:
             Logger.error("Server error \(http.statusCode) for \(method) \(path)", category: .api)
-            throw APIError.serverError(http.statusCode, errorResponse?.message, errorResponse?.details)
+            throw APIError.serverError(http.statusCode, errorResponse?.errorMessage, nil)
         default:
             Logger.warning("Bad status \(http.statusCode) for \(method) \(path)", category: .api)
-            throw APIError.badStatus(http.statusCode, errorResponse?.message, errorResponse?.details)
+            throw APIError.badStatus(http.statusCode, errorResponse?.errorMessage, nil)
         }
 
         if data.isEmpty {
@@ -146,16 +152,32 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
 
     private func parseErrorResponse(data: Data, statusCode: Int) -> ErrorResponse? {
         guard !data.isEmpty, statusCode >= 400 else { return nil }
-
+        
+        // Try to decode as ErrorResponse first
         if let errorResponse = try? APIClient.decoder.decode(ErrorResponse.self, from: data) {
             return errorResponse
         }
-
+        
+        // Fallback: try to parse as generic JSON
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            // Check for nested error object
+            if let errorObj = json["error"] as? [String: Any] {
+                let details = errorObj["details"] as? [String: [String]]
+                return ErrorResponse(
+                    code: errorObj["code"] as? String ?? "HTTP_\(statusCode)",
+                    message: errorObj["message"] as? String ?? "HTTP \(statusCode) error",
+                    details: details,
+                    timestamp: errorObj["timestamp"] as? String,
+                    status: statusCode,
+                    requestId: json["request_id"] as? String
+                )
+            }
+            
+            // Root level error
             return ErrorResponse(
                 code: json["code"] as? String ?? "HTTP_\(statusCode)",
                 message: json["message"] as? String ?? json["error"] as? String ?? "HTTP \(statusCode) error",
-                details: nil,
+                details: json["details"] as? [String: [String]],
                 timestamp: json["timestamp"] as? String,
                 status: statusCode,
                 requestId: json["request_id"] as? String

@@ -10,7 +10,6 @@ struct CreateTaskView: View {
     @State private var note = ""
     @State private var dueDate = Date()
     @State private var dueTime = Date()
-    @State private var hasDueDate = false
     @State private var hasSpecificTime = false
     @State private var selectedColor: String? = nil
     @State private var selectedPriority: TaskPriority = .none
@@ -25,7 +24,7 @@ struct CreateTaskView: View {
     @State private var isRecurring = false
     @State private var recurrencePattern: RecurrencePattern = .none
     @State private var recurrenceInterval = 1
-    @State private var selectedRecurrenceDays: Set<Int> = [1] // Monday default
+    @State private var selectedRecurrenceDays: Set<Int> = [1]
     @State private var recurrenceEndDate: Date? = nil
     @State private var hasRecurrenceEndDate = false
     
@@ -35,109 +34,104 @@ struct CreateTaskView: View {
         NavigationStack {
             Form {
                 Section("Task Details") {
-                    TextField("Title", text: $title)
+                    TextField("Title *", text: $title)
 
-                    TextField("Notes (Optional)", text: $note, axis: .vertical)
+                    TextField("Notes (optional)", text: $note, axis: .vertical)
                         .lineLimit(3...6)
                 }
 
-                Section("Due Date") {
-                    Toggle("Set due date", isOn: $hasDueDate)
-
-                    if hasDueDate {
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            Button("Today") {
-                                setDueDate(daysFromNow: 0)
-                            }
-                            .buttonStyle(.bordered)
-                            .tint(isToday ? DesignSystem.Colors.primary : .gray)
-                            
-                            Button("Tomorrow") {
-                                setDueDate(daysFromNow: 1)
-                            }
-                            .buttonStyle(.bordered)
-                            .tint(isTomorrow ? DesignSystem.Colors.primary : .gray)
-                            
-                            Button("Next Week") {
-                                setDueDate(daysFromNow: 7)
-                            }
-                            .buttonStyle(.bordered)
-                            .tint(isNextWeek ? DesignSystem.Colors.primary : .gray)
+                Section("Due Date *") {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Button("Today") {
+                            setDueDate(daysFromNow: 0)
                         }
-                        .padding(.vertical, DesignSystem.Spacing.xs)
+                        .buttonStyle(.bordered)
+                        .tint(isToday ? DesignSystem.Colors.primary : .gray)
+                        
+                        Button("Tomorrow") {
+                            setDueDate(daysFromNow: 1)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(isTomorrow ? DesignSystem.Colors.primary : .gray)
+                        
+                        Button("Next Week") {
+                            setDueDate(daysFromNow: 7)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(isNextWeek ? DesignSystem.Colors.primary : .gray)
+                    }
+                    .padding(.vertical, DesignSystem.Spacing.xs)
 
+                    DatePicker(
+                        "Date",
+                        selection: $dueDate,
+                        in: Calendar.current.startOfDay(for: Date())...,
+                        displayedComponents: [.date]
+                    )
+                    
+                    Toggle("Specific time", isOn: $hasSpecificTime)
+                    
+                    if hasSpecificTime {
                         DatePicker(
-                            "Date",
-                            selection: $dueDate,
-                            in: Calendar.current.startOfDay(for: Date())...,
-                            displayedComponents: [.date]
+                            "Time",
+                            selection: $dueTime,
+                            in: minimumTime...,
+                            displayedComponents: [.hourAndMinute]
                         )
-                        
-                        Toggle("Specific time", isOn: $hasSpecificTime)
-                        
-                        if hasSpecificTime {
-                            DatePicker(
-                                "Time",
-                                selection: $dueTime,
-                                in: minimumTime...,
-                                displayedComponents: [.hourAndMinute]
-                            )
+                    }
+                    
+                    Picker("Repeat", selection: $recurrencePattern) {
+                        ForEach(RecurrencePattern.allCases, id: \.self) { pattern in
+                            Text(pattern.label).tag(pattern)
                         }
+                    }
+                    
+                    if recurrencePattern != .none {
+                        Stepper("Every \(recurrenceInterval) \(recurrenceIntervalUnit)", value: $recurrenceInterval, in: 1...99)
                         
-                        // Recurrence picker
-                        Picker("Repeat", selection: $recurrencePattern) {
-                            ForEach(RecurrencePattern.allCases, id: \.self) { pattern in
-                                Text(pattern.label).tag(pattern)
-                            }
-                        }
-                        
-                        if recurrencePattern != .none {
-                            Stepper("Every \(recurrenceInterval) \(recurrenceIntervalUnit)", value: $recurrenceInterval, in: 1...99)
-                            
-                            if recurrencePattern == .weekly {
-                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                    Text("On these days")
-                                        .font(DesignSystem.Typography.caption1)
-                                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                                    
-                                    HStack(spacing: 6) {
-                                        ForEach([(0, "S"), (1, "M"), (2, "T"), (3, "W"), (4, "T"), (5, "F"), (6, "S")], id: \.0) { day, label in
-                                            Button {
-                                                HapticManager.selection()
-                                                if selectedRecurrenceDays.contains(day) {
-                                                    if selectedRecurrenceDays.count > 1 {
-                                                        selectedRecurrenceDays.remove(day)
-                                                    }
-                                                } else {
-                                                    selectedRecurrenceDays.insert(day)
+                        if recurrencePattern == .weekly {
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                                Text("On these days")
+                                    .font(DesignSystem.Typography.caption1)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                                
+                                HStack(spacing: 6) {
+                                    ForEach([(0, "S"), (1, "M"), (2, "T"), (3, "W"), (4, "T"), (5, "F"), (6, "S")], id: \.0) { day, label in
+                                        Button {
+                                            HapticManager.selection()
+                                            if selectedRecurrenceDays.contains(day) {
+                                                if selectedRecurrenceDays.count > 1 {
+                                                    selectedRecurrenceDays.remove(day)
                                                 }
-                                            } label: {
-                                                Text(label)
-                                                    .font(.caption.bold())
-                                                    .frame(width: 32, height: 32)
-                                                    .background(selectedRecurrenceDays.contains(day) ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryBackground)
-                                                    .foregroundColor(selectedRecurrenceDays.contains(day) ? .white : DesignSystem.Colors.textPrimary)
-                                                    .clipShape(Circle())
+                                            } else {
+                                                selectedRecurrenceDays.insert(day)
                                             }
-                                            .buttonStyle(.plain)
+                                        } label: {
+                                            Text(label)
+                                                .font(.caption.bold())
+                                                .frame(width: 32, height: 32)
+                                                .background(selectedRecurrenceDays.contains(day) ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryBackground)
+                                                .foregroundColor(selectedRecurrenceDays.contains(day) ? .white : DesignSystem.Colors.textPrimary)
+                                                .clipShape(Circle())
                                         }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                             }
-                            
-                            Toggle("End date", isOn: $hasRecurrenceEndDate)
-                            
-                            if hasRecurrenceEndDate {
-                                DatePicker(
-                                    "Ends on",
-                                    selection: Binding(
-                                        get: { recurrenceEndDate ?? Date().addingTimeInterval(86400 * 30) },
-                                        set: { recurrenceEndDate = $0 }
-                                    ),
-                                    in: dueDate...,
-                                    displayedComponents: [.date]
-                                )
-                            }
+                        }
+                        
+                        Toggle("End date", isOn: $hasRecurrenceEndDate)
+                        
+                        if hasRecurrenceEndDate {
+                            DatePicker(
+                                "Ends on",
+                                selection: Binding(
+                                    get: { recurrenceEndDate ?? Date().addingTimeInterval(86400 * 30) },
+                                    set: { recurrenceEndDate = $0 }
+                                ),
+                                in: dueDate...,
+                                displayedComponents: [.date]
+                            )
                         }
                     }
                 }
@@ -176,7 +170,7 @@ struct CreateTaskView: View {
                     )
                 }
                 
-                Section("Color (Optional)") {
+                Section("Color (optional)") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
                         ForEach(colors, id: \.self) { color in
                             Circle()
@@ -254,9 +248,7 @@ struct CreateTaskView: View {
         }
     }
     
-    private var finalDueDate: Date? {
-        guard hasDueDate else { return nil }
-        
+    private var finalDueDate: Date {
         let calendar = Calendar.current
         
         if hasSpecificTime {
@@ -264,7 +256,7 @@ struct CreateTaskView: View {
             return calendar.date(bySettingHour: timeComponents.hour ?? 17,
                                   minute: timeComponents.minute ?? 0,
                                   second: 0,
-                                  of: dueDate)
+                                  of: dueDate) ?? dueDate
         } else {
             return calendar.startOfDay(for: dueDate)
         }
@@ -332,7 +324,7 @@ struct CreateTaskView: View {
             error = err
             HapticManager.error()
         } catch {
-            self.error = .custom("CREATE_ERROR", error.localizedDescription)
+            self.error = .custom("UNKNOWN", error.localizedDescription)
             HapticManager.error()
         }
     }
