@@ -12,7 +12,7 @@ struct EditProfileView: View {
     private let timezones = TimeZone.knownTimeZoneIdentifiers.sorted()
 
     init(user: UserDTO) {
-        _name = State(initialValue: user.name)
+        _name = State(initialValue: user.name ?? "")
         _timezone = State(initialValue: user.timezone ?? TimeZone.current.identifier)
     }
 
