@@ -112,8 +112,10 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
 
         do {
             return try APIClient.decoder.decode(T.self, from: data)
-        } catch {
-            Logger.error("Decoding error for \(method) \(path)", error: error, category: .api)
+        } catch let decodingError {
+            let jsonString = String(data: data, encoding: .utf8) ?? "unable to read"
+            Logger.error("Decoding failed for \(method) \(path): \(decodingError)", category: .api)
+            Logger.error("Raw JSON: \(jsonString)", category: .api)
             throw APIError.decoding
         }
     }
