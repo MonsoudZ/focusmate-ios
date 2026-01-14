@@ -63,6 +63,12 @@ struct RootView: View {
                 .task {
                     await NotificationService.shared.requestPermission()
                     await CalendarService.shared.requestPermission()
+                    // Request Screen Time permission
+                    do {
+                        try await ScreenTimeService.shared.requestAuthorization()
+                    } catch {
+                        Logger.debug("Screen Time authorization failed: \(error)", category: .general)
+                    }
                     _ = EscalationService.shared
                     if !hasTrackedInitialOpen {
                         hasTrackedInitialOpen = true
