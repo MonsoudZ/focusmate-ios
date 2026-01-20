@@ -5,41 +5,67 @@ struct TaskRow: View {
     let onComplete: () async -> Void
     let onStar: (() async -> Void)?
     let onTap: (() -> Void)?
+    let onNudge: (() async -> Void)?
     
     @EnvironmentObject var state: AppState
     @State private var showingReasonSheet = false
+    @State private var isNudging = false
     
     private var isOverdue: Bool {
         task.isActuallyOverdue
+    }
+    
+    private var canEdit: Bool {
+        task.can_edit ?? true
+    }
+    
+    private var canDelete: Bool {
+        task.can_delete ?? true
+    }
+    
+    /// Whether this is a shared task that user can nudge about
+    private var canNudge: Bool {
+        // Can nudge if: shared task, not completed, and we can't edit it (we're a viewer)
+        // OR it's assigned to someone else
+        onNudge != nil && !task.isCompleted
     }
     
     init(
         task: TaskDTO,
         onComplete: @escaping () async -> Void,
         onStar: (() async -> Void)? = nil,
-        onTap: (() -> Void)? = nil
+        onTap: (() -> Void)? = nil,
+        onNudge: (() async -> Void)? = nil
     ) {
         self.task = task
         self.onComplete = onComplete
         self.onStar = onStar
         self.onTap = onTap
+        self.onNudge = onNudge
     }
     
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
-            // Complete button
-            Button {
-                handleCompleteTap()
-            } label: {
+            // Complete button - only if can edit
+            if canEdit {
+                Button {
+                    handleCompleteTap()
+                } label: {
+                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 24))
+                        .foregroundColor(task.isCompleted ? DesignSystem.Colors.success : DesignSystem.Colors.textSecondary)
+                }
+                .buttonStyle(.plain)
+            } else {
+                // Read-only indicator for viewers
                 Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 24))
-                    .foregroundColor(task.isCompleted ? DesignSystem.Colors.success : DesignSystem.Colors.textSecondary)
+                    .foregroundColor(task.isCompleted ? DesignSystem.Colors.success : DesignSystem.Colors.textSecondary.opacity(0.5))
             }
-            .buttonStyle(.plain)
             
             // Task content - tappable area
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                // Title row with priority
+                // Title row with priority and permission indicator
                 HStack(spacing: 4) {
                     if let icon = task.taskPriority.icon {
                         Image(systemName: icon)
@@ -52,6 +78,13 @@ struct TaskRow: View {
                         .fontWeight(task.isCompleted ? .regular : .medium)
                         .strikethrough(task.isCompleted)
                         .foregroundColor(task.isCompleted ? DesignSystem.Colors.textSecondary : (isOverdue ? DesignSystem.Colors.error : DesignSystem.Colors.textPrimary))
+                    
+                    // Read-only indicator
+                    if !canEdit {
+                        Image(systemName: "lock.fill")
+                            .font(.caption2)
+                            .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.6))
+                    }
                 }
                 
                 // Note preview
@@ -127,8 +160,31 @@ struct TaskRow: View {
                         .font(.subheadline)
                 }
                 
-                // Star button
-                if let onStar {
+                // Nudge button - for shared tasks
+                if canNudge {
+                    Button {
+                        HapticManager.selection()
+                        Task {
+                            isNudging = true
+                            await onNudge?()
+                            isNudging = false
+                        }
+                    } label: {
+                        if isNudging {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        } else {
+                            Image(systemName: "hand.point.right.fill")
+                                .foregroundColor(DesignSystem.Colors.accent)
+                                .font(.subheadline)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isNudging)
+                }
+                
+                // Star button - only if can edit
+                if let onStar, canEdit {
                     Button {
                         HapticManager.selection()
                         Task { await onStar() }
@@ -166,6 +222,8 @@ struct TaskRow: View {
     // MARK: - Actions
     
     private func handleCompleteTap() {
+        guard canEdit else { return }
+        
         HapticManager.selection()
         
         if task.isCompleted {

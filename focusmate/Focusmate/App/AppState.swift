@@ -27,6 +27,18 @@ final class AppState: ObservableObject {
             }
             .store(in: &cancellables)
         
+        // Listen for push token
+        NotificationCenter.default.publisher(for: .didReceivePushToken)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] notification in
+                if let token = notification.userInfo?["token"] as? String {
+                    Task { [weak self] in
+                        await self?.registerDevice(pushToken: token)
+                    }
+                }
+            }
+            .store(in: &cancellables)
+        
         Task {
             await setupServices()
         }
@@ -37,14 +49,17 @@ final class AppState: ObservableObject {
         
         Task {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
-            await registerDevice()
+            // Register with existing token if available
+            await registerDevice(pushToken: AppDelegate.pushToken)
         }
     }
 
-    private func registerDevice() async {
+    private func registerDevice(pushToken: String? = nil) async {
+        guard auth.jwt != nil else { return }
+        
         do {
-            _ = try await deviceService.registerDevice()
-            Logger.info("Device registered successfully", category: .api)
+            _ = try await deviceService.registerDevice(pushToken: pushToken)
+            Logger.info("Device registered successfully (push: \(pushToken != nil))", category: .api)
         } catch {
             Logger.warning("Device registration skipped: \(error)", category: .api)
         }

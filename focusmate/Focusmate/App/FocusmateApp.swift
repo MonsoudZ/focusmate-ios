@@ -61,8 +61,12 @@ struct RootView: View {
                         .tag(2)
                 }
                 .task {
+                    // Request push notification permission and register
+                    await requestPushPermission()
+                    
                     await NotificationService.shared.requestPermission()
                     await CalendarService.shared.requestPermission()
+                    
                     // Request Screen Time permission
                     do {
                         try await ScreenTimeService.shared.requestAuthorization()
@@ -87,6 +91,25 @@ struct RootView: View {
                     selectedTab = 0
                 }
             }
+        }
+    }
+    
+    private func requestPushPermission() async {
+        let center = UNUserNotificationCenter.current()
+        
+        do {
+            let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+            
+            if granted {
+                Logger.info("Push notification permission granted", category: .general)
+                await MainActor.run {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            } else {
+                Logger.info("Push notification permission denied", category: .general)
+            }
+        } catch {
+            Logger.error("Failed to request push permission: \(error)", category: .general)
         }
     }
     
