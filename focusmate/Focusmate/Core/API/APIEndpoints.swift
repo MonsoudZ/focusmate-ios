@@ -91,6 +91,11 @@ enum API {
         static func tasksReorder(_ listId: String) -> String { "api/v1/lists/\(listId)/tasks/reorder" }
         static func memberships(_ listId: String) -> String { "api/v1/lists/\(listId)/memberships" }
         static func membership(_ listId: String, _ membershipId: String) -> String { "api/v1/lists/\(listId)/memberships/\(membershipId)" }
+        
+        // Subtasks - created as tasks with parent_task_id
+        static func subtasks(_ listId: String, _ taskId: String) -> String {
+            "api/v1/lists/\(listId)/tasks/\(taskId)/subtasks"
+        }
     }
 
     enum Tasks {

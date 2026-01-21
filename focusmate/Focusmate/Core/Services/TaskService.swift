@@ -47,7 +47,8 @@ final class TaskService {
         recurrenceInterval: Int? = nil,
         recurrenceDays: [Int]? = nil,
         recurrenceEndDate: Date? = nil,
-        recurrenceCount: Int? = nil
+        recurrenceCount: Int? = nil,
+        parentTaskId: Int? = nil
     ) async throws -> TaskDTO {
         do {
             let request = CreateTaskRequest(task: .init(
@@ -63,7 +64,8 @@ final class TaskService {
                 recurrence_interval: recurrenceInterval,
                 recurrence_days: recurrenceDays,
                 recurrence_end_date: recurrenceEndDate?.ISO8601Format(),
-                recurrence_count: recurrenceCount
+                recurrence_count: recurrenceCount,
+                parent_task_id: parentTaskId
             ))
             let task: TaskDTO = try await apiClient.request(
                 "POST",
@@ -71,9 +73,11 @@ final class TaskService {
                 body: request
             )
             
-            // Schedule notifications
-            NotificationService.shared.scheduleTaskNotifications(for: task)
-            CalendarService.shared.addTaskToCalendar(task)
+            // Only schedule notifications for parent tasks
+            if parentTaskId == nil {
+                NotificationService.shared.scheduleTaskNotifications(for: task)
+                CalendarService.shared.addTaskToCalendar(task)
+            }
             
             return task
         } catch {
@@ -204,6 +208,80 @@ final class TaskService {
             throw ErrorHandler.shared.handle(error, context: "Searching tasks")
         }
     }
+    
+    // MARK: - Subtask Methods
+    
+    /// Create a subtask under a parent task
+    func createSubtask(listId: Int, parentTaskId: Int, title: String) async throws -> TaskDTO {
+        do {
+            let request = CreateSubtaskRequest(task: .init(
+                title: title,
+                parent_task_id: parentTaskId
+            ))
+            
+            // DEBUG: Print what we're sending
+            let encoder = JSONEncoder()
+            encoder.keyEncodingStrategy = .convertToSnakeCase
+            if let jsonData = try? encoder.encode(request),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("🔍 DEBUG createSubtask request: \(jsonString)")
+            }
+            
+            let subtask: TaskDTO = try await apiClient.request(
+                "POST",
+                API.Lists.tasks(String(listId)),
+                body: request
+            )
+            Logger.debug("TaskService: Created subtask '\(title)' under task \(parentTaskId)", category: .api)
+            return subtask
+        } catch {
+            throw ErrorHandler.shared.handle(error, context: "Creating subtask")
+        }
+    }
+    
+    /// Complete a subtask
+    func completeSubtask(listId: Int, subtaskId: Int) async throws -> TaskDTO {
+        do {
+            let subtask: TaskDTO = try await apiClient.request(
+                "PATCH",
+                API.Lists.taskAction(String(listId), String(subtaskId), "complete"),
+                body: nil as String?
+            )
+            Logger.debug("TaskService: Completed subtask \(subtaskId)", category: .api)
+            return subtask
+        } catch {
+            throw ErrorHandler.shared.handle(error, context: "Completing subtask")
+        }
+    }
+    
+    /// Reopen a subtask
+    func reopenSubtask(listId: Int, subtaskId: Int) async throws -> TaskDTO {
+        do {
+            let subtask: TaskDTO = try await apiClient.request(
+                "PATCH",
+                API.Lists.taskAction(String(listId), String(subtaskId), "reopen"),
+                body: nil as String?
+            )
+            Logger.debug("TaskService: Reopened subtask \(subtaskId)", category: .api)
+            return subtask
+        } catch {
+            throw ErrorHandler.shared.handle(error, context: "Reopening subtask")
+        }
+    }
+    
+    /// Delete a subtask
+    func deleteSubtask(listId: Int, subtaskId: Int) async throws {
+        do {
+            _ = try await apiClient.request(
+                "DELETE",
+                API.Lists.task(String(listId), String(subtaskId)),
+                body: nil as String?
+            ) as EmptyResponse
+            Logger.debug("TaskService: Deleted subtask \(subtaskId)", category: .api)
+        } catch {
+            throw ErrorHandler.shared.handle(error, context: "Deleting subtask")
+        }
+    }
 }
 
 // MARK: - Request Models (local to TaskService)
@@ -224,6 +302,15 @@ private struct CreateTaskRequest: Encodable {
         let recurrence_days: [Int]?
         let recurrence_end_date: String?
         let recurrence_count: Int?
+        let parent_task_id: Int?
+    }
+}
+
+private struct CreateSubtaskRequest: Encodable {
+    let task: SubtaskData
+    struct SubtaskData: Encodable {
+        let title: String
+        let parent_task_id: Int
     }
 }
 

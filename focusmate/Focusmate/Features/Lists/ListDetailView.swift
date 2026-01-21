@@ -18,6 +18,13 @@ struct ListDetailView: View {
     @State private var selectedTask: TaskDTO?
     @State private var nudgeMessage: String?
     
+    // Subtask state
+    @State private var showingAddSubtask = false
+    @State private var taskForSubtask: TaskDTO?
+    @State private var showingEditSubtask = false
+    @State private var subtaskToEdit: SubtaskDTO?
+    @State private var parentTaskForSubtaskEdit: TaskDTO?
+    
     // MARK: - Permission Helpers
     
     private var isOwner: Bool {
@@ -34,10 +41,6 @@ struct ListDetailView: View {
     
     private var canEdit: Bool {
         isOwner || isEditor
-    }
-    
-    private var canManageMembers: Bool {
-        isOwner
     }
     
     private var isSharedList: Bool {
@@ -57,14 +60,12 @@ struct ListDetailView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: DesignSystem.Spacing.sm) {
-                // Members button - always visible for shared lists
                 Button {
                     showingMembers = true
                 } label: {
                     Image(systemName: "person.2")
                 }
                 
-                // Edit list button - only for owners
                 if isOwner {
                     Button {
                         showingEditList = true
@@ -73,7 +74,6 @@ struct ListDetailView: View {
                     }
                 }
 
-                // Add task button - only for editors and owners
                 if canEdit {
                     Button {
                         showingCreateTask = true
@@ -88,22 +88,22 @@ struct ListDetailView: View {
     // MARK: - Sorted Task Groups
     
     private var urgentTasks: [TaskDTO] {
-        tasks.filter { !$0.isCompleted && $0.taskPriority == .urgent }
+        tasks.filter { !$0.isCompleted && $0.taskPriority == .urgent && !$0.isSubtask }
             .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
     }
     
     private var starredTasks: [TaskDTO] {
-        tasks.filter { !$0.isCompleted && $0.taskPriority != .urgent && $0.isStarred }
+        tasks.filter { !$0.isCompleted && $0.taskPriority != .urgent && $0.isStarred && !$0.isSubtask }
             .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
     }
     
     private var normalTasks: [TaskDTO] {
-        tasks.filter { !$0.isCompleted && $0.taskPriority != .urgent && !$0.isStarred }
+        tasks.filter { !$0.isCompleted && $0.taskPriority != .urgent && !$0.isStarred && !$0.isSubtask }
             .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
     }
     
     private var completedTasks: [TaskDTO] {
-        tasks.filter { $0.isCompleted }
+        tasks.filter { $0.isCompleted && !$0.isSubtask }
             .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
     }
 
@@ -148,6 +148,20 @@ struct ListDetailView: View {
                 tagService: tagService,
                 listId: list.id
             )
+        }
+        .sheet(isPresented: $showingAddSubtask) {
+            if let parentTask = taskForSubtask {
+                AddSubtaskSheet(parentTask: parentTask) { title in
+                    await createSubtask(parentTask: parentTask, title: title)
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditSubtask) {
+            if let subtask = subtaskToEdit, let parentTask = parentTaskForSubtaskEdit {
+                EditSubtaskSheet(subtask: subtask) { newTitle in
+                    await updateSubtask(subtask: subtask, parentTask: parentTask, title: newTitle)
+                }
+            }
         }
         .alert("Delete List", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -209,7 +223,6 @@ struct ListDetailView: View {
     
     private var taskListView: some View {
         VStack(spacing: 0) {
-            // Role indicator for shared lists
             if isSharedList {
                 HStack {
                     Image(systemName: roleIcon)
@@ -225,11 +238,35 @@ struct ListDetailView: View {
             }
             
             List {
-                // Urgent section
                 if !urgentTasks.isEmpty {
                     Section {
                         ForEach(urgentTasks, id: \.id) { task in
-                            taskRow(for: task)
+                            TaskRowContainer(
+                                task: task,
+                                canEdit: task.can_edit ?? canEdit,
+                                canDelete: task.can_delete ?? canEdit,
+                                isSharedList: isSharedList,
+                                onComplete: { await loadTasks() },
+                                onStar: { await toggleStar(task) },
+                                onTap: { selectedTask = task },
+                                onNudge: { await nudgeAboutTask(task) },
+                                onDelete: { await deleteTask(task) },
+                                onSubtaskComplete: { subtask in
+                                    await toggleSubtaskComplete(subtask: subtask, parentTask: task)
+                                },
+                                onSubtaskDelete: { subtask in
+                                    await deleteSubtask(subtask: subtask, parentTask: task)
+                                },
+                                onSubtaskEdit: { subtask in
+                                    subtaskToEdit = subtask
+                                    parentTaskForSubtaskEdit = task
+                                    showingEditSubtask = true
+                                },
+                                onAddSubtask: {
+                                    taskForSubtask = task
+                                    showingAddSubtask = true
+                                }
+                            )
                         }
                         .onMove { source, destination in
                             if canEdit {
@@ -243,11 +280,35 @@ struct ListDetailView: View {
                     }
                 }
                 
-                // Starred section
                 if !starredTasks.isEmpty {
                     Section {
                         ForEach(starredTasks, id: \.id) { task in
-                            taskRow(for: task)
+                            TaskRowContainer(
+                                task: task,
+                                canEdit: task.can_edit ?? canEdit,
+                                canDelete: task.can_delete ?? canEdit,
+                                isSharedList: isSharedList,
+                                onComplete: { await loadTasks() },
+                                onStar: { await toggleStar(task) },
+                                onTap: { selectedTask = task },
+                                onNudge: { await nudgeAboutTask(task) },
+                                onDelete: { await deleteTask(task) },
+                                onSubtaskComplete: { subtask in
+                                    await toggleSubtaskComplete(subtask: subtask, parentTask: task)
+                                },
+                                onSubtaskDelete: { subtask in
+                                    await deleteSubtask(subtask: subtask, parentTask: task)
+                                },
+                                onSubtaskEdit: { subtask in
+                                    subtaskToEdit = subtask
+                                    parentTaskForSubtaskEdit = task
+                                    showingEditSubtask = true
+                                },
+                                onAddSubtask: {
+                                    taskForSubtask = task
+                                    showingAddSubtask = true
+                                }
+                            )
                         }
                         .onMove { source, destination in
                             if canEdit {
@@ -261,11 +322,35 @@ struct ListDetailView: View {
                     }
                 }
                 
-                // Normal tasks section
                 if !normalTasks.isEmpty {
                     Section {
                         ForEach(normalTasks, id: \.id) { task in
-                            taskRow(for: task)
+                            TaskRowContainer(
+                                task: task,
+                                canEdit: task.can_edit ?? canEdit,
+                                canDelete: task.can_delete ?? canEdit,
+                                isSharedList: isSharedList,
+                                onComplete: { await loadTasks() },
+                                onStar: { await toggleStar(task) },
+                                onTap: { selectedTask = task },
+                                onNudge: { await nudgeAboutTask(task) },
+                                onDelete: { await deleteTask(task) },
+                                onSubtaskComplete: { subtask in
+                                    await toggleSubtaskComplete(subtask: subtask, parentTask: task)
+                                },
+                                onSubtaskDelete: { subtask in
+                                    await deleteSubtask(subtask: subtask, parentTask: task)
+                                },
+                                onSubtaskEdit: { subtask in
+                                    subtaskToEdit = subtask
+                                    parentTaskForSubtaskEdit = task
+                                    showingEditSubtask = true
+                                },
+                                onAddSubtask: {
+                                    taskForSubtask = task
+                                    showingAddSubtask = true
+                                }
+                            )
                         }
                         .onMove { source, destination in
                             if canEdit {
@@ -278,11 +363,35 @@ struct ListDetailView: View {
                     }
                 }
                 
-                // Completed section
                 if !completedTasks.isEmpty {
                     Section {
                         ForEach(completedTasks, id: \.id) { task in
-                            taskRow(for: task)
+                            TaskRowContainer(
+                                task: task,
+                                canEdit: task.can_edit ?? canEdit,
+                                canDelete: task.can_delete ?? canEdit,
+                                isSharedList: isSharedList,
+                                onComplete: { await loadTasks() },
+                                onStar: { await toggleStar(task) },
+                                onTap: { selectedTask = task },
+                                onNudge: { await nudgeAboutTask(task) },
+                                onDelete: { await deleteTask(task) },
+                                onSubtaskComplete: { subtask in
+                                    await toggleSubtaskComplete(subtask: subtask, parentTask: task)
+                                },
+                                onSubtaskDelete: { subtask in
+                                    await deleteSubtask(subtask: subtask, parentTask: task)
+                                },
+                                onSubtaskEdit: { subtask in
+                                    subtaskToEdit = subtask
+                                    parentTaskForSubtaskEdit = task
+                                    showingEditSubtask = true
+                                },
+                                onAddSubtask: {
+                                    taskForSubtask = task
+                                    showingAddSubtask = true
+                                }
+                            )
                         }
                     } header: {
                         Text("Completed")
@@ -307,44 +416,9 @@ struct ListDetailView: View {
     private var roleColor: Color {
         switch list.role {
         case "owner", nil: return .yellow
-        case "editor": return DesignSystem.Colors.accent
+        case "editor": return .blue
         case "viewer": return .gray
         default: return .blue
-        }
-    }
-    
-    @ViewBuilder
-    private func taskRow(for task: TaskDTO) -> some View {
-        let taskCanEdit = task.can_edit ?? canEdit
-        let taskCanDelete = task.can_delete ?? canEdit
-        
-        TaskRow(
-            task: task,
-            onComplete: { await loadTasks() },
-            onStar: taskCanEdit ? { await toggleStar(task) } : nil,
-            onTap: { selectedTask = task },
-            onNudge: isSharedList ? { await nudgeAboutTask(task) } : nil
-        )
-        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-        .listRowSeparator(.hidden)
-        .listRowBackground(Color.clear)
-        .swipeActions(edge: .trailing, allowsFullSwipe: taskCanDelete) {
-            if taskCanDelete {
-                Button("Delete", role: .destructive) {
-                    HapticManager.warning()
-                    Task { await deleteTask(task) }
-                }
-            }
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-            if isSharedList {
-                Button {
-                    Task { await nudgeAboutTask(task) }
-                } label: {
-                    Label("Nudge", systemImage: "hand.point.right.fill")
-                }
-                .tint(DesignSystem.Colors.accent)
-            }
         }
     }
     
@@ -461,6 +535,70 @@ struct ListDetailView: View {
         }
     }
     
+    // MARK: - Subtask Actions
+    
+    private func createSubtask(parentTask: TaskDTO, title: String) async {
+        do {
+            _ = try await taskService.createSubtask(
+                listId: parentTask.list_id,
+                parentTaskId: parentTask.id,
+                title: title
+            )
+            HapticManager.success()
+            await loadTasks()
+        } catch {
+            Logger.error("Failed to create subtask: \(error)", category: .api)
+            self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
+        }
+    }
+    
+    private func toggleSubtaskComplete(subtask: SubtaskDTO, parentTask: TaskDTO) async {
+        do {
+            if subtask.isCompleted {
+                _ = try await taskService.reopenSubtask(listId: parentTask.list_id, subtaskId: subtask.id)
+            } else {
+                _ = try await taskService.completeSubtask(listId: parentTask.list_id, subtaskId: subtask.id)
+            }
+            HapticManager.light()
+            await loadTasks()
+        } catch {
+            Logger.error("Failed to toggle subtask: \(error)", category: .api)
+            self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
+        }
+    }
+    
+    private func deleteSubtask(subtask: SubtaskDTO, parentTask: TaskDTO) async {
+        do {
+            try await taskService.deleteSubtask(listId: parentTask.list_id, subtaskId: subtask.id)
+            HapticManager.medium()
+            await loadTasks()
+        } catch {
+            Logger.error("Failed to delete subtask: \(error)", category: .api)
+            self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
+        }
+    }
+    
+    private func updateSubtask(subtask: SubtaskDTO, parentTask: TaskDTO, title: String) async {
+        do {
+            _ = try await taskService.updateTask(
+                listId: parentTask.list_id,
+                taskId: subtask.id,
+                title: title,
+                note: nil,
+                dueAt: nil
+            )
+            HapticManager.success()
+            await loadTasks()
+        } catch {
+            Logger.error("Failed to update subtask: \(error)", category: .api)
+            self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
+        }
+    }
+    
     private func loadTasks() async {
         isLoading = true
         error = nil
@@ -491,6 +629,61 @@ struct ListDetailView: View {
     }
 }
 
+// MARK: - Task Row Container (Separate View to avoid compiler crash)
+
+struct TaskRowContainer: View {
+    let task: TaskDTO
+    let canEdit: Bool
+    let canDelete: Bool
+    let isSharedList: Bool
+    let onComplete: () async -> Void
+    let onStar: () async -> Void
+    let onTap: () -> Void
+    let onNudge: () async -> Void
+    let onDelete: () async -> Void
+    let onSubtaskComplete: (SubtaskDTO) async -> Void
+    let onSubtaskDelete: (SubtaskDTO) async -> Void
+    let onSubtaskEdit: (SubtaskDTO) -> Void
+    let onAddSubtask: () -> Void
+    
+    var body: some View {
+        TaskRow(
+            task: task,
+            onComplete: onComplete,
+            onStar: onStar,
+            onTap: onTap,
+            onNudge: onNudge,
+            onSubtaskComplete: onSubtaskComplete,
+            onSubtaskDelete: onSubtaskDelete,
+            onSubtaskEdit: onSubtaskEdit,
+            onAddSubtask: onAddSubtask,
+            showStar: canEdit,
+            showNudge: isSharedList
+        )
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+        .swipeActions(edge: .trailing, allowsFullSwipe: canDelete) {
+            if canDelete {
+                Button("Delete", role: .destructive) {
+                    HapticManager.warning()
+                    Task { await onDelete() }
+                }
+            }
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            if isSharedList {
+                Button {
+                    Task { await onNudge() }
+                } label: {
+                    Label("Nudge", systemImage: "hand.point.right.fill")
+                }
+                .tint(.blue)
+            }
+        }
+    }
+}
+
 // MARK: - Supporting Views
 
 struct NudgeToast: View {
@@ -503,7 +696,7 @@ struct NudgeToast: View {
             .foregroundColor(.white)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(DesignSystem.Colors.accent)
+            .background(Color.blue)
             .cornerRadius(20)
             .shadow(radius: 4)
             .padding(.bottom, 20)

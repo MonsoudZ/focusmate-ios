@@ -17,7 +17,7 @@ struct ListRowView: View {
     
     private var roleColor: Color {
         switch list.role {
-        case "editor": return DesignSystem.Colors.accent
+        case "editor": return DesignSystem.Colors.primary
         case "viewer": return .gray
         default: return .blue
         }
