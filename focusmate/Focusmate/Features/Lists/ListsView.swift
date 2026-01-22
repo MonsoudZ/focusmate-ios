@@ -18,13 +18,13 @@ struct ListsView: View {
                     EmptyStateView(
                         title: "No lists yet",
                         message: "Create a list to organize your tasks",
-                        icon: DesignSystem.Icons.list,
+                        icon: DS.Icon.emptyList,
                         actionTitle: "Create List",
                         action: { showingCreateList = true }
                     )
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: DesignSystem.Spacing.sm) {
+                        LazyVStack(spacing: DS.Spacing.sm) {
                             ForEach(lists, id: \.id) { list in
                                 NavigationLink(destination: ListDetailView(
                                     list: list,
@@ -37,24 +37,24 @@ struct ListsView: View {
                                 .buttonStyle(.plain)
                             }
                         }
-                        .padding(DesignSystem.Spacing.md)
+                        .padding(DS.Spacing.md)
                     }
                 }
             }
             .navigationTitle("Lists")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: DesignSystem.Spacing.md) {
+                    HStack(spacing: DS.Spacing.md) {
                         Button {
                             showingSearch = true
                         } label: {
-                            Image(systemName: "magnifyingglass")
+                            Image(systemName: DS.Icon.search)
                         }
                         
                         Button {
                             showingCreateList = true
                         } label: {
-                            Image(systemName: DesignSystem.Icons.add)
+                            Image(systemName: DS.Icon.plus)
                         }
                     }
                 }

@@ -17,21 +17,14 @@ struct ListMembersView: View {
                 if isLoading {
                     ProgressView()
                 } else if memberships.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "person.2")
-                            .font(.system(size: 48))
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                        Text("No members yet")
-                            .font(.headline)
-                        Text("Invite people to collaborate on this list")
-                            .font(.subheadline)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                        Button("Invite Someone") {
-                            showingInvite = true
-                        }
-                        .buttonStyle(.borderedProminent)
+                    EmptyState(
+                        "No members yet",
+                        message: "Invite people to collaborate on this list",
+                        icon: DS.Icon.share,
+                        actionTitle: "Invite Someone"
+                    ) {
+                        showingInvite = true
                     }
-                    .padding()
                 } else {
                     List {
                         Section {
@@ -61,7 +54,7 @@ struct ListMembersView: View {
                     Button {
                         showingInvite = true
                     } label: {
-                        Image(systemName: "plus")
+                        Image(systemName: DS.Icon.plus)
                     }
                 }
             }
@@ -128,47 +121,39 @@ struct ListMembersView: View {
 struct MemberRowView: View {
     let membership: MembershipDTO
     
-    private var initials: String {
-        if let name = membership.user.name, !name.isEmpty {
-            let parts = name.split(separator: " ")
-            if parts.count >= 2 {
-                return "\(parts[0].prefix(1))\(parts[1].prefix(1))".uppercased()
-            }
-            return name.prefix(2).uppercased()
-        }
-        return membership.user.email?.prefix(1).uppercased() ?? "?"
-    }
-    
     var body: some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(DesignSystem.Colors.primary)
-                .frame(width: 40, height: 40)
-                .overlay(
-                    Text(initials)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                )
+        HStack(spacing: DS.Spacing.md) {
+            Avatar(membership.user.name ?? membership.user.email, size: 40)
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text(membership.user.name ?? "Unknown")
                     .font(.body)
                 Text(membership.user.email ?? "")
                     .font(.caption)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                    .foregroundStyle(.secondary)
             }
             
             Spacer()
             
-            Text(membership.role.capitalized)
-                .font(.caption)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(membership.isEditor ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
-                .foregroundColor(membership.isEditor ? .blue : .gray)
-                .cornerRadius(4)
+            RoleBadge(role: membership.role, isEditor: membership.isEditor)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, DS.Spacing.xs)
+    }
+}
+
+// MARK: - Role Badge
+
+private struct RoleBadge: View {
+    let role: String
+    let isEditor: Bool
+    
+    var body: some View {
+        Text(role.capitalized)
+            .font(.caption)
+            .padding(.horizontal, DS.Spacing.sm)
+            .padding(.vertical, DS.Spacing.xs)
+            .background(isEditor ? DS.Colors.accent.opacity(0.1) : Color.gray.opacity(0.1))
+            .foregroundStyle(isEditor ? DS.Colors.accent : .gray)
+            .cornerRadius(DS.Radius.sm)
     }
 }

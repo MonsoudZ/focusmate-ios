@@ -1,11 +1,3 @@
-//
-//  CreateTagView.swift
-//  focusmate
-//
-//  Created by Monsoud Zanaty on 1/7/26.
-//
-
-
 import SwiftUI
 
 struct CreateTagView: View {
@@ -18,8 +10,6 @@ struct CreateTagView: View {
     @State private var isLoading = false
     @State private var error: FocusmateError?
     
-    private let colors = ["blue", "green", "orange", "red", "purple", "pink", "teal", "yellow", "gray"]
-    
     var body: some View {
         NavigationStack {
             Form {
@@ -28,36 +18,21 @@ struct CreateTagView: View {
                 }
                 
                 Section("Color") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
-                        ForEach(colors, id: \.self) { color in
-                            Circle()
-                                .fill(colorFor(color))
-                                .frame(width: 36, height: 36)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.primary, lineWidth: selectedColor == color ? 3 : 0)
-                                )
-                                .onTapGesture {
-                                    HapticManager.selection()
-                                    selectedColor = color
-                                }
-                        }
-                    }
-                    .padding(.vertical, 8)
+                    ListColorPicker(selected: $selectedColor)
+                        .padding(.vertical, DS.Spacing.sm)
                 }
                 
-                // Preview
                 Section("Preview") {
                     HStack {
                         Circle()
-                            .fill(colorFor(selectedColor))
+                            .fill(DS.Colors.list(selectedColor))
                             .frame(width: 8, height: 8)
                         Text(name.isEmpty ? "Tag Name" : name)
-                            .font(DesignSystem.Typography.caption1)
+                            .font(.caption)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(colorFor(selectedColor).opacity(0.2))
+                    .padding(.horizontal, DS.Spacing.md)
+                    .padding(.vertical, DS.Spacing.sm)
+                    .background(DS.Colors.list(selectedColor).opacity(0.2))
                     .cornerRadius(16)
                 }
             }
@@ -78,21 +53,6 @@ struct CreateTagView: View {
                 }
             }
             .errorBanner($error)
-        }
-    }
-    
-    private func colorFor(_ name: String) -> Color {
-        switch name {
-        case "blue": return .blue
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "purple": return .purple
-        case "pink": return .pink
-        case "teal": return .teal
-        case "yellow": return .yellow
-        case "gray": return .gray
-        default: return .blue
         }
     }
     

@@ -6,24 +6,24 @@ struct TagPickerView: View {
     var onCreateTag: (() -> Void)? = nil
     
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             if availableTags.isEmpty {
                 HStack {
                     Text("No tags yet")
-                        .font(DesignSystem.Typography.caption1)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     
                     Spacer()
                     
-                    if let onCreateTag = onCreateTag {
+                    if let onCreateTag {
                         Button("Create Tag") {
                             onCreateTag()
                         }
-                        .font(DesignSystem.Typography.caption1)
+                        .font(.caption)
                     }
                 }
             } else {
-                FlowLayout(spacing: 8) {
+                FlowLayout(spacing: DS.Spacing.sm) {
                     ForEach(availableTags) { tag in
                         TagChip(
                             tag: tag,
@@ -38,20 +38,18 @@ struct TagPickerView: View {
                         )
                     }
                     
-                    if let onCreateTag = onCreateTag {
+                    if let onCreateTag {
                         Button {
                             onCreateTag()
                         } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "plus")
-                                Text("New")
-                            }
-                            .font(DesignSystem.Typography.caption1)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(DesignSystem.Colors.secondaryBackground)
-                            .cornerRadius(16)
+                            Label("New", systemImage: "plus")
+                                .font(.caption)
+                                .padding(.horizontal, DS.Spacing.md)
+                                .padding(.vertical, DS.Spacing.sm)
+                                .background(Color(.secondarySystemBackground))
+                                .cornerRadius(16)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -69,20 +67,20 @@ struct TagChip: View {
             HapticManager.selection()
             onTap()
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: DS.Spacing.xs) {
                 Circle()
                     .fill(tag.tagColor)
                     .frame(width: 8, height: 8)
                 
                 Text(tag.name)
-                    .font(DesignSystem.Typography.caption1)
+                    .font(.caption)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(isSelected ? tag.tagColor.opacity(0.2) : DesignSystem.Colors.secondaryBackground)
+            .padding(.horizontal, DS.Spacing.md)
+            .padding(.vertical, DS.Spacing.sm)
+            .background(isSelected ? tag.tagColor.opacity(0.2) : Color(.secondarySystemBackground))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? tag.tagColor : Color.clear, lineWidth: 1.5)
+                    .stroke(isSelected ? tag.tagColor : .clear, lineWidth: 1.5)
             )
             .cornerRadius(16)
         }
@@ -92,7 +90,7 @@ struct TagChip: View {
 
 // Simple flow layout for tags
 struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
+    var spacing: CGFloat = DS.Spacing.sm
     
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let result = layout(subviews: subviews, proposal: proposal)

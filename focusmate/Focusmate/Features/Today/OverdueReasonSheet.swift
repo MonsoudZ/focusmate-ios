@@ -19,25 +19,25 @@ struct OverdueReasonSheet: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: DesignSystem.Spacing.lg) {
+            VStack(spacing: DS.Spacing.lg) {
                 // Header
-                VStack(spacing: DesignSystem.Spacing.sm) {
+                VStack(spacing: DS.Spacing.sm) {
                     Image(systemName: "clock.badge.exclamationmark.fill")
                         .font(.system(size: 50))
-                        .foregroundColor(DesignSystem.Colors.warning)
+                        .foregroundStyle(DS.Colors.warning)
                     
                     Text("Why was this task late?")
-                        .font(DesignSystem.Typography.title2)
+                        .font(.title2.weight(.semibold))
                     
                     Text(task.title)
-                        .font(DesignSystem.Typography.body)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, DesignSystem.Spacing.lg)
+                .padding(.top, DS.Spacing.lg)
                 
                 // Reason options
-                VStack(spacing: DesignSystem.Spacing.sm) {
+                VStack(spacing: DS.Spacing.sm) {
                     ForEach(reasons, id: \.0) { reason in
                         ReasonButton(
                             title: reason.1,
@@ -63,12 +63,11 @@ struct OverdueReasonSheet: View {
                 } label: {
                     Text("Complete Task")
                         .frame(maxWidth: .infinity)
-                        .foregroundColor(.white)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!canSubmit)
                 .padding(.horizontal)
-                .padding(.bottom, DesignSystem.Spacing.lg)
+                .padding(.bottom, DS.Spacing.lg)
             }
             .navigationTitle("Overdue Task")
             .navigationBarTitleDisplayMode(.inline)
@@ -100,19 +99,19 @@ struct ReasonButton: View {
         Button(action: action) {
             HStack {
                 Text(title)
-                    .font(DesignSystem.Typography.body)
+                    .font(.body)
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(DesignSystem.Colors.primary)
+                        .foregroundStyle(DS.Colors.accent)
                 }
             }
-            .padding(DesignSystem.Spacing.md)
-            .background(isSelected ? DesignSystem.Colors.primaryLight : DesignSystem.Colors.cardBackground)
-            .cornerRadius(DesignSystem.CornerRadius.md)
+            .padding(DS.Spacing.md)
+            .background(isSelected ? DS.Colors.accent.opacity(0.1) : Color(.secondarySystemBackground))
+            .cornerRadius(DS.Radius.md)
             .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
-                    .stroke(isSelected ? DesignSystem.Colors.primary : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: DS.Radius.md)
+                    .stroke(isSelected ? DS.Colors.accent : .clear, lineWidth: 2)
             )
         }
         .buttonStyle(.plain)

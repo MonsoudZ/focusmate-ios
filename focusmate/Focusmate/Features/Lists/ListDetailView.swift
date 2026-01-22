@@ -59,18 +59,18 @@ struct ListDetailView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
-            HStack(spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DS.Spacing.sm) {
                 Button {
                     showingMembers = true
                 } label: {
-                    Image(systemName: "person.2")
+                    Image(systemName: DS.Icon.share)
                 }
                 
                 if isOwner {
                     Button {
                         showingEditList = true
                     } label: {
-                        Image(systemName: DesignSystem.Icons.edit)
+                        Image(systemName: DS.Icon.edit)
                     }
                 }
 
@@ -78,7 +78,7 @@ struct ListDetailView: View {
                     Button {
                         showingCreateTask = true
                     } label: {
-                        Image(systemName: DesignSystem.Icons.add)
+                        Image(systemName: DS.Icon.plus)
                     }
                 }
             }
@@ -204,7 +204,7 @@ struct ListDetailView: View {
             EmptyStateView(
                 title: "No tasks yet",
                 message: "Tap the + button to add your first task",
-                icon: DesignSystem.Icons.task,
+                icon: DS.Icon.circle,
                 actionTitle: "Create Task",
                 action: { showingCreateTask = true }
             )
@@ -212,7 +212,7 @@ struct ListDetailView: View {
             EmptyStateView(
                 title: "No tasks yet",
                 message: "The owner hasn't added any tasks to this list",
-                icon: DesignSystem.Icons.task,
+                icon: DS.Icon.circle,
                 actionTitle: nil,
                 action: nil
             )
@@ -226,14 +226,14 @@ struct ListDetailView: View {
             if isSharedList {
                 HStack {
                     Image(systemName: roleIcon)
-                        .foregroundColor(roleColor)
+                        .foregroundStyle(roleColor)
                     Text("You're a \(roleLabel.lowercased()) of this list")
                         .font(.caption)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .foregroundStyle(.secondary)
                     Spacer()
                 }
                 .padding(.horizontal)
-                .padding(.vertical, 8)
+                .padding(.vertical, DS.Spacing.sm)
                 .background(roleColor.opacity(0.1))
             }
             
@@ -275,7 +275,7 @@ struct ListDetailView: View {
                         }
                     } header: {
                         Label("Urgent", systemImage: "flag.fill")
-                            .foregroundColor(.red)
+                            .foregroundStyle(DS.Colors.error)
                             .font(.caption)
                     }
                 }
@@ -316,8 +316,8 @@ struct ListDetailView: View {
                             }
                         }
                     } header: {
-                        Label("Starred", systemImage: "star.fill")
-                            .foregroundColor(.yellow)
+                        Label("Starred", systemImage: DS.Icon.starFilled)
+                            .foregroundStyle(.yellow)
                             .font(.caption)
                     }
                 }
@@ -407,7 +407,7 @@ struct ListDetailView: View {
     private var roleIcon: String {
         switch list.role {
         case "owner", nil: return "crown.fill"
-        case "editor": return "pencil"
+        case "editor": return DS.Icon.edit
         case "viewer": return "eye"
         default: return "person"
         }
@@ -416,9 +416,9 @@ struct ListDetailView: View {
     private var roleColor: Color {
         switch list.role {
         case "owner", nil: return .yellow
-        case "editor": return .blue
-        case "viewer": return .gray
-        default: return .blue
+        case "editor": return DS.Colors.accent
+        case "viewer": return Color(.secondaryLabel)
+        default: return DS.Colors.accent
         }
     }
     
@@ -629,7 +629,7 @@ struct ListDetailView: View {
     }
 }
 
-// MARK: - Task Row Container (Separate View to avoid compiler crash)
+// MARK: - Task Row Container
 
 struct TaskRowContainer: View {
     let task: TaskDTO
@@ -660,7 +660,7 @@ struct TaskRowContainer: View {
             showStar: canEdit,
             showNudge: isSharedList
         )
-        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+        .listRowInsets(EdgeInsets(top: DS.Spacing.xs, leading: DS.Spacing.lg, bottom: DS.Spacing.xs, trailing: DS.Spacing.lg))
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
         .swipeActions(edge: .trailing, allowsFullSwipe: canDelete) {
@@ -678,7 +678,7 @@ struct TaskRowContainer: View {
                 } label: {
                     Label("Nudge", systemImage: "hand.point.right.fill")
                 }
-                .tint(.blue)
+                .tint(DS.Colors.accent)
             }
         }
     }
@@ -691,15 +691,14 @@ struct NudgeToast: View {
     
     var body: some View {
         Text(message)
-            .font(.subheadline)
-            .fontWeight(.medium)
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color.blue)
-            .cornerRadius(20)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.white)
+            .padding(.horizontal, DS.Spacing.lg)
+            .padding(.vertical, DS.Spacing.sm)
+            .background(DS.Colors.accent)
+            .cornerRadius(DS.Radius.lg)
             .shadow(radius: 4)
-            .padding(.bottom, 20)
+            .padding(.bottom, DS.Spacing.xl)
     }
 }
 

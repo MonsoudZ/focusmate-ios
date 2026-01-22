@@ -14,7 +14,7 @@ struct AppBlockingSettingsView: View {
                 if screenTime.isAuthorized {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(DesignSystem.Colors.success)
+                            .foregroundStyle(DS.Colors.success)
                         Text("Screen Time Access Granted")
                     }
                 } else {
@@ -27,10 +27,7 @@ struct AppBlockingSettingsView: View {
                             }
                         }
                     } label: {
-                        HStack {
-                            Image(systemName: "lock.shield")
-                            Text("Enable Screen Time Access")
-                        }
+                        Label("Enable Screen Time Access", systemImage: "lock.shield")
                     }
                 }
             } header: {
@@ -54,13 +51,13 @@ struct AppBlockingSettingsView: View {
                             Spacer()
                             if screenTime.hasSelections {
                                 Text("\(screenTime.selectedApps.count + screenTime.selectedCategories.count) selected")
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                                    .foregroundStyle(.secondary)
                             }
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                            Image(systemName: DS.Icon.chevronRight)
+                                .foregroundStyle(.secondary)
                         }
                     }
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .foregroundStyle(.primary)
                 } header: {
                     Text("Blocked Apps")
                 } footer: {
@@ -73,7 +70,7 @@ struct AppBlockingSettingsView: View {
                         Text("Blocking Active")
                         Spacer()
                         Text(screenTime.isBlocking ? "Yes" : "No")
-                            .foregroundColor(screenTime.isBlocking ? DesignSystem.Colors.error : DesignSystem.Colors.textSecondary)
+                            .foregroundStyle(screenTime.isBlocking ? DS.Colors.error : .secondary)
                     }
                 } header: {
                     Text("Status")

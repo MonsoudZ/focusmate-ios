@@ -19,7 +19,7 @@ struct NotificationSettingsView: View {
                         ProgressView()
                     } else if notificationsEnabled {
                         Text("Enabled")
-                            .foregroundColor(.green)
+                            .foregroundStyle(DS.Colors.success)
                     } else {
                         Button("Enable in Settings") {
                             openSettings()
@@ -43,10 +43,10 @@ struct NotificationSettingsView: View {
                     } label: {
                         HStack {
                             Text("All Reminders")
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
+                                .foregroundStyle(.primary)
                             Spacer()
                             Text(dueSoonReminders && overdueAlerts && morningBriefing ? "On" : "Off")
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -63,7 +63,7 @@ struct NotificationSettingsView: View {
                     Text("Morning Briefing: Daily at 8:00 AM")
                 }
                 .font(.footnote)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             }
         }
         .navigationTitle("Notifications")

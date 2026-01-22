@@ -9,67 +9,61 @@ struct ListRowView: View {
     
     private var roleIcon: String {
         switch list.role {
-        case "editor": return "pencil"
+        case "editor": return DS.Icon.edit
         case "viewer": return "eye"
-        default: return "person.2"
+        default: return DS.Icon.share
         }
     }
     
     private var roleColor: Color {
         switch list.role {
-        case "editor": return DesignSystem.Colors.primary
+        case "editor": return DS.Colors.accent
         case "viewer": return .gray
-        default: return .blue
+        default: return DS.Colors.accent
         }
     }
 
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
+        HStack(spacing: DS.Spacing.md) {
             // Color indicator
-            RoundedRectangle(cornerRadius: 4)
-                .fill(list.listColor)
-                .frame(width: 4, height: 40)
+            ColorBar(color: list.listColor)
             
             // List info
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                HStack(spacing: DS.Spacing.sm) {
                     Text(list.name)
-                        .font(DesignSystem.Typography.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .font(.body.weight(.medium))
                     
-                    // Shared indicator
                     if isSharedList {
                         Image(systemName: roleIcon)
                             .font(.caption)
-                            .foregroundColor(roleColor)
+                            .foregroundStyle(roleColor)
                     }
                 }
 
-                HStack(spacing: DesignSystem.Spacing.sm) {
+                HStack(spacing: DS.Spacing.sm) {
                     if let count = list.tasks_count {
                         Text(count == 1 ? "1 task" : "\(count) tasks")
-                            .font(DesignSystem.Typography.caption1)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     
-                    // Role label for shared lists
                     if isSharedList {
                         Text("•")
-                            .font(DesignSystem.Typography.caption1)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         
                         Text(list.role?.capitalized ?? "Shared")
-                            .font(DesignSystem.Typography.caption1)
-                            .foregroundColor(roleColor)
+                            .font(.caption)
+                            .foregroundStyle(roleColor)
                     } else if let description = list.description, !description.isEmpty {
                         Text("•")
-                            .font(DesignSystem.Typography.caption1)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         
                         Text(description)
-                            .font(DesignSystem.Typography.caption1)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 }
@@ -77,13 +71,12 @@ struct ListRowView: View {
             
             Spacer()
             
-            // Chevron
-            Image(systemName: "chevron.right")
+            Image(systemName: DS.Icon.chevronRight)
                 .font(.caption)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundStyle(.tertiary)
         }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.md)
+        .padding(DS.Spacing.md)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(DS.Radius.md)
     }
 }

@@ -12,50 +12,46 @@ struct ErrorBannerView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             HStack {
                 Image(systemName: iconName)
-                    .foregroundColor(iconColor)
+                    .foregroundStyle(iconColor)
                 
                 Text(error.title)
                     .font(.headline)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
                 
                 Spacer()
                 
                 Button {
                     onDismiss()
                 } label: {
-                    Image(systemName: "xmark")
+                    Image(systemName: DS.Icon.close)
                         .font(.caption)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             
             Text(error.message)
                 .font(.subheadline)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             
             if error.isRetryable, let onRetry {
                 Button {
                     onRetry()
                 } label: {
-                    HStack {
-                        Image(systemName: "arrow.clockwise")
-                        Text("Try Again")
-                    }
-                    .font(.subheadline.weight(.medium))
+                    Label("Try Again", systemImage: "arrow.clockwise")
+                        .font(.subheadline.weight(.medium))
                 }
-                .padding(.top, 4)
+                .padding(.top, DS.Spacing.xs)
             }
         }
-        .padding()
-        .background(backgroundColor)
-        .cornerRadius(12)
+        .padding(DS.Spacing.md)
+        .background(DS.Colors.error.opacity(0.1))
+        .cornerRadius(DS.Radius.md)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(borderColor, lineWidth: 1)
+            RoundedRectangle(cornerRadius: DS.Radius.md)
+                .stroke(DS.Colors.error.opacity(0.3), lineWidth: 1)
         )
         .padding(.horizontal)
     }
@@ -65,35 +61,27 @@ struct ErrorBannerView: View {
         case "NO_INTERNET", "NETWORK_ERROR":
             return "wifi.slash"
         case "UNAUTHORIZED":
-            return "lock"
+            return DS.Icon.lock
         case "NOT_FOUND":
-            return "magnifyingglass"
+            return DS.Icon.search
         case "TIMEOUT":
-            return "clock"
+            return DS.Icon.clock
         case "RATE_LIMITED":
             return "hand.raised"
         default:
-            return "exclamationmark.triangle"
+            return DS.Icon.overdue
         }
     }
     
     private var iconColor: Color {
         switch error.code {
         case "UNAUTHORIZED", "NOT_FOUND":
-            return .orange
+            return DS.Colors.warning
         case _ where error.code.hasPrefix("SERVER_ERROR"):
-            return .red
+            return DS.Colors.error
         default:
-            return .red
+            return DS.Colors.error
         }
-    }
-    
-    private var backgroundColor: Color {
-        Color.red.opacity(0.1)
-    }
-    
-    private var borderColor: Color {
-        Color.red.opacity(0.3)
     }
 }
 
@@ -112,8 +100,7 @@ struct ErrorBannerModifier: ViewModifier {
                     onRetry: onRetry
                 )
                 .transition(.move(edge: .top).combined(with: .opacity))
-                .padding(.top, 8)
-                .padding(.bottom, 8)
+                .padding(.vertical, DS.Spacing.sm)
             }
             
             content

@@ -8,14 +8,14 @@ struct ForgotPasswordView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: DesignSystem.Spacing.lg) {
+            VStack(spacing: DS.Spacing.lg) {
                 if submitted {
                     successView
                 } else {
                     formView
                 }
             }
-            .padding(DesignSystem.Spacing.padding)
+            .padding(DS.Spacing.xl)
             .navigationTitle("Reset Password")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -29,19 +29,19 @@ struct ForgotPasswordView: View {
     }
 
     private var formView: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
+        VStack(spacing: DS.Spacing.lg) {
             Spacer()
 
             Image(systemName: "lock.rotation")
-                .font(.system(size: 60))
-                .foregroundColor(DesignSystem.Colors.primary)
+                .font(.system(size: DS.Size.iconJumbo))
+                .foregroundStyle(DS.Colors.accent)
 
             Text("Forgot your password?")
-                .font(DesignSystem.Typography.title2)
+                .font(.title2.weight(.semibold))
 
             Text("Enter your email and we'll send you instructions to reset your password.")
-                .font(DesignSystem.Typography.body)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .font(.body)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             TextField("Email", text: $email)
@@ -61,7 +61,6 @@ struct ForgotPasswordView: View {
             } label: {
                 Text(state.auth.isLoading ? "Sending..." : "Send Reset Link")
                     .frame(maxWidth: .infinity)
-                    .foregroundColor(.white)
             }
             .buttonStyle(.borderedProminent)
             .disabled(state.auth.isLoading || email.isEmpty)
@@ -83,19 +82,19 @@ struct ForgotPasswordView: View {
     }
 
     private var successView: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
+        VStack(spacing: DS.Spacing.lg) {
             Spacer()
 
             Image(systemName: "envelope.circle.fill")
-                .font(.system(size: 60))
-                .foregroundColor(DesignSystem.Colors.success)
+                .font(.system(size: DS.Size.iconJumbo))
+                .foregroundStyle(DS.Colors.success)
 
             Text("Check your email")
-                .font(DesignSystem.Typography.title2)
+                .font(.title2.weight(.semibold))
 
             Text("We've sent password reset instructions to \(email)")
-                .font(DesignSystem.Typography.body)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .font(.body)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             Button {

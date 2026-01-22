@@ -11,44 +11,25 @@ struct SettingsView: View {
         appState.auth.currentUser
     }
     
-    private var initials: String {
-        guard let name = user?.name, !name.isEmpty else {
-            return user?.email.prefix(1).uppercased() ?? "?"
-        }
-        let parts = name.split(separator: " ")
-        if parts.count >= 2 {
-            return "\(parts[0].prefix(1))\(parts[1].prefix(1))".uppercased()
-        }
-        return name.prefix(2).uppercased()
-    }
-    
     var body: some View {
         NavigationStack {
             List {
                 // MARK: - Profile Header
                 Section {
-                    HStack(spacing: 16) {
-                        Circle()
-                            .fill(DesignSystem.Colors.primary)
-                            .frame(width: 60, height: 60)
-                            .overlay(
-                                Text(initials)
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.white)
-                            )
+                    HStack(spacing: DS.Spacing.lg) {
+                        Avatar(user?.name ?? user?.email, size: DS.Size.avatarLarge)
                         
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                             Text(user?.name ?? "No Name")
                                 .font(.headline)
                             Text(user?.email ?? "")
                                 .font(.subheadline)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                                .foregroundStyle(.secondary)
                         }
                         
                         Spacer()
                     }
-                    .padding(.vertical, 8)
+                    .padding(.vertical, DS.Spacing.sm)
                 }
                 
                 // MARK: - Account
@@ -56,28 +37,14 @@ struct SettingsView: View {
                     Button {
                         showingEditProfile = true
                     } label: {
-                        HStack {
-                            Label("Edit Profile", systemImage: "person")
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.footnote)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                        }
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        SettingsRow("Edit Profile", icon: "person")
                     }
                     
                     if user?.hasPassword == true {
                         Button {
                             showingChangePassword = true
                         } label: {
-                            HStack {
-                                Label("Change Password", systemImage: "lock")
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.footnote)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                            }
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                            SettingsRow("Change Password", icon: "lock")
                         }
                     }
                     
@@ -85,7 +52,7 @@ struct SettingsView: View {
                         Label("Timezone", systemImage: "clock")
                         Spacer()
                         Text(user?.timezone ?? "Not set")
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 
@@ -94,7 +61,7 @@ struct SettingsView: View {
                     NavigationLink {
                         NotificationSettingsView()
                     } label: {
-                        Label("Notification Preferences", systemImage: "bell")
+                        Label("Notification Preferences", systemImage: DS.Icon.bell)
                     }
                 }
                 
@@ -103,39 +70,25 @@ struct SettingsView: View {
                     NavigationLink {
                         AppBlockingSettingsView()
                     } label: {
-                        Label("Blocked Apps", systemImage: "shield")
+                        Label("Blocked Apps", systemImage: DS.Icon.shield)
                     }
                 }
                 
                 // MARK: - About
                 Section("About") {
                     HStack {
-                        Label("Version", systemImage: "info.circle")
+                        Label("Version", systemImage: DS.Icon.info)
                         Spacer()
                         Text(appVersion)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .foregroundStyle(.secondary)
                     }
                     
                     Link(destination: URL(string: "https://intentia.app/privacy")!) {
-                        HStack {
-                            Label("Privacy Policy", systemImage: "hand.raised")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.footnote)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                        }
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        SettingsRow("Privacy Policy", icon: "hand.raised", external: true)
                     }
                     
                     Link(destination: URL(string: "https://intentia.app/terms")!) {
-                        HStack {
-                            Label("Terms of Service", systemImage: "doc.text")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.footnote)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                        }
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        SettingsRow("Terms of Service", icon: "doc.text", external: true)
                     }
                 }
                 
@@ -150,14 +103,14 @@ struct SettingsView: View {
                             Spacer()
                         }
                     }
-                    .foregroundColor(.orange)
+                    .foregroundStyle(DS.Colors.warning)
                     
                     Button(role: .destructive) {
                         showingDeleteAccount = true
                     } label: {
                         HStack {
                             Spacer()
-                            Label("Delete Account", systemImage: "trash")
+                            Label("Delete Account", systemImage: DS.Icon.trash)
                             Spacer()
                         }
                     }
@@ -190,5 +143,30 @@ struct SettingsView: View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "\(version) (\(build))"
+    }
+}
+
+// MARK: - Settings Row Helper
+
+private struct SettingsRow: View {
+    let title: String
+    let icon: String
+    let external: Bool
+    
+    init(_ title: String, icon: String, external: Bool = false) {
+        self.title = title
+        self.icon = icon
+        self.external = external
+    }
+    
+    var body: some View {
+        HStack {
+            Label(title, systemImage: icon)
+            Spacer()
+            Image(systemName: external ? DS.Icon.externalLink : DS.Icon.chevronRight)
+                .font(.footnote)
+                .foregroundStyle(.tertiary)
+        }
+        .foregroundStyle(.primary)
     }
 }

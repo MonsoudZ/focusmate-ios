@@ -11,34 +11,30 @@ struct AddSubtaskSheet: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: DesignSystem.Spacing.lg) {
+            VStack(spacing: DS.Spacing.lg) {
                 // Parent task info
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                     Text("Adding subtask to:")
-                        .font(DesignSystem.Typography.caption1)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     
                     Text(parentTask.title)
-                        .font(DesignSystem.Typography.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .font(.body.weight(.medium))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(DesignSystem.Colors.cardBackground)
-                .cornerRadius(DesignSystem.CornerRadius.md)
+                .card()
                 
                 // Title input
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                     Text("Subtask")
-                        .font(DesignSystem.Typography.caption1)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     
                     TextField("What needs to be done?", text: $title)
-                        .font(DesignSystem.Typography.body)
+                        .font(.body)
                         .padding()
-                        .background(DesignSystem.Colors.cardBackground)
-                        .cornerRadius(DesignSystem.CornerRadius.md)
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(DS.Radius.md)
                         .focused($isFocused)
                         .submitLabel(.done)
                         .onSubmit {
@@ -49,7 +45,7 @@ struct AddSubtaskSheet: View {
                 Spacer()
             }
             .padding()
-            .background(DesignSystem.Colors.background)
+            .background(Color(.systemBackground))
             .navigationTitle("Add Subtask")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

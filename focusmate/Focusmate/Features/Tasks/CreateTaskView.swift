@@ -27,8 +27,6 @@ struct CreateTaskView: View {
     @State private var selectedRecurrenceDays: Set<Int> = [1]
     @State private var recurrenceEndDate: Date? = nil
     @State private var hasRecurrenceEndDate = false
-    
-    private let colors = ["blue", "green", "orange", "red", "purple", "pink", "teal", "yellow", "gray"]
 
     var body: some View {
         NavigationStack {
@@ -41,26 +39,18 @@ struct CreateTaskView: View {
                 }
 
                 Section("Due Date *") {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        Button("Today") {
+                    HStack(spacing: DS.Spacing.sm) {
+                        QuickDateButton("Today", isSelected: isToday) {
                             setDueDate(daysFromNow: 0)
                         }
-                        .buttonStyle(.bordered)
-                        .tint(isToday ? DesignSystem.Colors.primary : .gray)
-                        
-                        Button("Tomorrow") {
+                        QuickDateButton("Tomorrow", isSelected: isTomorrow) {
                             setDueDate(daysFromNow: 1)
                         }
-                        .buttonStyle(.bordered)
-                        .tint(isTomorrow ? DesignSystem.Colors.primary : .gray)
-                        
-                        Button("Next Week") {
+                        QuickDateButton("Next Week", isSelected: isNextWeek) {
                             setDueDate(daysFromNow: 7)
                         }
-                        .buttonStyle(.bordered)
-                        .tint(isNextWeek ? DesignSystem.Colors.primary : .gray)
                     }
-                    .padding(.vertical, DesignSystem.Spacing.xs)
+                    .padding(.vertical, DS.Spacing.xs)
 
                     DatePicker(
                         "Date",
@@ -90,33 +80,12 @@ struct CreateTaskView: View {
                         Stepper("Every \(recurrenceInterval) \(recurrenceIntervalUnit)", value: $recurrenceInterval, in: 1...99)
                         
                         if recurrencePattern == .weekly {
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
                                 Text("On these days")
-                                    .font(DesignSystem.Typography.caption1)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                                 
-                                HStack(spacing: 6) {
-                                    ForEach([(0, "S"), (1, "M"), (2, "T"), (3, "W"), (4, "T"), (5, "F"), (6, "S")], id: \.0) { day, label in
-                                        Button {
-                                            HapticManager.selection()
-                                            if selectedRecurrenceDays.contains(day) {
-                                                if selectedRecurrenceDays.count > 1 {
-                                                    selectedRecurrenceDays.remove(day)
-                                                }
-                                            } else {
-                                                selectedRecurrenceDays.insert(day)
-                                            }
-                                        } label: {
-                                            Text(label)
-                                                .font(.caption.bold())
-                                                .frame(width: 32, height: 32)
-                                                .background(selectedRecurrenceDays.contains(day) ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryBackground)
-                                                .foregroundColor(selectedRecurrenceDays.contains(day) ? .white : DesignSystem.Colors.textPrimary)
-                                                .clipShape(Circle())
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                }
+                                WeekdayPicker(selectedDays: $selectedRecurrenceDays)
                             }
                         }
                         
@@ -142,7 +111,7 @@ struct CreateTaskView: View {
                             HStack {
                                 if let icon = priority.icon {
                                     Image(systemName: icon)
-                                        .foregroundColor(priority.color)
+                                        .foregroundStyle(priority.color)
                                 }
                                 Text(priority.label)
                             }
@@ -154,11 +123,8 @@ struct CreateTaskView: View {
                 
                 Section {
                     Toggle(isOn: $isStarred) {
-                        HStack {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
-                            Text("Starred")
-                        }
+                        Label("Starred", systemImage: DS.Icon.starFilled)
+                            .foregroundStyle(.yellow)
                     }
                 }
                 
@@ -171,26 +137,8 @@ struct CreateTaskView: View {
                 }
                 
                 Section("Color (optional)") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
-                        ForEach(colors, id: \.self) { color in
-                            Circle()
-                                .fill(colorFor(color))
-                                .frame(width: 36, height: 36)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.primary, lineWidth: selectedColor == color ? 3 : 0)
-                                )
-                                .onTapGesture {
-                                    HapticManager.selection()
-                                    if selectedColor == color {
-                                        selectedColor = nil
-                                    } else {
-                                        selectedColor = color
-                                    }
-                                }
-                        }
-                    }
-                    .padding(.vertical, 8)
+                    OptionalColorPicker(selected: $selectedColor)
+                        .padding(.vertical, DS.Spacing.sm)
                 }
             }
             .navigationTitle("New Task")
@@ -278,21 +226,6 @@ struct CreateTaskView: View {
         case .yearly: return recurrenceInterval == 1 ? "year" : "years"
         }
     }
-    
-    private func colorFor(_ name: String) -> Color {
-        switch name {
-        case "blue": return .blue
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "purple": return .purple
-        case "pink": return .pink
-        case "teal": return .teal
-        case "yellow": return .yellow
-        case "gray": return .gray
-        default: return .blue
-        }
-    }
 
     private func createTask() async {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -350,6 +283,79 @@ struct CreateTaskView: View {
             dueDate = now
         } else {
             dueDate = calendar.date(byAdding: .day, value: daysFromNow, to: calendar.startOfDay(for: now)) ?? now
+        }
+    }
+}
+
+// MARK: - Supporting Views
+
+private struct QuickDateButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    init(_ title: String, isSelected: Bool, action: @escaping () -> Void) {
+        self.title = title
+        self.isSelected = isSelected
+        self.action = action
+    }
+    
+    var body: some View {
+        Button(title, action: action)
+            .buttonStyle(.bordered)
+            .tint(isSelected ? DS.Colors.accent : .gray)
+    }
+}
+
+private struct WeekdayPicker: View {
+    @Binding var selectedDays: Set<Int>
+    
+    private let days = [(0, "S"), (1, "M"), (2, "T"), (3, "W"), (4, "T"), (5, "F"), (6, "S")]
+    
+    var body: some View {
+        HStack(spacing: DS.Spacing.sm) {
+            ForEach(days, id: \.0) { day, label in
+                Button {
+                    HapticManager.selection()
+                    if selectedDays.contains(day) {
+                        if selectedDays.count > 1 {
+                            selectedDays.remove(day)
+                        }
+                    } else {
+                        selectedDays.insert(day)
+                    }
+                } label: {
+                    Text(label)
+                        .font(.caption.bold())
+                        .frame(width: 32, height: 32)
+                        .background(selectedDays.contains(day) ? DS.Colors.accent : Color(.secondarySystemBackground))
+                        .foregroundStyle(selectedDays.contains(day) ? .white : .primary)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct OptionalColorPicker: View {
+    @Binding var selected: String?
+    
+    var body: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: DS.Spacing.md) {
+            ForEach(DS.Colors.listColorOrder, id: \.self) { name in
+                Circle()
+                    .fill(DS.Colors.list(name))
+                    .frame(width: 36, height: 36)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.primary, lineWidth: selected == name ? 3 : 0)
+                    )
+                    .onTapGesture {
+                        HapticManager.selection()
+                        selected = selected == name ? nil : name
+                    }
+            }
         }
     }
 }

@@ -41,8 +41,8 @@ struct RootView: View {
                     ProgressView()
                     Text("Loading...")
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 8)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, DS.Spacing.sm)
                 }
             } else if auth.jwt == nil {
                 SignInView()
@@ -52,7 +52,7 @@ struct RootView: View {
                         overdueCount = count
                     })
                     .tabItem {
-                        Image(systemName: "sun.max.fill")
+                        Image(systemName: DS.Icon.afternoon)
                         Text("Today")
                     }
                     .tag(0)
@@ -60,14 +60,14 @@ struct RootView: View {
 
                     ListsView()
                         .tabItem {
-                            Image(systemName: DesignSystem.Icons.list)
+                            Image(systemName: "list.bullet")
                             Text("Lists")
                         }
                         .tag(1)
 
                     SettingsView()
                         .tabItem {
-                            Image(systemName: DesignSystem.Icons.settings)
+                            Image(systemName: "gearshape")
                             Text("Settings")
                         }
                         .tag(2)

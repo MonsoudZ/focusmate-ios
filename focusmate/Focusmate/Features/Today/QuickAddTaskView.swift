@@ -24,12 +24,8 @@ struct QuickAddTaskView: View {
                 }
                 
                 Section {
-                    HStack {
-                        Image(systemName: "calendar")
-                            .foregroundColor(DesignSystem.Colors.primary)
-                        Text("Due today")
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
+                    Label("Due today", systemImage: DS.Icon.calendar)
+                        .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Quick Add")

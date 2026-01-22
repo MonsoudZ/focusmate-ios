@@ -14,8 +14,8 @@ struct RegisterView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: DesignSystem.Spacing.lg) {
-                VStack(spacing: DesignSystem.Spacing.md) {
+            VStack(spacing: DS.Spacing.lg) {
+                VStack(spacing: DS.Spacing.md) {
                     TextField("Name", text: $name)
                         .textInputAutocapitalization(.words)
                         .textFieldStyle(.roundedBorder)
@@ -40,7 +40,6 @@ struct RegisterView: View {
                 } label: {
                     Text(state.auth.isLoading ? "Creating Account…" : "Create Account")
                         .frame(maxWidth: .infinity)
-                        .foregroundColor(.white)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(state.auth.isLoading || !isValid)
@@ -55,7 +54,7 @@ struct RegisterView: View {
 
                 Spacer()
             }
-            .padding(DesignSystem.Spacing.padding)
+            .padding(DS.Spacing.xl)
             .navigationTitle("Create Account")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {

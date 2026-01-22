@@ -9,11 +9,11 @@ struct SignInView: View {
     @State private var showingForgotPassword = false
 
     var body: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
+        VStack(spacing: DS.Spacing.lg) {
             Spacer()
 
             Text("Intentia")
-                .font(DesignSystem.Typography.largeTitle)
+                .font(.largeTitle.weight(.bold))
 
             // Apple Sign In Button
             SignInWithAppleButton(.signIn) { request in
@@ -27,7 +27,7 @@ struct SignInView: View {
             DSDivider("or")
 
             // Email/Password fields
-            VStack(spacing: DesignSystem.Spacing.md) {
+            VStack(spacing: DS.Spacing.md) {
                 TextField("Email", text: $email)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -43,18 +43,17 @@ struct SignInView: View {
                     Button("Forgot Password?") {
                         showingForgotPassword = true
                     }
-                    .font(DesignSystem.Typography.subheadline)
-                    .foregroundColor(DesignSystem.Colors.primary)
+                    .font(.subheadline)
+                    .foregroundStyle(DS.Colors.accent)
                 }
             }
 
-            VStack(spacing: DesignSystem.Spacing.sm) {
+            VStack(spacing: DS.Spacing.sm) {
                 Button {
                     Task { await state.auth.signIn(email: email, password: password) }
                 } label: {
                     Text(state.auth.isLoading ? "Signing in…" : "Sign In")
                         .frame(maxWidth: .infinity)
-                        .foregroundColor(.white)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(state.auth.isLoading || email.isEmpty || password.isEmpty)
@@ -83,7 +82,7 @@ struct SignInView: View {
 
             Spacer()
         }
-        .padding(DesignSystem.Spacing.padding)
+        .padding(DS.Spacing.xl)
         .sheet(isPresented: $showingRegister) {
             RegisterView()
         }

@@ -17,18 +17,17 @@ struct EditSubtaskSheet: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: DesignSystem.Spacing.lg) {
-                // Title input
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+            VStack(spacing: DS.Spacing.lg) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                     Text("Subtask")
-                        .font(DesignSystem.Typography.caption1)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     
                     TextField("What needs to be done?", text: $title)
-                        .font(DesignSystem.Typography.body)
+                        .font(.body)
                         .padding()
-                        .background(DesignSystem.Colors.cardBackground)
-                        .cornerRadius(DesignSystem.CornerRadius.md)
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(DS.Radius.md)
                         .focused($isFocused)
                         .submitLabel(.done)
                         .onSubmit {
@@ -39,7 +38,7 @@ struct EditSubtaskSheet: View {
                 Spacer()
             }
             .padding()
-            .background(DesignSystem.Colors.background)
+            .background(Color(.systemBackground))
             .navigationTitle("Edit Subtask")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

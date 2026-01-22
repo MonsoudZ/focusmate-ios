@@ -69,13 +69,13 @@ struct SearchView: View {
         } else if results.isEmpty && hasSearched {
             ContentUnavailableView(
                 "No Results",
-                systemImage: "magnifyingglass",
+                systemImage: DS.Icon.search,
                 description: Text("No tasks found for \"\(query)\"")
             )
         } else if results.isEmpty {
             ContentUnavailableView(
                 "Search Tasks",
-                systemImage: "magnifyingglass",
+                systemImage: DS.Icon.search,
                 description: Text("Search by title or notes")
             )
         } else {
@@ -102,17 +102,15 @@ struct SearchView: View {
                                         .fill(list.listColor)
                                         .frame(width: 10, height: 10)
                                     Text(list.name)
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                    Image(systemName: "chevron.right")
+                                        .font(.subheadline.weight(.semibold))
+                                    Image(systemName: DS.Icon.chevronRight)
                                         .font(.caption2)
                                 }
-                                .foregroundColor(DesignSystem.Colors.primary)
+                                .foregroundStyle(DS.Colors.accent)
                             }
                         } else {
                             Text("List \(group.listId)")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
+                                .font(.subheadline.weight(.semibold))
                         }
                     }
                 }
@@ -167,47 +165,46 @@ struct SearchResultRow: View {
     }
     
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            Image(systemName: task.isCompleted ? DesignSystem.Icons.taskCompleted : DesignSystem.Icons.task)
-                .foregroundColor(task.isCompleted ? DesignSystem.Colors.success : task.taskColor)
+        HStack(spacing: DS.Spacing.md) {
+            Image(systemName: task.isCompleted ? DS.Icon.circleChecked : DS.Icon.circle)
+                .foregroundStyle(task.isCompleted ? DS.Colors.success : task.taskColor)
                 .font(.title3)
             
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                HStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
+                HStack(spacing: DS.Spacing.xs) {
                     if let icon = task.taskPriority.icon {
                         Image(systemName: icon)
-                            .foregroundColor(task.taskPriority.color)
+                            .foregroundStyle(task.taskPriority.color)
                             .font(.caption)
                     }
                     
                     Text(task.title)
-                        .font(DesignSystem.Typography.body)
-                        .fontWeight(.medium)
+                        .font(.body.weight(.medium))
                         .strikethrough(task.isCompleted)
-                        .foregroundColor(isOverdue ? DesignSystem.Colors.overdue : DesignSystem.Colors.textPrimary)
+                        .foregroundStyle(isOverdue ? DS.Colors.overdue : .primary)
                     
                     if task.isStarred {
-                        Image(systemName: "star.fill")
-                            .foregroundColor(.yellow)
+                        Image(systemName: DS.Icon.starFilled)
+                            .foregroundStyle(.yellow)
                             .font(.caption)
                     }
                 }
                 
                 if let note = task.note, !note.isEmpty {
                     Text(note)
-                        .font(DesignSystem.Typography.caption1)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
             
             Spacer()
             
-            Image(systemName: "chevron.right")
+            Image(systemName: DS.Icon.chevronRight)
                 .font(.caption)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, DesignSystem.Spacing.xs)
+        .padding(.vertical, DS.Spacing.xs)
         .opacity(task.isCompleted ? 0.6 : 1.0)
     }
 }

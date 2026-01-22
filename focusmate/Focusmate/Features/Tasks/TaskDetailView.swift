@@ -22,40 +22,33 @@ struct TaskDetailView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                    // Header with completion status
+                VStack(alignment: .leading, spacing: DS.Spacing.lg) {
                     headerSection
                     
                     Divider()
                     
-                    // Details
                     detailsSection
                     
-                    // Tags
                     if let tags = task.tags, !tags.isEmpty {
                         tagsSection(tags)
                     }
                     
-                    // Notes
                     if let note = task.note, !note.isEmpty {
                         notesSection(note)
                     }
                     
                     Spacer()
                     
-                    // Actions
                     actionsSection
                 }
-                .padding(DesignSystem.Spacing.md)
+                .padding(DS.Spacing.md)
             }
             .navigationTitle("Task Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
+                    Button("Edit") {
                         showingEditTask = true
-                    } label: {
-                        Text("Edit")
                     }
                 }
                 
@@ -63,7 +56,7 @@ struct TaskDetailView: View {
                     Button {
                         dismiss()
                     } label: {
-                        Image(systemName: "xmark")
+                        Image(systemName: DS.Icon.close)
                     }
                 }
             }
@@ -107,147 +100,148 @@ struct TaskDetailView: View {
     // MARK: - Header Section
     
     private var headerSection: some View {
-        HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
-            // Completion circle
+        HStack(alignment: .top, spacing: DS.Spacing.md) {
             Button {
                 handleComplete()
             } label: {
-                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                Image(systemName: task.isCompleted ? DS.Icon.circleChecked : DS.Icon.circle)
                     .font(.system(size: 28))
-                    .foregroundColor(task.isCompleted ? DesignSystem.Colors.success : DesignSystem.Colors.textSecondary)
+                    .foregroundStyle(task.isCompleted ? DS.Colors.success : .secondary)
             }
             
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                 // Priority badge
                 if task.taskPriority != .none {
-                    HStack(spacing: 4) {
-                        if let icon = task.taskPriority.icon {
-                            Image(systemName: icon)
-                        }
-                        Text(task.taskPriority.label)
-                    }
-                    .font(DesignSystem.Typography.caption1)
-                    .foregroundColor(task.taskPriority.color)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(task.taskPriority.color.opacity(0.15))
-                    .cornerRadius(6)
+                    priorityBadge
                 }
                 
                 // Title
                 Text(task.title)
-                    .font(DesignSystem.Typography.title3)
-                    .fontWeight(.semibold)
+                    .font(.title3.weight(.semibold))
                     .strikethrough(task.isCompleted)
-                    .foregroundColor(isOverdue ? DesignSystem.Colors.error : DesignSystem.Colors.textPrimary)
+                    .foregroundStyle(isOverdue ? DS.Colors.error : .primary)
                 
                 // Overdue badge
                 if isOverdue {
-                    HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                        Text("Overdue")
-                        if let minutes = task.minutes_overdue {
-                            Text("• \(formatOverdue(minutes))")
-                        }
-                    }
-                    .font(DesignSystem.Typography.caption1)
-                    .foregroundColor(DesignSystem.Colors.error)
+                    overdueBadge
                 }
             }
             
             Spacer()
             
-            // Star
             if task.isStarred {
-                Image(systemName: "star.fill")
-                    .foregroundColor(.yellow)
+                Image(systemName: DS.Icon.starFilled)
+                    .foregroundStyle(.yellow)
             }
         }
+    }
+    
+    private var priorityBadge: some View {
+        HStack(spacing: DS.Spacing.xs) {
+            if let icon = task.taskPriority.icon {
+                Image(systemName: icon)
+            }
+            Text(task.taskPriority.label)
+        }
+        .font(.caption)
+        .foregroundStyle(task.taskPriority.color)
+        .padding(.horizontal, DS.Spacing.sm)
+        .padding(.vertical, DS.Spacing.xs)
+        .background(task.taskPriority.color.opacity(0.15))
+        .cornerRadius(DS.Radius.sm)
+    }
+    
+    private var overdueBadge: some View {
+        HStack(spacing: DS.Spacing.xs) {
+            Image(systemName: DS.Icon.overdue)
+            Text("Overdue")
+            if let minutes = task.minutes_overdue {
+                Text("• \(formatOverdue(minutes))")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(DS.Colors.error)
     }
     
     // MARK: - Details Section
     
     private var detailsSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            // Due date
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
             if let dueDate = task.dueDate {
                 detailRow(
-                    icon: "calendar",
+                    icon: DS.Icon.calendar,
                     title: "Due",
                     value: formatDueDate(dueDate),
-                    valueColor: isOverdue ? DesignSystem.Colors.error : DesignSystem.Colors.textPrimary
+                    valueColor: isOverdue ? DS.Colors.error : nil
                 )
             }
             
-            // List
             detailRow(
                 icon: "list.bullet",
                 title: "List",
                 value: listName
             )
             
-            // Recurring info
             if let recurrence = task.recurrenceDescription {
                 detailRow(
-                    icon: "repeat",
+                    icon: DS.Icon.recurring,
                     title: "Repeats",
                     value: recurrence
                 )
             }
             
-            // Completed date
             if task.isCompleted, let completedAt = task.completed_at {
                 if let date = ISO8601DateFormatter().date(from: completedAt) {
                     detailRow(
-                        icon: "checkmark.circle",
+                        icon: DS.Icon.circleChecked,
                         title: "Completed",
                         value: formatDueDate(date),
-                        valueColor: DesignSystem.Colors.success
+                        valueColor: DS.Colors.success
                     )
                 }
             }
         }
     }
     
-    private func detailRow(icon: String, title: String, value: String, valueColor: Color = DesignSystem.Colors.textPrimary) -> some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
+    private func detailRow(icon: String, title: String, value: String, valueColor: Color? = nil) -> some View {
+        HStack(spacing: DS.Spacing.md) {
             Image(systemName: icon)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundStyle(.secondary)
                 .frame(width: 24)
             
             Text(title)
-                .font(DesignSystem.Typography.body)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .font(.body)
+                .foregroundStyle(.secondary)
             
             Spacer()
             
             Text(value)
-                .font(DesignSystem.Typography.body)
-                .foregroundColor(valueColor)
+                .font(.body)
+                .foregroundStyle(valueColor ?? Color(.label))
         }
     }
     
     // MARK: - Tags Section
     
     private func tagsSection(_ tags: [TagDTO]) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             Text("Tags")
-                .font(DesignSystem.Typography.caption1)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             
-            FlowLayout(spacing: 8) {
+            FlowLayout(spacing: DS.Spacing.sm) {
                 ForEach(tags) { tag in
-                    HStack(spacing: 4) {
+                    HStack(spacing: DS.Spacing.xs) {
                         Circle()
                             .fill(tag.tagColor)
                             .frame(width: 8, height: 8)
                         Text(tag.name)
-                            .font(DesignSystem.Typography.caption1)
+                            .font(.caption)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xs)
                     .background(tag.tagColor.opacity(0.15))
-                    .cornerRadius(12)
+                    .cornerRadius(DS.Radius.md)
                 }
             }
         }
@@ -256,47 +250,42 @@ struct TaskDetailView: View {
     // MARK: - Notes Section
     
     private func notesSection(_ note: String) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             Text("Notes")
-                .font(DesignSystem.Typography.caption1)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             
             Text(note)
-                .font(DesignSystem.Typography.body)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .padding(DesignSystem.Spacing.md)
+                .font(.body)
+                .foregroundStyle(.primary)
+                .padding(DS.Spacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(DesignSystem.Colors.secondaryBackground)
-                .cornerRadius(DesignSystem.CornerRadius.md)
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(DS.Radius.md)
         }
     }
     
     // MARK: - Actions Section
     
     private var actionsSection: some View {
-        VStack(spacing: DesignSystem.Spacing.sm) {
-            // Complete/Uncomplete button
+        VStack(spacing: DS.Spacing.sm) {
             Button {
                 handleComplete()
             } label: {
-                HStack {
-                    Image(systemName: task.isCompleted ? "arrow.uturn.backward" : "checkmark")
-                    Text(task.isCompleted ? "Mark Incomplete" : "Mark Complete")
-                }
+                Label(
+                    task.isCompleted ? "Mark Incomplete" : "Mark Complete",
+                    systemImage: task.isCompleted ? "arrow.uturn.backward" : "checkmark"
+                )
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .tint(task.isCompleted ? .orange : DesignSystem.Colors.success)
+            .tint(task.isCompleted ? DS.Colors.warning : DS.Colors.success)
             
-            // Delete button
             Button(role: .destructive) {
                 showingDeleteConfirmation = true
             } label: {
-                HStack {
-                    Image(systemName: "trash")
-                    Text("Delete Task")
-                }
-                .frame(maxWidth: .infinity)
+                Label("Delete Task", systemImage: DS.Icon.trash)
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
         }
@@ -327,14 +316,10 @@ struct TaskDetailView: View {
         let formatter = DateFormatter()
         
         if task.isAnytime {
-            if calendar.isDateInToday(date) {
-                return "Today"
-            } else if calendar.isDateInTomorrow(date) {
-                return "Tomorrow"
-            } else {
-                formatter.dateFormat = "MMM d, yyyy"
-                return formatter.string(from: date)
-            }
+            if calendar.isDateInToday(date) { return "Today" }
+            if calendar.isDateInTomorrow(date) { return "Tomorrow" }
+            formatter.dateFormat = "MMM d, yyyy"
+            return formatter.string(from: date)
         }
         
         if calendar.isDateInToday(date) {
@@ -349,12 +334,8 @@ struct TaskDetailView: View {
     }
     
     private func formatOverdue(_ minutes: Int) -> String {
-        if minutes < 60 {
-            return "\(minutes)m"
-        } else if minutes < 1440 {
-            return "\(minutes / 60)h"
-        } else {
-            return "\(minutes / 1440)d"
-        }
+        if minutes < 60 { return "\(minutes)m" }
+        if minutes < 1440 { return "\(minutes / 60)h" }
+        return "\(minutes / 1440)d"
     }
 }

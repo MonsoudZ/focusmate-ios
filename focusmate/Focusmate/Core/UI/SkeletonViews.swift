@@ -1,5 +1,7 @@
 import SwiftUI
 
+// MARK: - Skeleton View
+
 struct SkeletonView: View {
     @State private var isAnimating = false
 
@@ -10,7 +12,7 @@ struct SkeletonView: View {
     init(
         width: CGFloat? = nil,
         height: CGFloat = 16,
-        cornerRadius: CGFloat = DesignSystem.CornerRadius.sm
+        cornerRadius: CGFloat = DS.Radius.sm
     ) {
         self.width = width
         self.height = height
@@ -19,7 +21,7 @@ struct SkeletonView: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(DesignSystem.Colors.cardBackground)
+            .fill(Color(.tertiarySystemBackground))
             .frame(width: width, height: height)
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
@@ -38,23 +40,25 @@ struct SkeletonView: View {
             )
             .clipped()
             .onAppear {
-                withAnimation(Animation.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
                     isAnimating = true
                 }
             }
     }
 }
 
+// MARK: - Task Row Skeleton
+
 struct TaskRowSkeleton: View {
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
+        HStack(spacing: DS.Spacing.md) {
             SkeletonView(width: 28, height: 28, cornerRadius: 14)
 
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                 SkeletonView(width: 200, height: 16)
                 SkeletonView(width: 150, height: 12)
 
-                HStack(spacing: DesignSystem.Spacing.xs) {
+                HStack(spacing: DS.Spacing.xs) {
                     SkeletonView(width: 80, height: 10)
                     SkeletonView(width: 60, height: 18, cornerRadius: 9)
                 }
@@ -62,14 +66,16 @@ struct TaskRowSkeleton: View {
 
             Spacer()
         }
-        .padding(.vertical, DesignSystem.Spacing.xs)
-        .padding(.horizontal, DesignSystem.Spacing.sm)
+        .padding(.vertical, DS.Spacing.xs)
+        .padding(.horizontal, DS.Spacing.sm)
     }
 }
 
+// MARK: - List Card Skeleton
+
 struct ListCardSkeleton: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             HStack {
                 SkeletonView(width: 150, height: 20)
                 Spacer()
@@ -79,15 +85,18 @@ struct ListCardSkeleton: View {
             SkeletonView(width: 200, height: 14)
             SkeletonView(width: 180, height: 14)
 
-            HStack(spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DS.Spacing.sm) {
                 SkeletonView(width: 60, height: 12)
                 SkeletonView(width: 70, height: 12)
             }
         }
-        .padding(DesignSystem.Spacing.cardPadding)
-        .cardStyle()
+        .padding(DS.Spacing.md)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(DS.Radius.md)
     }
 }
+
+// MARK: - Empty State View
 
 struct EmptyStateView: View {
     let title: String
@@ -99,7 +108,7 @@ struct EmptyStateView: View {
     init(
         title: String,
         message: String,
-        icon: String = DesignSystem.Icons.empty,
+        icon: String = DS.Icon.emptyTray,
         actionTitle: String? = nil,
         action: (() -> Void)? = nil
     ) {
@@ -111,38 +120,36 @@ struct EmptyStateView: View {
     }
 
     var body: some View {
-        VStack(spacing: DesignSystem.Spacing.xl) {
+        VStack(spacing: DS.Spacing.xl) {
             Image(systemName: icon)
-                .font(.system(size: 64))
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .font(.system(size: DS.Size.iconJumbo))
+                .foregroundStyle(.secondary)
 
-            VStack(spacing: DesignSystem.Spacing.sm) {
+            VStack(spacing: DS.Spacing.sm) {
                 Text(title)
-                    .font(DesignSystem.Typography.title3)
+                    .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
 
                 Text(message)
-                    .font(DesignSystem.Typography.body)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
 
             if let actionTitle = actionTitle, let action = action {
                 Button(action: action) {
                     Text(actionTitle)
-                        .font(DesignSystem.Typography.buttonLabel)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, DesignSystem.Spacing.xl)
-                        .padding(.vertical, DesignSystem.Spacing.md)
-                        .background(DesignSystem.Colors.primary)
-                        .cornerRadius(DesignSystem.CornerRadius.button)
+                        .font(.body.weight(.semibold))
                 }
+                .buttonStyle(.borderedProminent)
             }
         }
-        .padding(DesignSystem.Spacing.xl)
+        .padding(DS.Spacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+// MARK: - Loading State View
 
 struct LoadingStateView: View {
     let message: String
@@ -152,41 +159,47 @@ struct LoadingStateView: View {
     }
 
     var body: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
+        VStack(spacing: DS.Spacing.lg) {
             ProgressView()
                 .scaleEffect(1.2)
 
             Text(message)
-                .font(DesignSystem.Typography.subheadline)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
+// MARK: - Lists Loading View
+
 struct ListsLoadingView: View {
     var body: some View {
         ScrollView {
-            VStack(spacing: DesignSystem.Spacing.md) {
+            VStack(spacing: DS.Spacing.md) {
                 ForEach(0..<5, id: \.self) { _ in
                     ListCardSkeleton()
                 }
             }
-            .padding(DesignSystem.Spacing.padding)
+            .padding(DS.Spacing.lg)
         }
     }
 }
 
+// MARK: - Tasks Loading View
+
 struct TasksLoadingView: View {
     var body: some View {
-        VStack(spacing: DesignSystem.Spacing.sm) {
+        VStack(spacing: DS.Spacing.sm) {
             ForEach(0..<8, id: \.self) { _ in
                 TaskRowSkeleton()
             }
         }
-        .padding(DesignSystem.Spacing.padding)
+        .padding(DS.Spacing.lg)
     }
 }
+
+// MARK: - View Extensions
 
 extension View {
     func skeleton(isLoading: Bool) -> some View {
