@@ -4,9 +4,18 @@ final class APIClient {
     private let networking: NetworkingProtocol
     private let tokenProvider: () -> String?
 
+    // MARK: - Initializers
+
+    /// Production init
     init(tokenProvider: @escaping () -> String?) {
         self.tokenProvider = tokenProvider
         self.networking = InternalNetworking(tokenProvider: tokenProvider)
+    }
+
+    /// DI init (used for tests, previews, and swapping transport implementations cleanly)
+    init(tokenProvider: @escaping () -> String?, networking: NetworkingProtocol) {
+        self.tokenProvider = tokenProvider
+        self.networking = networking
     }
 
     func getToken() -> String? {

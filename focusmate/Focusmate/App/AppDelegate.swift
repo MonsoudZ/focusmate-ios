@@ -2,10 +2,25 @@ import UIKit
 import UserNotifications
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-    
+
     /// Stored push token to be registered with backend
     static var pushToken: String?
-    
+
+    /// Buffer notification route for cold-start races (notification tapped before SwiftUI subscribes)
+    private static var pendingRoute: NotificationAction?
+
+    static func flushPendingRouteIfAny() {
+        guard let route = pendingRoute else { return }
+        pendingRoute = nil
+
+        switch route {
+        case .openTask(let taskId):
+            NotificationCenter.default.post(name: .openTask, object: nil, userInfo: ["taskId": taskId])
+        case .openToday:
+            NotificationCenter.default.post(name: .openToday, object: nil)
+        }
+    }
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -13,31 +28,34 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         UNUserNotificationCenter.current().delegate = self
         return true
     }
-    
+
     // MARK: - Push Notification Registration
-    
+
     func application(
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
         let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-        Logger.info("APNs token received: \(token.prefix(20))...", category: .general)
-        
-        // Store token and post notification
+
+        #if DEBUG
+        Logger.info("APNs token received (debug): \(token)", category: .general)
+        #else
+        Logger.info("APNs token received", category: .general)
+        #endif
+
         AppDelegate.pushToken = token
         NotificationCenter.default.post(name: .didReceivePushToken, object: nil, userInfo: ["token": token])
     }
-    
+
     func application(
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
         Logger.error("Failed to register for remote notifications: \(error)", category: .general)
     }
-    
+
     // MARK: - Notification Presentation
-    
-    // Show notification banner even when app is in foreground
+
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
@@ -45,46 +63,76 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) {
         completionHandler([.banner, .sound, .badge])
     }
-    
-    // Handle notification tap
+
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        routeNotification(response)
+        completionHandler()
+    }
+
+    // MARK: - Routing
+
+    private func routeNotification(_ response: UNNotificationResponse) {
         let userInfo = response.notification.request.content.userInfo
         let identifier = response.notification.request.identifier
-        
-        // Handle push notification data (from server)
-        if let type = userInfo["type"] as? String {
-            switch type {
-            case "nudge":
-                if let taskId = userInfo["task_id"] as? Int {
-                    NotificationCenter.default.post(
-                        name: .openTask,
-                        object: nil,
-                        userInfo: ["taskId": taskId]
-                    )
-                }
-            default:
-                break
-            }
+
+        // Server push payload routing
+        if let action = NotificationAction(userInfo: userInfo) {
+            AppDelegate.pendingRoute = action
+            AppDelegate.flushPendingRouteIfAny()
+            return
         }
-        // Handle local notification identifiers
-        else if identifier.hasPrefix("task-") {
-            let parts = identifier.split(separator: "-")
+
+        // Local notification routing
+        if let action = NotificationAction(localIdentifier: identifier) {
+            AppDelegate.pendingRoute = action
+            AppDelegate.flushPendingRouteIfAny()
+            return
+        }
+    }
+}
+
+// MARK: - Notification Parsing (local to AppDelegate)
+
+private enum NotificationAction {
+    case openTask(Int)
+    case openToday
+
+    init?(userInfo: [AnyHashable: Any]) {
+        guard let type = userInfo["type"] as? String else { return nil }
+
+        switch type {
+        case "nudge":
+            if let taskId = userInfo["task_id"] as? Int {
+                self = .openTask(taskId)
+            } else if let taskIdString = userInfo["task_id"] as? String, let taskId = Int(taskIdString) {
+                self = .openTask(taskId)
+            } else {
+                return nil
+            }
+        default:
+            return nil
+        }
+    }
+
+    init?(localIdentifier: String) {
+        if localIdentifier == "morning-briefing" {
+            self = .openToday
+            return
+        }
+
+        if localIdentifier.hasPrefix("task-") {
+            let parts = localIdentifier.split(separator: "-")
             if parts.count >= 2, let taskId = Int(parts[1]) {
-                NotificationCenter.default.post(
-                    name: .openTask,
-                    object: nil,
-                    userInfo: ["taskId": taskId]
-                )
+                self = .openTask(taskId)
+                return
             }
-        } else if identifier == "morning-briefing" {
-            NotificationCenter.default.post(name: .openToday, object: nil)
         }
-        
-        completionHandler()
+
+        return nil
     }
 }
 

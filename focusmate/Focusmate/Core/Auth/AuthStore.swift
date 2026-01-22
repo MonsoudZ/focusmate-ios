@@ -7,6 +7,7 @@ final class AuthStore: ObservableObject {
     @Published var jwt: String? {
         didSet {
             Logger.debug("JWT updated: \(jwt != nil ? "SET" : "CLEARED")", category: .auth)
+            AuthEventBus.shared.send(.tokenUpdated(hasToken: jwt != nil))
         }
     }
 
@@ -20,28 +21,82 @@ final class AuthStore: ObservableObject {
     @Published var isValidatingSession = false
     @Published var error: FocusmateError?
 
-    private(set) lazy var api: APIClient = APIClient { [weak self] in self?.jwt }
+    private(set) lazy var api: APIClient = APIClient(
+        tokenProvider: { [weak self] in self?.jwt },
+        networking: injectedNetworking ?? InternalNetworking(tokenProvider: { [weak self] in self?.jwt })
+    )
+
     private let authSession = AuthSession()
     private lazy var authAPI: AuthAPI = AuthAPI(api: api, session: authSession)
     private let errorHandler = ErrorHandler.shared
 
+    private let keychain: KeychainManaging
+    private let injectedNetworking: NetworkingProtocol?
+    private let autoValidateOnInit: Bool
+
+    private var cancellables = Set<AnyCancellable>()
+    private var isHandlingUnauthorized = false
+
+    // MARK: - Production init (unchanged call site behavior)
     init() {
-        let loadedJWT = KeychainManager.shared.load()
+        self.keychain = KeychainManager.shared
+        self.injectedNetworking = nil
+        self.autoValidateOnInit = true
+
+        bindAuthEvents()
+
+        let loadedJWT = keychain.load()
         self.jwt = loadedJWT
 
-        if let token = loadedJWT {
+        if autoValidateOnInit, let token = loadedJWT {
             Task {
                 await authSession.set(token: token)
                 await validateSession()
             }
         }
     }
-    
+
+    // MARK: - DI init (tests / previews / dev tooling)
+    init(
+        keychain: KeychainManaging,
+        networking: NetworkingProtocol?,
+        autoValidateOnInit: Bool
+    ) {
+        self.keychain = keychain
+        self.injectedNetworking = networking
+        self.autoValidateOnInit = autoValidateOnInit
+
+        bindAuthEvents()
+
+        let loadedJWT = keychain.load()
+        self.jwt = loadedJWT
+
+        if autoValidateOnInit, let token = loadedJWT {
+            Task {
+                await authSession.set(token: token)
+                await validateSession()
+            }
+        }
+    }
+
+    private func bindAuthEvents() {
+        AuthEventBus.shared.publisher
+            .receive(on: RunLoop.main)
+            .sink { [weak self] event in
+                guard let self else { return }
+                if event == .unauthorized {
+                    Task { await self.handleUnauthorizedEvent() }
+                }
+            }
+            .store(in: &cancellables)
+    }
+
     func validateSession() async {
         guard jwt != nil else { return }
-        
+
         isValidatingSession = true
-        
+        defer { isValidatingSession = false }
+
         do {
             let user: UserDTO = try await api.request(
                 "GET",
@@ -52,85 +107,81 @@ final class AuthStore: ObservableObject {
             Logger.info("Session validated", category: .auth)
         } catch {
             Logger.warning("Session invalid, clearing: \(error)", category: .auth)
-            jwt = nil
-            currentUser = nil
-            KeychainManager.shared.clear()
-            await authSession.clear()
+            await clearLocalSession()
         }
-        
-        isValidatingSession = false
     }
 
     func signIn(email: String, password: String) async {
         Logger.debug("Starting sign in for \(Logger.sanitizeEmail(email))", category: .auth)
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             let user = try await authAPI.signIn(email: email, password: password)
             Logger.info("Sign in successful", category: .auth)
 
             let token = try await authSession.access()
+            await setAuthenticatedSession(token: token, user: user)
 
-            jwt = token
-            KeychainManager.shared.save(token: token)
-            currentUser = user
+            AuthEventBus.shared.send(.signedIn)
         } catch {
             Logger.error("Sign in failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Sign In")
-            jwt = nil
-            KeychainManager.shared.clear()
+            await clearLocalSession()
         }
-
-        isLoading = false
     }
 
     func register(email: String, password: String, name: String) async {
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             let user = try await authAPI.signUp(name: name, email: email, password: password)
             Logger.info("Registration successful", category: .auth)
 
             let token = try await authSession.access()
+            await setAuthenticatedSession(token: token, user: user)
 
-            jwt = token
-            KeychainManager.shared.save(token: token)
-            currentUser = user
+            AuthEventBus.shared.send(.signedIn)
         } catch {
             Logger.error("Registration failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Registration")
-            jwt = nil
-            KeychainManager.shared.clear()
+            await clearLocalSession()
         }
-
-        isLoading = false
     }
 
     func signOut() async {
         Logger.debug("Signing out", category: .auth)
-        _ = try? await api.request("DELETE", API.Auth.signOut, body: nil as String?) as EmptyResponse
-        Logger.info("Sign out successful", category: .auth)
 
-        await authSession.clear()
+        do {
+            _ = try await api.request("DELETE", API.Auth.signOut, body: nil as String?) as EmptyResponse
+            Logger.info("Sign out successful", category: .auth)
+        } catch {
+            Logger.warning("Remote sign out failed, continuing local sign out: \(error)", category: .auth)
+        }
 
-        jwt = nil
-        currentUser = nil
-        KeychainManager.shared.clear()
+        await clearLocalSession()
+
+        // ✅ Reset one-time authenticated boot state
+        AppSettings.shared.didCompleteAuthenticatedBoot = false
+
+        AuthEventBus.shared.send(.signedOut)
     }
-    
+
+
     func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
         switch result {
         case .success(let authorization):
             if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
                let identityToken = appleIDCredential.identityToken {
-                
+
                 let name = [
                     appleIDCredential.fullName?.givenName,
                     appleIDCredential.fullName?.familyName
                 ].compactMap { $0 }.joined(separator: " ")
-                
+
                 Task {
                     await signInWithApple(
                         identityToken: identityToken,
@@ -143,16 +194,16 @@ final class AuthStore: ObservableObject {
             self.error = FocusmateError.custom("Apple Sign In Failed", error.localizedDescription)
         }
     }
-    
+
     func signInWithApple(identityToken: Data, name: String?) async {
         Logger.debug("Starting Apple Sign In", category: .auth)
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         guard let tokenString = String(data: identityToken, encoding: .utf8) else {
             Logger.error("Failed to convert Apple identity token to string", category: .auth)
             self.error = FocusmateError.custom("Sign In Failed", "Invalid Apple credentials")
-            isLoading = false
             return
         }
 
@@ -164,24 +215,21 @@ final class AuthStore: ObservableObject {
             )
 
             Logger.info("Apple Sign In successful", category: .auth)
+            await setAuthenticatedSession(token: response.token, user: response.user)
 
-            jwt = response.token
-            KeychainManager.shared.save(token: response.token)
-            currentUser = response.user
+            AuthEventBus.shared.send(.signedIn)
         } catch {
             Logger.error("Apple Sign In failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Apple Sign In")
-            jwt = nil
-            KeychainManager.shared.clear()
+            await clearLocalSession()
         }
-
-        isLoading = false
     }
-    
+
     func forgotPassword(email: String) async {
         Logger.debug("Requesting password reset for \(Logger.sanitizeEmail(email))", category: .auth)
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             let _: EmptyResponse = try await api.request(
@@ -194,7 +242,34 @@ final class AuthStore: ObservableObject {
             Logger.error("Password reset failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Password Reset")
         }
+    }
 
-        isLoading = false
+    private func handleUnauthorizedEvent() async {
+        guard !isHandlingUnauthorized else { return }
+        isHandlingUnauthorized = true
+        defer { isHandlingUnauthorized = false }
+
+        guard jwt != nil else { return }
+
+        Logger.warning("Global unauthorized received. Clearing local session.", category: .auth)
+
+        _ = await errorHandler.handleUnauthorized()
+        await clearLocalSession()
+
+        AuthEventBus.shared.send(.signedOut)
+    }
+
+    private func setAuthenticatedSession(token: String, user: UserDTO) async {
+        await authSession.set(token: token)
+        jwt = token
+        keychain.save(token: token)
+        currentUser = user
+    }
+
+    private func clearLocalSession() async {
+        await authSession.clear()
+        jwt = nil
+        currentUser = nil
+        keychain.clear()
     }
 }

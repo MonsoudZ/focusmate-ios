@@ -4,7 +4,8 @@ import SwiftUI
 
 @MainActor
 final class AppState: ObservableObject {
-    @Published var auth = AuthStore()
+    let auth: AuthStore
+
     @Published var isLoading = false
     @Published var error: FocusmateError?
 
@@ -16,50 +17,64 @@ final class AppState: ObservableObject {
     private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
     private(set) lazy var tagService = TagService(apiClient: auth.api)
 
-    init() {
+    // Push token coordination
+    private var lastKnownPushToken: String?
+    private var lastRegisteredPushToken: String?
+    private var isRegisteringDevice = false
+
+    init(auth: AuthStore) {
+        self.auth = auth
+
         SentryService.shared.initialize()
-        
-        // Forward auth changes to trigger AppState updates
+
+        // When auth changes, attempt any deferred setup (like device registration)
         auth.objectWillChange
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.objectWillChange.send()
+                guard let self else { return }
+                self.objectWillChange.send()
+                Task { await self.tryRegisterDeviceIfPossible() }
             }
             .store(in: &cancellables)
-        
-        // Listen for push token
+
+        // Listen for push token updates
         NotificationCenter.default.publisher(for: .didReceivePushToken)
             .receive(on: RunLoop.main)
             .sink { [weak self] notification in
+                guard let self else { return }
                 if let token = notification.userInfo?["token"] as? String {
-                    Task { [weak self] in
-                        await self?.registerDevice(pushToken: token)
-                    }
+                    self.lastKnownPushToken = token
+                    Task { await self.tryRegisterDeviceIfPossible() }
                 }
             }
             .store(in: &cancellables)
-        
-        Task {
-            await setupServices()
-        }
+
+        // If AppDelegate already has a token, stash it immediately.
+        lastKnownPushToken = AppDelegate.pushToken
+
+        // ✅ If a notification was tapped on cold start, route it now that SwiftUI is listening.
+        AppDelegate.flushPendingRouteIfAny()
+
+        // Try immediately in case we're already logged in.
+        Task { await tryRegisterDeviceIfPossible() }
     }
 
-    private func setupServices() async {
+    private func tryRegisterDeviceIfPossible() async {
         guard auth.jwt != nil else { return }
-        
-        Task {
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-            // Register with existing token if available
-            await registerDevice(pushToken: AppDelegate.pushToken)
-        }
-    }
+        guard !isRegisteringDevice else { return }
 
-    private func registerDevice(pushToken: String? = nil) async {
-        guard auth.jwt != nil else { return }
-        
+        let tokenToRegister = lastKnownPushToken
+        if lastRegisteredPushToken == tokenToRegister {
+            return
+        }
+
+        isRegisteringDevice = true
+        defer { isRegisteringDevice = false }
+
         do {
-            _ = try await deviceService.registerDevice(pushToken: pushToken)
-            Logger.info("Device registered successfully (push: \(pushToken != nil))", category: .api)
+            _ = try await deviceService.registerDevice(pushToken: tokenToRegister)
+            lastRegisteredPushToken = tokenToRegister
+            Logger.info("Device registered successfully (push: \(tokenToRegister != nil))", category: .api)
         } catch {
             Logger.warning("Device registration skipped: \(error)", category: .api)
         }

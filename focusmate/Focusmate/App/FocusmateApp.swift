@@ -1,27 +1,39 @@
 import SwiftUI
 
+@MainActor
 @main
 struct FocusmateApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject var state = AppState()
+
+    @StateObject private var state: AppState
+    @StateObject private var bootstrapper: AppBootstrapper
+
+    init() {
+        let auth = AuthStore()
+        _state = StateObject(wrappedValue: AppState(auth: auth))
+        _bootstrapper = StateObject(wrappedValue: AppBootstrapper(auth: auth))
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(state)
                 .environmentObject(state.auth)
+                .environmentObject(bootstrapper)
         }
     }
 }
 
+
 struct RootView: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var auth: AuthStore
+    @EnvironmentObject var bootstrapper: AppBootstrapper
+
     @State private var overdueCount: Int = 0
     @State private var selectedTab: Int = 0
-    @State private var hasTrackedInitialOpen = false
     @Environment(\.scenePhase) private var scenePhase
-    
+
     var body: some View {
         Group {
             if auth.isValidatingSession {
@@ -45,14 +57,14 @@ struct RootView: View {
                     }
                     .tag(0)
                     .badge(overdueCount)
-                    
+
                     ListsView()
                         .tabItem {
                             Image(systemName: DesignSystem.Icons.list)
                             Text("Lists")
                         }
                         .tag(1)
-                    
+
                     SettingsView()
                         .tabItem {
                             Image(systemName: DesignSystem.Icons.settings)
@@ -60,28 +72,13 @@ struct RootView: View {
                         }
                         .tag(2)
                 }
-                .task {
-                    // Request push notification permission and register
-                    await requestPushPermission()
-                    
-                    await NotificationService.shared.requestPermission()
-                    await CalendarService.shared.requestPermission()
-                    
-                    // Request Screen Time permission
-                    do {
-                        try await ScreenTimeService.shared.requestAuthorization()
-                    } catch {
-                        Logger.debug("Screen Time authorization failed: \(error)", category: .general)
-                    }
-                    _ = EscalationService.shared
-                    if !hasTrackedInitialOpen {
-                        hasTrackedInitialOpen = true
-                        await trackAppOpened()
-                    }
+                .task(id: auth.jwt != nil) {
+                    guard auth.jwt != nil else { return }
+                    await bootstrapper.runAuthenticatedBootTasksIfNeeded()
                 }
-                .onChange(of: scenePhase) { oldPhase, newPhase in
-                    if newPhase == .active && oldPhase == .background {
-                        Task { await trackAppOpened() }
+                .onChange(of: scenePhase) { _, newPhase in
+                    if newPhase == .active {
+                        Task { await bootstrapper.handleBecameActive() }
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .openToday)) { _ in
@@ -93,41 +90,4 @@ struct RootView: View {
             }
         }
     }
-    
-    private func requestPushPermission() async {
-        let center = UNUserNotificationCenter.current()
-        
-        do {
-            let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
-            
-            if granted {
-                Logger.info("Push notification permission granted", category: .general)
-                await MainActor.run {
-                    UIApplication.shared.registerForRemoteNotifications()
-                }
-            } else {
-                Logger.info("Push notification permission denied", category: .general)
-            }
-        } catch {
-            Logger.error("Failed to request push permission: \(error)", category: .general)
-        }
-    }
-    
-    private func trackAppOpened() async {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-        do {
-            _ = try await auth.api.request(
-                "POST",
-                "/api/v1/analytics/app_opened",
-                body: AppOpenedRequest(platform: "ios", version: version)
-            ) as EmptyResponse
-        } catch {
-            Logger.debug("Failed to track app opened: \(error)", category: .api)
-        }
-    }
-}
-
-private struct AppOpenedRequest: Encodable {
-    let platform: String
-    let version: String?
 }

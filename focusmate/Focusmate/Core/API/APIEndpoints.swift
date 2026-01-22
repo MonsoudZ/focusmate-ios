@@ -1,72 +1,64 @@
 import Foundation
 
 enum API {
-    
-    // MARK: - Environment Configuration
-    
-    enum Environment {
+
+    enum Environment: String {
         case development
         case staging
         case production
-        
+
         var baseURLString: String {
             switch self {
-            case .development:
-                return "http://localhost:3000"
-            case .staging:
-                return "https://focusmate-api-focusmate-api-staging.up.railway.app"
-            case .production:
-                return "https://focusmate-api-production.up.railway.app"
+            case .development: return "http://localhost:3000"
+            case .staging:     return "https://focusmate-api-focusmate-api-staging.up.railway.app"
+            case .production:  return "https://focusmate-api-production.up.railway.app"
             }
         }
-        
+
         var webSocketURLString: String {
             switch self {
-            case .development:
-                return "ws://localhost:3000/cable"
-            case .staging:
-                return "wss://focusmate-api-focusmate-api-staging.up.railway.app/cable"
-            case .production:
-                return "wss://focusmate-api-production.up.railway.app/cable"
+            case .development: return "ws://localhost:3000/cable"
+            case .staging:     return "wss://focusmate-api-focusmate-api-staging.up.railway.app/cable"
+            case .production:  return "wss://focusmate-api-production.up.railway.app/cable"
             }
         }
     }
-    
-    // MARK: - Current Environment
 
     static var current: Environment {
+        if let raw = AppSettings.shared.apiEnvironmentOverrideRawValue,
+           let override = Environment(rawValue: raw) {
+            return override
+        }
+
         #if DEBUG
             #if targetEnvironment(simulator)
-                return .development  // Simulator → local
+                return .development
             #else
-                return .staging      // Physical device → staging
+                return .staging
             #endif
         #else
-            return .production       // Release build → production
+            return .production
         #endif
     }
-    
-    // MARK: - Base URLs
-    
-    static let base: URL = {
+
+    static var base: URL {
         guard let url = URL(string: current.baseURLString) else {
             fatalError("Critical: Failed to create base URL")
         }
         return url
-    }()
-
-    static func path(_ p: String) -> URL {
-        base.appendingPathComponent(p)
     }
 
-    static let webSocketURL: URL = {
+    static func path(_ p: String) -> URL {
+        let normalized = p.hasPrefix("/") ? String(p.dropFirst()) : p
+        return base.appendingPathComponent(normalized)
+    }
+
+    static var webSocketURL: URL {
         guard let url = URL(string: current.webSocketURLString) else {
             fatalError("Critical: Failed to create WebSocket URL")
         }
         return url
-    }()
-
-    // MARK: - Endpoints
+    }
 
     enum Auth {
         static let signIn  = "api/v1/auth/sign_in"
@@ -91,8 +83,6 @@ enum API {
         static func tasksReorder(_ listId: String) -> String { "api/v1/lists/\(listId)/tasks/reorder" }
         static func memberships(_ listId: String) -> String { "api/v1/lists/\(listId)/memberships" }
         static func membership(_ listId: String, _ membershipId: String) -> String { "api/v1/lists/\(listId)/memberships/\(membershipId)" }
-        
-        // Subtasks - created as tasks with parent_task_id
         static func subtasks(_ listId: String, _ taskId: String) -> String {
             "api/v1/lists/\(listId)/tasks/\(taskId)/subtasks"
         }
@@ -102,13 +92,17 @@ enum API {
         static let root = "api/v1/tasks"
         static let search = "api/v1/tasks/search"
     }
-    
+
     enum Today {
         static let root = "api/v1/today"
     }
-    
+
     enum Tags {
         static let root = "api/v1/tags"
         static func id(_ id: String) -> String { "api/v1/tags/\(id)" }
     }
+    enum Analytics {
+        static let appOpened = "api/v1/analytics/app_opened"
+    }
+
 }
