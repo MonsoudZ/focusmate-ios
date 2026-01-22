@@ -60,6 +60,28 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		992D55132F2149DD0000D648 /* Exceptions for "focusmateTests" folder in "IntentiaShield" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Core/API/InternalNetworkingTests.swift,
+				Core/API/MockURLProtocol.swift,
+				Core/Auth/AuthSessionTests.swift,
+				Core/Auth/AuthStoreTests.swift,
+				Core/Auth/AuthStoreUnauthorizedTests.swift,
+			);
+			target = 99A8F0A12F16938700A75CF9 /* IntentiaShield */;
+		};
+		992D55152F2149E10000D648 /* Exceptions for "focusmateTests" folder in "focusmateTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Core/API/InternalNetworkingTests.swift,
+				Core/API/MockURLProtocol.swift,
+				Core/Auth/AuthSessionTests.swift,
+				Core/Auth/AuthStoreTests.swift,
+				Core/Auth/AuthStoreUnauthorizedTests.swift,
+			);
+			target = 99C4FB352E9E05B2003F8E91 /* focusmateTests */;
+		};
 		99A8F0B32F16938700A75CF9 /* Exceptions for "IntentiaShield" folder in "IntentiaShield" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -78,6 +100,15 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		992D54F92F2138120000D648 /* focusmateTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				992D55152F2149E10000D648 /* Exceptions for "focusmateTests" folder in "focusmateTests" target */,
+				992D55132F2149DD0000D648 /* Exceptions for "focusmateTests" folder in "IntentiaShield" target */,
+			);
+			path = focusmateTests;
+			sourceTree = "<group>";
+		};
 		99A8F0A82F16938700A75CF9 /* IntentiaShield */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -92,11 +123,6 @@
 				99C4FC422EA59034003F8E91 /* Exceptions for "focusmate" folder in "focusmate" target */,
 			);
 			path = focusmate;
-			sourceTree = "<group>";
-		};
-		99C4FB392E9E05B2003F8E91 /* focusmateTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = focusmateTests;
 			sourceTree = "<group>";
 		};
 		99C4FB432E9E05B2003F8E91 /* focusmateUITests */ = {
@@ -152,8 +178,8 @@
 		99C4FB202E9E05B1003F8E91 = {
 			isa = PBXGroup;
 			children = (
+				992D54F92F2138120000D648 /* focusmateTests */,
 				99C4FB2B2E9E05B1003F8E91 /* focusmate */,
-				99C4FB392E9E05B2003F8E91 /* focusmateTests */,
 				99C4FB432E9E05B2003F8E91 /* focusmateUITests */,
 				99A8F0A82F16938700A75CF9 /* IntentiaShield */,
 				99A8F0A32F16938700A75CF9 /* Frameworks */,
@@ -188,6 +214,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				992D54F92F2138120000D648 /* focusmateTests */,
 				99A8F0A82F16938700A75CF9 /* IntentiaShield */,
 			);
 			name = IntentiaShield;
@@ -233,9 +260,6 @@
 			);
 			dependencies = (
 				99C4FB382E9E05B2003F8E91 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				99C4FB392E9E05B2003F8E91 /* focusmateTests */,
 			);
 			name = focusmateTests;
 			packageProductDependencies = (
