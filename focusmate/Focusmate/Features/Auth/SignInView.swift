@@ -56,7 +56,7 @@ struct SignInView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(state.auth.isLoading || email.isEmpty || password.isEmpty)
+                .disabled(state.auth.isLoading || !InputValidation.isValidEmail(email) || password.isEmpty)
 
                 Button {
                     showingRegister = true

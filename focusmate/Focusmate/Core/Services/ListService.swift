@@ -2,6 +2,10 @@ import Foundation
 
 final class ListService {
     private let apiClient: APIClient
+    private let cache = ResponseCache.shared
+
+    private static let cacheKey = "lists"
+    private static let cacheTTL: TimeInterval = 60 // 1 minute
 
     init(apiClient: APIClient) {
         self.apiClient = apiClient
@@ -10,8 +14,12 @@ final class ListService {
     // MARK: - List Management
 
     func fetchLists() async throws -> [ListDTO] {
+        if let cached: [ListDTO] = await cache.get(Self.cacheKey) {
+            return cached
+        }
         let response: ListsResponse = try await apiClient.request("GET", API.Lists.root, body: nil as String?)
         Logger.debug("ListService: Fetched \(response.lists.count) lists", category: .api)
+        await cache.set(Self.cacheKey, value: response.lists, ttl: Self.cacheTTL)
         return response.lists
     }
 
@@ -21,15 +29,20 @@ final class ListService {
 
     func createList(name: String, description: String?, color: String = "blue") async throws -> ListDTO {
         let request = CreateListRequest(list: .init(name: name, description: description, color: color))
-        return try await apiClient.request("POST", API.Lists.root, body: request)
+        let list: ListDTO = try await apiClient.request("POST", API.Lists.root, body: request)
+        await cache.invalidate(Self.cacheKey)
+        return list
     }
 
     func updateList(id: Int, name: String?, description: String?, color: String? = nil) async throws -> ListDTO {
         let request = UpdateListRequest(list: .init(name: name, description: description, visibility: nil, color: color))
-        return try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
+        let list: ListDTO = try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
+        await cache.invalidate(Self.cacheKey)
+        return list
     }
 
     func deleteList(id: Int) async throws {
         _ = try await apiClient.request("DELETE", API.Lists.id(String(id)), body: nil as String?) as EmptyResponse
+        await cache.invalidate(Self.cacheKey)
     }
 }

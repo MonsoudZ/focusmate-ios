@@ -98,13 +98,6 @@ final class ScreenTimeService: ObservableObject {
         }
     }
     
-    // MARK: - Quick Setup (for onboarding)
-    
-    func selectDefaults() {
-        // This just sets categories - Social and Games
-        // The actual category tokens need to come from FamilyActivityPicker
-    }
-    
     var hasSelections: Bool {
         !selectedApps.isEmpty || !selectedCategories.isEmpty
     }

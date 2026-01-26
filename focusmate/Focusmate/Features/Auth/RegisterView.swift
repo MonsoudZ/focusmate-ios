@@ -9,7 +9,14 @@ struct RegisterView: View {
     @State private var confirmPassword = ""
 
     private var isValid: Bool {
-        !name.isEmpty && !email.isEmpty && !password.isEmpty && password == confirmPassword
+        InputValidation.isValidName(name)
+            && InputValidation.isValidEmail(email)
+            && InputValidation.isValidPassword(password)
+            && password == confirmPassword
+    }
+
+    private var passwordMismatch: Bool {
+        !confirmPassword.isEmpty && password != confirmPassword
     }
 
     var body: some View {
@@ -26,13 +33,34 @@ struct RegisterView: View {
                         .textContentType(.emailAddress)
                         .textFieldStyle(.roundedBorder)
 
+                    if !email.isEmpty && !InputValidation.isValidEmail(email) {
+                        Text("Enter a valid email address")
+                            .font(.caption)
+                            .foregroundStyle(DS.Colors.error)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
                     SecureField("Password", text: $password)
                         .textContentType(.newPassword)
                         .textFieldStyle(.roundedBorder)
 
+                    if let pwError = InputValidation.passwordError(password) {
+                        Text(pwError)
+                            .font(.caption)
+                            .foregroundStyle(DS.Colors.error)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
                     SecureField("Confirm Password", text: $confirmPassword)
                         .textContentType(.newPassword)
                         .textFieldStyle(.roundedBorder)
+
+                    if passwordMismatch {
+                        Text("Passwords do not match")
+                            .font(.caption)
+                            .foregroundStyle(DS.Colors.error)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
 
                 Button {

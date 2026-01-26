@@ -168,6 +168,7 @@ final class AuthStore: ObservableObject {
         }
 
         await clearLocalSession()
+        await ResponseCache.shared.invalidateAll()
 
         // Reset one-time authenticated boot state
         AppSettings.shared.didCompleteAuthenticatedBoot = false
