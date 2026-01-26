@@ -32,6 +32,7 @@ struct RootView: View {
 
     @State private var overdueCount: Int = 0
     @State private var selectedTab: Int = 0
+    @State private var showOnboarding: Bool = !AppSettings.shared.hasCompletedOnboarding
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -46,6 +47,18 @@ struct RootView: View {
                 }
             } else if auth.jwt == nil {
                 SignInView()
+            } else if showOnboarding {
+                OnboardingView {
+                    AppSettings.shared.hasCompletedOnboarding = true
+                    withAnimation {
+                        showOnboarding = false
+                    }
+                }
+                .environmentObject(state)
+                .task(id: auth.jwt != nil) {
+                    guard auth.jwt != nil else { return }
+                    await bootstrapper.runAuthenticatedBootTasksIfNeeded()
+                }
             } else {
                 TabView(selection: $selectedTab) {
                     TodayView(onOverdueCountChange: { count in
@@ -86,6 +99,12 @@ struct RootView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .openTask)) { _ in
                     selectedTab = 0
+                }
+                .onAppear {
+                    // Flush any notification route buffered during cold start.
+                    // Must happen here (not AppState.init) so .onReceive
+                    // listeners are active before the post fires.
+                    AppDelegate.flushPendingRouteIfAny()
                 }
             }
         }

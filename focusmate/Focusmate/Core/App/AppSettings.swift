@@ -18,6 +18,7 @@ final class AppSettings {
 
         // ✅ NEW
         static let didCompleteAuthenticatedBoot = "did_complete_authenticated_boot"
+        static let hasCompletedOnboarding = "has_completed_onboarding"
     }
 
     // MARK: - API Environment Override
@@ -62,5 +63,13 @@ final class AppSettings {
     var didCompleteAuthenticatedBoot: Bool {
         get { defaults.bool(forKey: Key.didCompleteAuthenticatedBoot) }
         set { defaults.set(newValue, forKey: Key.didCompleteAuthenticatedBoot) }
+    }
+
+    // MARK: - Onboarding
+
+    /// Whether the user has completed the onboarding flow after first sign-in.
+    var hasCompletedOnboarding: Bool {
+        get { defaults.bool(forKey: Key.hasCompletedOnboarding) }
+        set { defaults.set(newValue, forKey: Key.hasCompletedOnboarding) }
     }
 }

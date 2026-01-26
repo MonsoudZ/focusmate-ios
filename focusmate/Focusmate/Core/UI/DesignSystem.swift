@@ -513,7 +513,7 @@ struct DSDivider: View {
         icon: DS.Icon.emptyList,
         actionTitle: "Create List"
     ) {
-        print("Create tapped")
+        // Preview placeholder - no action needed
     }
 }
 

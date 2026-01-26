@@ -112,20 +112,28 @@ final class EscalationService: ObservableObject {
     }
     
     private func stopEscalation() {
+        resetAll()
+        Logger.info("Escalation stopped - all tasks cleared", category: .general)
+    }
+
+    /// Fully resets escalation state. Called on sign-out to ensure app blocking
+    /// is removed before auth state is cleared.
+    func resetAll() {
         // Stop grace period timer
         gracePeriodTimer?.invalidate()
         gracePeriodTimer = nil
         isInGracePeriod = false
         gracePeriodEndTime = nil
-        
+
         // Stop blocking
         ScreenTimeService.shared.stopBlocking()
-        
+
+        // Clear overdue tracking
+        overdueTaskIds.removeAll()
+
         // Clear persisted state
         UserDefaults.standard.removeObject(forKey: gracePeriodStartKey)
         saveState()
-        
-        Logger.info("Escalation stopped - all tasks cleared", category: .general)
     }
     
     // MARK: - Notifications

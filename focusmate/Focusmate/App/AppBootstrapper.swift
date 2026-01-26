@@ -1,8 +1,6 @@
 import Combine
 import Foundation
 import SwiftUI
-import UIKit
-import UserNotifications
 
 @MainActor
 final class AppBootstrapper: ObservableObject {
@@ -28,25 +26,13 @@ final class AppBootstrapper: ObservableObject {
         // ✅ One-time authenticated boot (persisted)
         guard !settings.didCompleteAuthenticatedBoot else { return }
 
-        await requestPushPermissionOnceIfNeeded()
-
-        if !settings.didRequestNotificationsPermission {
-            _ = await NotificationService.shared.requestPermission()
-            settings.didRequestNotificationsPermission = true
-        }
+        // Notification and Screen Time permissions are now handled by the
+        // onboarding flow (OnboardingPermissionsPage). Only calendar
+        // permission remains here as a low-priority, no-explanation request.
 
         if !settings.didRequestCalendarPermission {
             _ = await CalendarService.shared.requestPermission()
             settings.didRequestCalendarPermission = true
-        }
-
-        if !settings.didRequestScreenTimePermission {
-            do {
-                try await ScreenTimeService.shared.requestAuthorization()
-            } catch {
-                Logger.debug("Screen Time authorization failed: \(error)", category: .general)
-            }
-            settings.didRequestScreenTimePermission = true
         }
 
         _ = EscalationService.shared
@@ -63,27 +49,6 @@ final class AppBootstrapper: ObservableObject {
     func resetAuthenticatedBootState() {
         settings.didCompleteAuthenticatedBoot = false
         hasTrackedInitialOpenThisRun = false
-    }
-
-    private func requestPushPermissionOnceIfNeeded() async {
-        guard !settings.didRequestPushPermission else { return }
-
-        let center = UNUserNotificationCenter.current()
-        do {
-            let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
-            settings.didRequestPushPermission = true
-
-            if granted {
-                Logger.info("Push notification permission granted", category: .general)
-                await MainActor.run {
-                    UIApplication.shared.registerForRemoteNotifications()
-                }
-            } else {
-                Logger.info("Push notification permission denied", category: .general)
-            }
-        } catch {
-            Logger.error("Failed to request push permission: \(error)", category: .general)
-        }
     }
 
     private func trackAppOpenedIfAuthenticated() async {

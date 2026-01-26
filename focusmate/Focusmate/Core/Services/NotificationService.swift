@@ -160,18 +160,21 @@ final class NotificationService {
     // MARK: - Helper
     
     private func scheduleNotification(id: String, title: String, body: String, date: Date) {
+        let timeInterval = date.timeIntervalSinceNow
+        guard timeInterval > 0 else { return }
+
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
         content.sound = .default
-        
+
         let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: date.timeIntervalSinceNow,
+            timeInterval: max(timeInterval, 1),
             repeats: false
         )
-        
+
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-        
+
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 Logger.error("Failed to schedule notification: \(id)", error: error, category: .general)

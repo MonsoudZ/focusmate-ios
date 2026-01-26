@@ -155,6 +155,11 @@ final class AuthStore: ObservableObject {
     func signOut() async {
         Logger.debug("Signing out", category: .auth)
 
+        // Stop app blocking and escalation BEFORE clearing auth state.
+        // If we clear auth first, the UI switches to SignInView and
+        // the user has no way to remove the block.
+        EscalationService.shared.resetAll()
+
         do {
             _ = try await api.request("DELETE", API.Auth.signOut, body: nil as String?) as EmptyResponse
             Logger.info("Sign out successful", category: .auth)
@@ -164,8 +169,9 @@ final class AuthStore: ObservableObject {
 
         await clearLocalSession()
 
-        // ✅ Reset one-time authenticated boot state
+        // Reset one-time authenticated boot state
         AppSettings.shared.didCompleteAuthenticatedBoot = false
+        AppSettings.shared.hasCompletedOnboarding = false
 
         AuthEventBus.shared.send(.signedOut)
     }
@@ -252,6 +258,9 @@ final class AuthStore: ObservableObject {
         guard jwt != nil else { return }
 
         Logger.warning("Global unauthorized received. Clearing local session.", category: .auth)
+
+        // Stop app blocking before clearing auth to prevent stuck blocks
+        EscalationService.shared.resetAll()
 
         _ = await errorHandler.handleUnauthorized()
         await clearLocalSession()

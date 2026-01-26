@@ -4,6 +4,8 @@ struct ListsView: View {
     @EnvironmentObject var state: AppState
     @State private var showingCreateList = false
     @State private var showingSearch = false
+    @State private var showingDeleteConfirmation = false
+    @State private var listToDelete: ListDTO?
     @State private var lists: [ListDTO] = []
     @State private var isLoading = false
     @State private var error: FocusmateError?
@@ -35,6 +37,16 @@ struct ListsView: View {
                                     ListRowView(list: list)
                                 }
                                 .buttonStyle(.plain)
+                                .contextMenu {
+                                    if list.role == "owner" || list.role == nil {
+                                        Button(role: .destructive) {
+                                            listToDelete = list
+                                            showingDeleteConfirmation = true
+                                        } label: {
+                                            Label("Delete List", systemImage: DS.Icon.trash)
+                                        }
+                                    }
+                                }
                             }
                         }
                         .padding(DS.Spacing.md)
@@ -88,6 +100,24 @@ struct ListsView: View {
             }
             .refreshable {
                 await loadLists()
+            }
+            .alert("Delete List", isPresented: $showingDeleteConfirmation) {
+                Button("Cancel", role: .cancel) {
+                    listToDelete = nil
+                }
+                Button("Delete", role: .destructive) {
+                    if let list = listToDelete {
+                        Task { await deleteList(list) }
+                    }
+                    listToDelete = nil
+                }
+            } message: {
+                Text("Are you sure you want to delete '\(listToDelete?.name ?? "")'? This action cannot be undone.")
+            }
+            .onChange(of: showingCreateList) { _, isPresented in
+                if !isPresented {
+                    Task { await loadLists() }
+                }
             }
         }
     }

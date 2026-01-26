@@ -60,26 +60,40 @@ struct ListDetailView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: DS.Spacing.sm) {
-                Button {
-                    showingMembers = true
-                } label: {
-                    Image(systemName: DS.Icon.share)
-                }
-                
-                if isOwner {
-                    Button {
-                        showingEditList = true
-                    } label: {
-                        Image(systemName: DS.Icon.edit)
-                    }
-                }
-
                 if canEdit {
                     Button {
                         showingCreateTask = true
                     } label: {
                         Image(systemName: DS.Icon.plus)
                     }
+                }
+
+                Menu {
+                    Button {
+                        showingMembers = true
+                    } label: {
+                        Label("Members", systemImage: DS.Icon.share)
+                    }
+
+                    if isOwner {
+                        Button {
+                            showingEditList = true
+                        } label: {
+                            Label("Edit List", systemImage: DS.Icon.edit)
+                        }
+                    }
+
+                    if isOwner {
+                        Divider()
+
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Delete List", systemImage: DS.Icon.trash)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
         }

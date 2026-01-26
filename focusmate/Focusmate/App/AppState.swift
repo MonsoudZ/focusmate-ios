@@ -20,6 +20,7 @@ final class AppState: ObservableObject {
     // Push token coordination
     private var lastKnownPushToken: String?
     private var lastRegisteredPushToken: String?
+    private var hasRegisteredDevice = false
     private var isRegisteringDevice = false
 
     init(auth: AuthStore) {
@@ -52,8 +53,11 @@ final class AppState: ObservableObject {
         // If AppDelegate already has a token, stash it immediately.
         lastKnownPushToken = AppDelegate.pushToken
 
-        // ✅ If a notification was tapped on cold start, route it now that SwiftUI is listening.
-        AppDelegate.flushPendingRouteIfAny()
+        // NOTE: Do NOT flush pending notification routes here.
+        // AppState.init() runs during StateObject creation, before RootView's
+        // .onReceive listeners are set up. Flushing here would post to
+        // NotificationCenter with no subscribers, losing the route.
+        // Instead, RootView calls flushPendingRouteIfAny() in .onAppear.
 
         // Try immediately in case we're already logged in.
         Task { await tryRegisterDeviceIfPossible() }
@@ -64,7 +68,11 @@ final class AppState: ObservableObject {
         guard !isRegisteringDevice else { return }
 
         let tokenToRegister = lastKnownPushToken
-        if lastRegisteredPushToken == tokenToRegister {
+
+        // Skip if we already registered with this exact token.
+        // Use a separate flag to ensure we register at least once per session
+        // even when push permission is denied (token is nil).
+        if hasRegisteredDevice && lastRegisteredPushToken == tokenToRegister {
             return
         }
 
@@ -74,6 +82,7 @@ final class AppState: ObservableObject {
         do {
             _ = try await deviceService.registerDevice(pushToken: tokenToRegister)
             lastRegisteredPushToken = tokenToRegister
+            hasRegisteredDevice = true
             Logger.info("Device registered successfully (push: \(tokenToRegister != nil))", category: .api)
         } catch {
             Logger.warning("Device registration skipped: \(error)", category: .api)

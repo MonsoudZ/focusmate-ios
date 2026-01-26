@@ -219,12 +219,12 @@ final class TaskService {
                 parent_task_id: parentTaskId
             ))
             
-            // DEBUG: Print what we're sending
+            // DEBUG: Log what we're sending
             let encoder = JSONEncoder()
             encoder.keyEncodingStrategy = .convertToSnakeCase
             if let jsonData = try? encoder.encode(request),
                let jsonString = String(data: jsonData, encoding: .utf8) {
-                print("🔍 DEBUG createSubtask request: \(jsonString)")
+                Logger.debug("TaskService: Creating subtask request: \(LogRedactor.redact(jsonString))", category: .api)
             }
             
             let subtask: TaskDTO = try await apiClient.request(
