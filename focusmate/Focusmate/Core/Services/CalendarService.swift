@@ -7,7 +7,13 @@ final class CalendarService {
     
     private let eventStore = EKEventStore()
     private let calendarName = "Intentia"
-    
+
+    // MARK: - Cache
+    private var cachedCalendar: EKCalendar?
+    private var cachedEvents: [EKEvent] = []
+    private var eventsCacheTimestamp: Date = .distantPast
+    private let eventsCacheTTL: TimeInterval = 2.0
+
     private init() {}
     
     // MARK: - Permission
@@ -37,12 +43,38 @@ final class CalendarService {
             return status == .authorized
         }
     }
+    // MARK: - Cache Helpers
+
+    private func getCachedCalendar() -> EKCalendar? {
+        if let cached = cachedCalendar { return cached }
+        let calendars = eventStore.calendars(for: .event)
+        cachedCalendar = calendars.first(where: { $0.title == calendarName })
+        return cachedCalendar
+    }
+
+    private func getCachedEvents(for calendar: EKCalendar) -> [EKEvent] {
+        if Date().timeIntervalSince(eventsCacheTimestamp) < eventsCacheTTL {
+            return cachedEvents
+        }
+        let predicate = eventStore.predicateForEvents(
+            withStart: Date().addingTimeInterval(-30 * 24 * 3600),
+            end: Date().addingTimeInterval(30 * 24 * 3600),
+            calendars: [calendar]
+        )
+        cachedEvents = eventStore.events(matching: predicate)
+        eventsCacheTimestamp = Date()
+        return cachedEvents
+    }
+
+    private func invalidateEventsCache() {
+        eventsCacheTimestamp = .distantPast
+    }
+
     // MARK: - Calendar Management
-    
+
     private func getOrCreateCalendar() -> EKCalendar? {
         // Check if Intentia calendar already exists
-        let calendars = eventStore.calendars(for: .event)
-        if let existing = calendars.first(where: { $0.title == calendarName }) {
+        if let existing = getCachedCalendar() {
             return existing
         }
         
@@ -78,6 +110,7 @@ final class CalendarService {
         do {
             try eventStore.saveCalendar(calendar, commit: true)
             Logger.info("Created Intentia calendar with source: \(calendar.source?.title ?? "unknown")", category: .general)
+            cachedCalendar = calendar
             return calendar
         } catch {
             Logger.error("Failed to create calendar", error: error, category: .general)
@@ -139,25 +172,15 @@ final class CalendarService {
     func removeTaskFromCalendar(taskId: Int) {
         guard checkPermission() else { return }
 
-        let calendars = eventStore.calendars(for: .event)
-        guard let calendar = calendars.first(where: { $0.title == calendarName }) else {
-            return
-        }
+        guard let calendar = getCachedCalendar() else { return }
 
-        // Search a narrower window — tasks are unlikely to be scheduled more
-        // than 30 days out or overdue by more than 30 days.
-        let predicate = eventStore.predicateForEvents(
-            withStart: Date().addingTimeInterval(-30 * 24 * 3600),
-            end: Date().addingTimeInterval(30 * 24 * 3600),
-            calendars: [calendar]
-        )
-
-        let events = eventStore.events(matching: predicate)
+        let events = getCachedEvents(for: calendar)
         let taskURL = URL(string: "intentia://task/\(taskId)")
 
         for event in events where event.url == taskURL {
             do {
                 try eventStore.remove(event, span: .thisEvent)
+                invalidateEventsCache()
                 Logger.debug("Removed task from calendar: \(taskId)", category: .general)
             } catch {
                 Logger.error("Failed to remove task from calendar", error: error, category: .general)

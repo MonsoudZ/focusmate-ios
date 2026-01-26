@@ -40,43 +40,22 @@ struct TodayView: View {
     }
     
     // MARK: - Time-Based Grouping
-    
-    private var anytimeTasks: [TaskDTO] {
-        guard let data = todayData else { return [] }
-        return data.due_today.filter { task in
-            guard let dueDate = task.dueDate else { return true }
-            let hour = Calendar.current.component(.hour, from: dueDate)
-            let minute = Calendar.current.component(.minute, from: dueDate)
-            return hour == 0 && minute == 0
+
+    private var groupedTasks: (anytime: [TaskDTO], morning: [TaskDTO], afternoon: [TaskDTO], evening: [TaskDTO]) {
+        guard let data = todayData else { return ([], [], [], []) }
+        var anytime: [TaskDTO] = [], morning: [TaskDTO] = []
+        var afternoon: [TaskDTO] = [], evening: [TaskDTO] = []
+        let calendar = Calendar.current
+        for task in data.due_today {
+            guard let dueDate = task.dueDate else { anytime.append(task); continue }
+            let hour = calendar.component(.hour, from: dueDate)
+            let minute = calendar.component(.minute, from: dueDate)
+            if hour == 0 && minute == 0 { anytime.append(task) }
+            else if hour < 12 { morning.append(task) }
+            else if hour < 17 { afternoon.append(task) }
+            else { evening.append(task) }
         }
-    }
-    
-    private var morningTasks: [TaskDTO] {
-        guard let data = todayData else { return [] }
-        return data.due_today.filter { task in
-            guard let dueDate = task.dueDate else { return false }
-            let hour = Calendar.current.component(.hour, from: dueDate)
-            let minute = Calendar.current.component(.minute, from: dueDate)
-            return !(hour == 0 && minute == 0) && hour < 12
-        }
-    }
-    
-    private var afternoonTasks: [TaskDTO] {
-        guard let data = todayData else { return [] }
-        return data.due_today.filter { task in
-            guard let dueDate = task.dueDate else { return false }
-            let hour = Calendar.current.component(.hour, from: dueDate)
-            return hour >= 12 && hour < 17
-        }
-    }
-    
-    private var eveningTasks: [TaskDTO] {
-        guard let data = todayData else { return [] }
-        return data.due_today.filter { task in
-            guard let dueDate = task.dueDate else { return false }
-            let hour = Calendar.current.component(.hour, from: dueDate)
-            return hour >= 17
-        }
+        return (anytime, morning, afternoon, evening)
     }
     
     var body: some View {
@@ -151,12 +130,13 @@ struct TodayView: View {
     }
     
     private func contentView(_ data: TodayResponse) -> some View {
-        ScrollView {
+        let grouped = groupedTasks
+        return ScrollView {
             VStack(spacing: DS.Spacing.lg) {
                 escalationBanner
-                
+
                 progressSection(data)
-                
+
                 if !data.overdue.isEmpty {
                     taskSection(
                         title: "Overdue",
@@ -165,43 +145,43 @@ struct TodayView: View {
                         tasks: data.overdue
                     )
                 }
-                
-                if !anytimeTasks.isEmpty {
+
+                if !grouped.anytime.isEmpty {
                     taskSection(
                         title: "Anytime Today",
                         icon: DS.Icon.calendar,
                         iconColor: DS.Colors.accent,
-                        tasks: anytimeTasks
+                        tasks: grouped.anytime
                     )
                 }
-                
-                if !morningTasks.isEmpty {
+
+                if !grouped.morning.isEmpty {
                     taskSection(
                         title: "Morning",
                         icon: DS.Icon.morning,
                         iconColor: DS.Colors.morning,
-                        tasks: morningTasks
+                        tasks: grouped.morning
                     )
                 }
-                
-                if !afternoonTasks.isEmpty {
+
+                if !grouped.afternoon.isEmpty {
                     taskSection(
                         title: "Afternoon",
                         icon: DS.Icon.afternoon,
                         iconColor: DS.Colors.afternoon,
-                        tasks: afternoonTasks
+                        tasks: grouped.afternoon
                     )
                 }
-                
-                if !eveningTasks.isEmpty {
+
+                if !grouped.evening.isEmpty {
                     taskSection(
                         title: "Evening",
                         icon: DS.Icon.evening,
                         iconColor: DS.Colors.evening,
-                        tasks: eveningTasks
+                        tasks: grouped.evening
                     )
                 }
-                
+
                 if !data.completed_today.isEmpty {
                     taskSection(
                         title: "Completed",
@@ -210,7 +190,7 @@ struct TodayView: View {
                         tasks: data.completed_today
                     )
                 }
-                
+
                 if isAllComplete {
                     allClearView
                 } else if data.overdue.isEmpty && data.due_today.isEmpty && data.completed_today.isEmpty {

@@ -4,30 +4,41 @@ import XCTest
 @MainActor
 final class AuthStoreUnauthorizedTests: XCTestCase {
 
+    private var testKeychain: KeychainManaging!
+
+    private final class FakeKeychain: KeychainManaging {
+        var token: String?
+        func save(token: String) { self.token = token }
+        func load() -> String? { token }
+        func clear() { token = nil }
+    }
+
     override func setUp() {
         super.setUp()
-        // Ensure clean state
-        KeychainManager.shared.clear()
-        // Avoid throttle interference if another test sent unauthorized recently
-        Thread.sleep(forTimeInterval: 1.1)
+        testKeychain = FakeKeychain()
     }
 
     override func tearDown() {
-        KeychainManager.shared.clear()
+        testKeychain = nil
         super.tearDown()
     }
 
     func testUnauthorizedEventClearsLocalSession() async {
-        // Arrange: put a token in keychain so AuthStore loads it on init
-        KeychainManager.shared.save(token: "jwt-123")
+        let eventBus = AuthEventBus()
+        (testKeychain as! FakeKeychain).token = "jwt-123"
 
-        let store = AuthStore()
+        let store = AuthStore(
+            keychain: testKeychain,
+            networking: nil,
+            autoValidateOnInit: false,
+            eventBus: eventBus
+        )
 
         // Precondition: token loaded
         XCTAssertNotNil(store.jwt)
 
         // Act
-        AuthEventBus.shared.send(.unauthorized)
+        eventBus.send(.unauthorized)
 
         // Allow async Task in the event sink to execute
         try? await Task.sleep(nanoseconds: 300_000_000)
@@ -35,6 +46,6 @@ final class AuthStoreUnauthorizedTests: XCTestCase {
         // Assert
         XCTAssertNil(store.jwt)
         XCTAssertNil(store.currentUser)
-        XCTAssertNil(KeychainManager.shared.load())
+        XCTAssertNil(testKeychain.load())
     }
 }

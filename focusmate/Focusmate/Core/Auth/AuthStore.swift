@@ -7,7 +7,7 @@ final class AuthStore: ObservableObject {
     @Published var jwt: String? {
         didSet {
             Logger.debug("JWT updated: \(jwt != nil ? "SET" : "CLEARED")", category: .auth)
-            AuthEventBus.shared.send(.tokenUpdated(hasToken: jwt != nil))
+            eventBus.send(.tokenUpdated(hasToken: jwt != nil))
         }
     }
 
@@ -30,6 +30,7 @@ final class AuthStore: ObservableObject {
     private lazy var authAPI: AuthAPI = AuthAPI(api: api, session: authSession)
     private let errorHandler = ErrorHandler.shared
 
+    private let eventBus: AuthEventBus
     private let keychain: KeychainManaging
     private let injectedNetworking: NetworkingProtocol?
     private let autoValidateOnInit: Bool
@@ -39,6 +40,7 @@ final class AuthStore: ObservableObject {
 
     // MARK: - Production init (unchanged call site behavior)
     init() {
+        self.eventBus = .shared
         self.keychain = KeychainManager.shared
         self.injectedNetworking = nil
         self.autoValidateOnInit = true
@@ -60,8 +62,10 @@ final class AuthStore: ObservableObject {
     init(
         keychain: KeychainManaging,
         networking: NetworkingProtocol?,
-        autoValidateOnInit: Bool
+        autoValidateOnInit: Bool,
+        eventBus: AuthEventBus = .shared
     ) {
+        self.eventBus = eventBus
         self.keychain = keychain
         self.injectedNetworking = networking
         self.autoValidateOnInit = autoValidateOnInit
@@ -80,7 +84,7 @@ final class AuthStore: ObservableObject {
     }
 
     private func bindAuthEvents() {
-        AuthEventBus.shared.publisher
+        eventBus.publisher
             .receive(on: RunLoop.main)
             .sink { [weak self] event in
                 guard let self else { return }
@@ -124,7 +128,7 @@ final class AuthStore: ObservableObject {
             let token = try await authSession.access()
             await setAuthenticatedSession(token: token, user: user)
 
-            AuthEventBus.shared.send(.signedIn)
+            eventBus.send(.signedIn)
         } catch {
             Logger.error("Sign in failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Sign In")
@@ -144,7 +148,7 @@ final class AuthStore: ObservableObject {
             let token = try await authSession.access()
             await setAuthenticatedSession(token: token, user: user)
 
-            AuthEventBus.shared.send(.signedIn)
+            eventBus.send(.signedIn)
         } catch {
             Logger.error("Registration failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Registration")
@@ -174,7 +178,7 @@ final class AuthStore: ObservableObject {
         AppSettings.shared.didCompleteAuthenticatedBoot = false
         AppSettings.shared.hasCompletedOnboarding = false
 
-        AuthEventBus.shared.send(.signedOut)
+        eventBus.send(.signedOut)
     }
 
 
@@ -217,14 +221,14 @@ final class AuthStore: ObservableObject {
         do {
             let response: AuthSignInResponse = try await api.request(
                 "POST",
-                "api/v1/auth/apple",
+                API.Auth.apple,
                 body: AppleAuthRequest(idToken: tokenString, name: name)
             )
 
             Logger.info("Apple Sign In successful", category: .auth)
             await setAuthenticatedSession(token: response.token, user: response.user)
 
-            AuthEventBus.shared.send(.signedIn)
+            eventBus.send(.signedIn)
         } catch {
             Logger.error("Apple Sign In failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Apple Sign In")
@@ -241,7 +245,7 @@ final class AuthStore: ObservableObject {
         do {
             let _: EmptyResponse = try await api.request(
                 "POST",
-                "api/v1/auth/password",
+                API.Auth.password,
                 body: ForgotPasswordRequest(email: email)
             )
             Logger.info("Password reset email sent", category: .auth)
@@ -265,7 +269,7 @@ final class AuthStore: ObservableObject {
             _ = await errorHandler.handleUnauthorized()
             await clearLocalSession()
 
-            AuthEventBus.shared.send(.signedOut)
+            eventBus.send(.signedOut)
         }
     }
 

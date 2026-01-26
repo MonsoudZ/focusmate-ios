@@ -18,7 +18,7 @@ final class AuthEventBus {
     private let subject = PassthroughSubject<AuthEvent, Never>()
     private var lastUnauthorizedAt: Date?
 
-    private init() {}
+    init() {}
 
     func send(_ event: AuthEvent) {
         if event == .unauthorized {

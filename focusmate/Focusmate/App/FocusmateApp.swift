@@ -1,7 +1,6 @@
 import SwiftUI
 
 @MainActor
-@main
 struct FocusmateApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 

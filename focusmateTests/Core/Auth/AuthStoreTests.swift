@@ -58,7 +58,7 @@ final class AuthStoreTests: XCTestCase {
         keychain.token = "jwt-123"
 
         let store = await MainActor.run {
-            AuthStore(keychain: keychain, networking: nil, autoValidateOnInit: false)
+            AuthStore(keychain: keychain, networking: nil, autoValidateOnInit: false, eventBus: AuthEventBus())
         }
 
         let jwt = await MainActor.run { store.jwt }
@@ -81,7 +81,7 @@ final class AuthStoreTests: XCTestCase {
         let networking = MockNetworking(mode: .successUser(user))
 
         let store = await MainActor.run {
-            AuthStore(keychain: keychain, networking: networking, autoValidateOnInit: false)
+            AuthStore(keychain: keychain, networking: networking, autoValidateOnInit: false, eventBus: AuthEventBus())
         }
 
         await MainActor.run { store.jwt = "jwt-123" }
@@ -102,7 +102,7 @@ final class AuthStoreTests: XCTestCase {
         let networking = MockNetworking(mode: .failure(APIError.unauthorized))
 
         let store = await MainActor.run {
-            AuthStore(keychain: keychain, networking: networking, autoValidateOnInit: false)
+            AuthStore(keychain: keychain, networking: networking, autoValidateOnInit: false, eventBus: AuthEventBus())
         }
 
         await MainActor.run {
