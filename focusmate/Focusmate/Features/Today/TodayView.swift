@@ -134,7 +134,7 @@ struct TodayView: View {
         .task {
             await loadToday()
         }
-        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+        .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { _ in
             updateEscalationState()
         }
         .onAppear {

@@ -109,6 +109,16 @@ struct SubtaskDTO: Codable, Identifiable {
 
 // MARK: - Task
 
+private let _iso8601Formatter: ISO8601DateFormatter = {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return f
+}()
+
+private let _iso8601FormatterNoFrac: ISO8601DateFormatter = {
+    ISO8601DateFormatter()
+}()
+
 struct TaskDTO: Codable, Identifiable {
     let id: Int
     let list_id: Int
@@ -175,7 +185,8 @@ struct TaskDTO: Codable, Identifiable {
     
     var dueDate: Date? {
         guard let due_at else { return nil }
-        return ISO8601DateFormatter().date(from: due_at)
+        return _iso8601Formatter.date(from: due_at)
+            ?? _iso8601FormatterNoFrac.date(from: due_at)
     }
     
     var taskPriority: TaskPriority {
@@ -207,14 +218,21 @@ struct TaskDTO: Codable, Identifiable {
     
     var isActuallyOverdue: Bool {
         guard let dueDate = dueDate, !isCompleted else { return false }
-        
+
+        let now = Date()
+
         if isAnytime {
+            // "Anytime" tasks are due by end of the calendar day in the user's
+            // local timezone.  Calendar.current uses the device timezone, which
+            // matches the server's expectation (due_at is midnight user-tz).
             let calendar = Calendar.current
-            let endOfDueDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: dueDate) ?? dueDate
-            return Date() > endOfDueDay
+            guard let startOfNextDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: dueDate)) else {
+                return false
+            }
+            return now >= startOfNextDay
         }
-        
-        return dueDate < Date()
+
+        return now > dueDate
     }
     
     var recurrenceDescription: String? {

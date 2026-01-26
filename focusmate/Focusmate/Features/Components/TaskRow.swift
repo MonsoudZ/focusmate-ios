@@ -361,17 +361,16 @@ struct TaskRow: View {
     
     private func completeTask(reason: String?) async {
         do {
-            let endpoint = API.Lists.taskAction(String(task.list_id), String(task.id), "complete")
-            var body: [String: String]? = nil
-            if let reason = reason {
-                body = ["missed_reason": reason]
-            }
-            let _: TaskDTO = try await state.auth.api.request("PATCH", endpoint, body: body)
-            
+            _ = try await state.taskService.completeTask(
+                listId: task.list_id,
+                taskId: task.id,
+                reason: reason
+            )
+
             await MainActor.run {
                 EscalationService.shared.taskCompleted(task.id)
             }
-            
+
             HapticManager.success()
             await onComplete()
         } catch {
