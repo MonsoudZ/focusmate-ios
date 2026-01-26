@@ -17,12 +17,30 @@ struct TaskRow: View {
     @State private var showingReasonSheet = false
     @State private var isNudging = false
     @State private var isExpanded = false
+    @State private var isCompleting = false
+    @State private var completionError: FocusmateError?
     
     private var isOverdue: Bool { task.isActuallyOverdue }
     private var canEdit: Bool { task.can_edit ?? true }
     private var canDelete: Bool { task.can_delete ?? true }
     private var canNudge: Bool { showNudge && !task.isCompleted }
-    
+
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f
+    }()
+    private static let dateTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, h:mm a"
+        return f
+    }()
+
     init(
         task: TaskDTO,
         onComplete: @escaping () async -> Void,
@@ -75,6 +93,7 @@ struct TaskRow: View {
                 }
             }
         }
+        .errorBanner($completionError)
     }
     
     // MARK: - Main Task Row
@@ -95,9 +114,15 @@ struct TaskRow: View {
                 Button {
                     handleCompleteTap()
                 } label: {
-                    checkboxIcon
+                    if isCompleting {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                    } else {
+                        checkboxIcon
+                    }
                 }
                 .buttonStyle(.plain)
+                .disabled(isCompleting)
             } else {
                 checkboxIcon
                     .opacity(0.5)
@@ -349,17 +374,25 @@ struct TaskRow: View {
     private func handleCompleteTap() {
         guard canEdit else { return }
         HapticManager.selection()
-        
+
         if task.isCompleted {
-            Task { await onComplete() }
+            isCompleting = true
+            Task {
+                defer { isCompleting = false }
+                await onComplete()
+            }
         } else if isOverdue {
             showingReasonSheet = true
         } else {
-            Task { await completeTask(reason: nil) }
+            isCompleting = true
+            Task {
+                await completeTask(reason: nil)
+            }
         }
     }
     
     private func completeTask(reason: String?) async {
+        defer { isCompleting = false }
         do {
             _ = try await state.taskService.completeTask(
                 listId: task.list_id,
@@ -376,6 +409,7 @@ struct TaskRow: View {
         } catch {
             Logger.error("Failed to complete task", error: error, category: .api)
             HapticManager.error()
+            completionError = ErrorHandler.shared.handle(error, context: "Completing task")
         }
     }
     
@@ -383,29 +417,24 @@ struct TaskRow: View {
     
     private func formatDueDate(_ date: Date) -> String {
         let calendar = Calendar.current
-        let formatter = DateFormatter()
-        
+
         if task.isAnytime {
             if calendar.isDateInToday(date) { return "Today" }
             if calendar.isDateInTomorrow(date) { return "Tomorrow" }
             if calendar.isDateInYesterday(date) { return "Yesterday" }
-            formatter.dateFormat = "MMM d"
-            return formatter.string(from: date)
+            return Self.dateFormatter.string(from: date)
         }
-        
+
         if calendar.isDateInToday(date) {
-            formatter.dateFormat = "h:mm a"
-            return "Today \(formatter.string(from: date))"
+            return "Today \(Self.timeFormatter.string(from: date))"
         }
         if calendar.isDateInTomorrow(date) {
-            formatter.dateFormat = "h:mm a"
-            return "Tomorrow \(formatter.string(from: date))"
+            return "Tomorrow \(Self.timeFormatter.string(from: date))"
         }
         if calendar.isDateInYesterday(date) {
             return "Yesterday"
         }
-        formatter.dateFormat = "MMM d, h:mm a"
-        return formatter.string(from: date)
+        return Self.dateTimeFormatter.string(from: date)
     }
     
     private func formatOverdue(_ minutes: Int) -> String {

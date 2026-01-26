@@ -7,12 +7,25 @@
 		<key>IntentiaShield.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>1</integer>
+			<integer>0</integer>
 		</dict>
 		<key>focusmate.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>0</integer>
+			<integer>1</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>99A8F0A12F16938700A75CF9</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>99C4FB282E9E05B1003F8E91</key>
+		<dict>
+			<key>primary</key>
+			<true/>
 		</dict>
 	</dict>
 </dict>

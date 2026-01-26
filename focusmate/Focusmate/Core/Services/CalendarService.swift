@@ -138,22 +138,23 @@ final class CalendarService {
     
     func removeTaskFromCalendar(taskId: Int) {
         guard checkPermission() else { return }
-        
+
         let calendars = eventStore.calendars(for: .event)
         guard let calendar = calendars.first(where: { $0.title == calendarName }) else {
             return
         }
-        
-        // Search for events with matching URL
+
+        // Search a narrower window — tasks are unlikely to be scheduled more
+        // than 30 days out or overdue by more than 30 days.
         let predicate = eventStore.predicateForEvents(
-            withStart: Date().addingTimeInterval(-365 * 24 * 3600), // 1 year ago
-            end: Date().addingTimeInterval(365 * 24 * 3600), // 1 year from now
+            withStart: Date().addingTimeInterval(-30 * 24 * 3600),
+            end: Date().addingTimeInterval(30 * 24 * 3600),
             calendars: [calendar]
         )
-        
+
         let events = eventStore.events(matching: predicate)
         let taskURL = URL(string: "intentia://task/\(taskId)")
-        
+
         for event in events where event.url == taskURL {
             do {
                 try eventStore.remove(event, span: .thisEvent)
