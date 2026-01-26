@@ -121,15 +121,29 @@ extension CertificatePinning: URLSessionDelegate {
 
 struct CertificatePinningConfig {
     static let productionDomain = "focusmate-api-production.up.railway.app"
+    static let stagingDomain = "focusmate-api-focusmate-api-staging.up.railway.app"
 
-    // Certificate pinning disabled - using standard TLS validation
-    // Enable later for high-security requirements by adding domain and hash
-    static var pinnedDomains: Set<String> { [] }
-    static var publicKeyHashes: Set<String> { [] }
+    static var pinnedDomains: Set<String> {
+        [productionDomain, stagingDomain]
+    }
+
+    // To generate hashes, run against each domain:
+    //   echo | openssl s_client -connect <DOMAIN>:443 -servername <DOMAIN> 2>/dev/null \
+    //     | openssl x509 -pubkey -noout \
+    //     | openssl pkey -pubin -outform DER \
+    //     | openssl dgst -sha256 -hex
+    //
+    // Add at least two hashes: the leaf certificate and a backup/intermediate.
+    // Pinning is only enforced when this set is non-empty.
+    static var publicKeyHashes: Set<String> {
+        // TODO: Add your production and staging public key SHA-256 hashes here.
+        // Example: ["ab3c...de9f", "12fa...89bc"]
+        []
+    }
 
     static func createPinning(enforceInDebug: Bool = false) -> CertificatePinning {
         CertificatePinning(
-            pinnedDomains: pinnedDomains,
+            pinnedDomains: publicKeyHashes.isEmpty ? [] : pinnedDomains,
             publicKeyHashes: publicKeyHashes,
             enforceInDebug: enforceInDebug
         )

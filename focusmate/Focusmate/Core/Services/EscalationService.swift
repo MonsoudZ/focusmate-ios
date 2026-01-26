@@ -31,8 +31,9 @@ final class EscalationService: ObservableObject {
         overdueTaskIds.insert(task.id)
         saveState()
         
-        // Start grace period if not already running
-        if !isInGracePeriod && !ScreenTimeService.shared.isBlocking {
+        // Start grace period if not already running and blocking is possible
+        if !isInGracePeriod && !ScreenTimeService.shared.isBlocking
+            && ScreenTimeService.shared.isAuthorized && ScreenTimeService.shared.hasSelections {
             startGracePeriod()
         }
         
@@ -100,14 +101,15 @@ final class EscalationService: ObservableObject {
     private func startBlocking() {
         guard ScreenTimeService.shared.hasSelections else {
             Logger.warning("Cannot block - no apps selected", category: .general)
-            // Send notification that blocking would have started but no apps selected
             sendBlockingSkippedNotification()
+            // No point keeping escalation state active when blocking is impossible.
+            resetAll()
             return
         }
-        
+
         ScreenTimeService.shared.startBlocking()
         sendBlockingStartedNotification()
-        
+
         Logger.info("App blocking started", category: .general)
     }
     

@@ -9,7 +9,10 @@ final class KeychainManager {
   private let tokenKey = "jwt_token"
 
   func save(token: String) {
-    let data = token.data(using: .utf8)!
+    guard let data = token.data(using: .utf8) else {
+      Logger.error("Failed to encode token to Data", category: .auth)
+      return
+    }
 
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,

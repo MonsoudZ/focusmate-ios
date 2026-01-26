@@ -35,7 +35,7 @@ final class AuthStore: ObservableObject {
     private let autoValidateOnInit: Bool
 
     private var cancellables = Set<AnyCancellable>()
-    private var isHandlingUnauthorized = false
+    private var unauthorizedTask: Task<Void, Never>?
 
     // MARK: - Production init (unchanged call site behavior)
     init() {
@@ -85,7 +85,7 @@ final class AuthStore: ObservableObject {
             .sink { [weak self] event in
                 guard let self else { return }
                 if event == .unauthorized {
-                    Task { await self.handleUnauthorizedEvent() }
+                    self.handleUnauthorizedEvent()
                 }
             }
             .store(in: &cancellables)
@@ -250,22 +250,22 @@ final class AuthStore: ObservableObject {
         }
     }
 
-    private func handleUnauthorizedEvent() async {
-        guard !isHandlingUnauthorized else { return }
-        isHandlingUnauthorized = true
-        defer { isHandlingUnauthorized = false }
-
+    private func handleUnauthorizedEvent() {
+        // Cancel any in-flight handling and ignore if already signed out.
         guard jwt != nil else { return }
+        unauthorizedTask?.cancel()
 
-        Logger.warning("Global unauthorized received. Clearing local session.", category: .auth)
+        unauthorizedTask = Task {
+            Logger.warning("Global unauthorized received. Clearing local session.", category: .auth)
 
-        // Stop app blocking before clearing auth to prevent stuck blocks
-        EscalationService.shared.resetAll()
+            // Stop app blocking before clearing auth to prevent stuck blocks
+            EscalationService.shared.resetAll()
 
-        _ = await errorHandler.handleUnauthorized()
-        await clearLocalSession()
+            _ = await errorHandler.handleUnauthorized()
+            await clearLocalSession()
 
-        AuthEventBus.shared.send(.signedOut)
+            AuthEventBus.shared.send(.signedOut)
+        }
     }
 
     private func setAuthenticatedSession(token: String, user: UserDTO) async {
