@@ -512,24 +512,24 @@ struct SubtaskRow: View {
                         .foregroundStyle(subtask.isCompleted ? DS.Colors.success : .secondary)
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
             .disabled(!canEdit || isCompleting)
-            
-            // Title
-            Text(subtask.title)
-                .font(.caption)
-                .strikethrough(subtask.isCompleted)
-                .foregroundStyle(subtask.isCompleted ? .secondary : .primary)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if canEdit {
-                        HapticManager.selection()
-                        onTap()
-                    }
-                }
-            
-            Spacer()
-            
+
+            // Title — Button instead of onTapGesture so it receives taps in List edit mode
+            Button {
+                HapticManager.selection()
+                onTap()
+            } label: {
+                Text(subtask.title)
+                    .font(.caption)
+                    .strikethrough(subtask.isCompleted)
+                    .foregroundStyle(subtask.isCompleted ? .secondary : .primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .disabled(!canEdit)
+
             // Delete
             if canEdit {
                 Button {
@@ -539,8 +539,10 @@ struct SubtaskRow: View {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: DS.Size.iconSmall))
                         .foregroundStyle(Color(.tertiaryLabel))
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
             }
         }
         .padding(.horizontal, DS.Spacing.md)

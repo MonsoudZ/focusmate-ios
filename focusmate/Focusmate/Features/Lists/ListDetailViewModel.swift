@@ -233,9 +233,9 @@ final class ListDetailViewModel: ObservableObject {
     func toggleSubtaskComplete(subtask: SubtaskDTO, parentTask: TaskDTO) async {
         do {
             if subtask.isCompleted {
-                _ = try await taskService.reopenSubtask(listId: parentTask.list_id, subtaskId: subtask.id)
+                _ = try await taskService.reopenSubtask(listId: parentTask.list_id, subtaskId: subtask.apiId)
             } else {
-                _ = try await taskService.completeSubtask(listId: parentTask.list_id, subtaskId: subtask.id)
+                _ = try await taskService.completeSubtask(listId: parentTask.list_id, subtaskId: subtask.apiId)
             }
             HapticManager.light()
             await loadTasks()
@@ -248,7 +248,7 @@ final class ListDetailViewModel: ObservableObject {
 
     func deleteSubtask(subtask: SubtaskDTO, parentTask: TaskDTO) async {
         do {
-            try await taskService.deleteSubtask(listId: parentTask.list_id, subtaskId: subtask.id)
+            try await taskService.deleteSubtask(listId: parentTask.list_id, subtaskId: subtask.apiId)
             HapticManager.medium()
             await loadTasks()
         } catch {
@@ -262,7 +262,7 @@ final class ListDetailViewModel: ObservableObject {
         do {
             _ = try await taskService.updateTask(
                 listId: parentTask.list_id,
-                taskId: subtask.id,
+                taskId: subtask.apiId,
                 title: title,
                 note: nil,
                 dueAt: nil

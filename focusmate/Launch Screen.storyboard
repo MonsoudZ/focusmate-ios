@@ -27,13 +27,6 @@
                                 <color key="textColor" red="0.41889270195438544" green="0.90980392156862744" blue="0.66901528927692389" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Intentia" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="7PK-0T-R0H">
-                                <rect key="frame" x="139" y="212" width="115" height="43"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="36"/>
-                                <color key="textColor" red="0.28727552930649303" green="0.7803921568627451" blue="0.54864351386861654" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
                             <imageView autoresizesSubviews="NO" opaque="NO" clearsContextBeforeDrawing="NO" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="Logo" highlightedImage="Logo" translatesAutoresizingMaskIntoConstraints="NO" id="nqq-8A-2XH">
                                 <rect key="frame" x="124" y="380" width="145" height="92"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" heightSizable="YES" flexibleMaxY="YES"/>
@@ -59,6 +52,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="Logo" width="50" height="50"/>
+        <image name="Logo" width="341.33334350585938" height="341.33334350585938"/>
     </resources>
 </document>
