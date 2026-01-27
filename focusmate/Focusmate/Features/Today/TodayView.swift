@@ -8,8 +8,8 @@ struct TodayView: View {
         listService: ListService,
         tagService: TagService,
         apiClient: APIClient,
-        escalationService: EscalationService = .shared,
-        screenTimeService: ScreenTimeService = .shared,
+        escalationService: EscalationService? = nil,
+        screenTimeService: ScreenTimeService? = nil,
         onOverdueCountChange: ((Int) -> Void)? = nil
     ) {
         let vm = TodayViewModel(

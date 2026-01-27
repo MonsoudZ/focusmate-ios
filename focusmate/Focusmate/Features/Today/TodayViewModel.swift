@@ -65,17 +65,17 @@ final class TodayViewModel: ObservableObject {
         listService: ListService,
         tagService: TagService,
         apiClient: APIClient,
-        escalationService: EscalationService = .shared,
-        screenTimeService: ScreenTimeService = .shared,
-        notificationService: NotificationService = .shared
+        escalationService: EscalationService? = nil,
+        screenTimeService: ScreenTimeService? = nil,
+        notificationService: NotificationService? = nil
     ) {
         self.taskService = taskService
         self.listService = listService
         self.tagService = tagService
         self.apiClient = apiClient
-        self.escalationService = escalationService
-        self.screenTimeService = screenTimeService
-        self.notificationService = notificationService
+        self.escalationService = escalationService ?? .shared
+        self.screenTimeService = screenTimeService ?? .shared
+        self.notificationService = notificationService ?? .shared
     }
 
     // MARK: - Actions

@@ -7,18 +7,18 @@ import DeviceActivity
 @MainActor
 final class ScreenTimeService: ObservableObject {
     static let shared = ScreenTimeService()
-    
+
     private let store = ManagedSettingsStore()
     private let center = AuthorizationCenter.shared
-    
+
     @Published var authorizationStatus: AuthorizationStatus = .notDetermined
     @Published var selectedApps: Set<ApplicationToken> = []
     @Published var selectedCategories: Set<ActivityCategoryToken> = []
     @Published var isBlocking: Bool = false
-    
+
     private let appsKey = "ScreenTime_SelectedApps"
     private let categoriesKey = "ScreenTime_SelectedCategories"
-    
+
     private init() {
         loadSelections()
         updateAuthorizationStatus()

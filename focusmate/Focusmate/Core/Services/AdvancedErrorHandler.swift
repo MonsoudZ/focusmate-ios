@@ -173,8 +173,8 @@ final class AdvancedErrorHandler: ObservableObject {
 
   // MARK: - Error Processing
 
-  func handle(_ error: Error, context: String = "") -> FocusmateError {
-    Logger.debug("AdvancedErrorHandler: Processing error in context '\(context)': \(error)", category: .general)
+  nonisolated func handle(_ error: Error, context: String = "") -> FocusmateError {
+    Task { @MainActor in Logger.debug("AdvancedErrorHandler: Processing error in context '\(context)': \(error)", category: .general) }
 
     if let apiError = error as? APIError {
       return self.processAPIError(apiError, context: context)
@@ -188,7 +188,7 @@ final class AdvancedErrorHandler: ObservableObject {
     return .custom("UNKNOWN_ERROR", error.localizedDescription)
   }
 
-  private func processAPIError(_ error: APIError, context _: String) -> FocusmateError {
+  nonisolated private func processAPIError(_ error: APIError, context _: String) -> FocusmateError {
     switch error {
     case .badURL:
       return .custom("BAD_URL", "Invalid URL")
@@ -213,7 +213,7 @@ final class AdvancedErrorHandler: ObservableObject {
     }
   }
 
-  private func processURLError(_ error: URLError, context _: String) -> FocusmateError {
+  nonisolated private func processURLError(_ error: URLError, context _: String) -> FocusmateError {
     switch error.code {
     case .notConnectedToInternet, .networkConnectionLost:
       return .noInternetConnection
@@ -226,7 +226,7 @@ final class AdvancedErrorHandler: ObservableObject {
     }
   }
 
-  private func processHTTPStatus(code: Int, message: String?, details: [String: Any]?) -> FocusmateError {
+  nonisolated private func processHTTPStatus(code: Int, message: String?, details: [String: Any]?) -> FocusmateError {
     switch code {
     case 400:
       return .badRequest(message ?? "Bad request", self.extractMessageFromDetails(details))
@@ -364,7 +364,7 @@ final class AdvancedErrorHandler: ObservableObject {
 
   // MARK: - Helper Methods
 
-  private func extractMessageFromDetails(_ details: [String: Any]?) -> String? {
+  nonisolated private func extractMessageFromDetails(_ details: [String: Any]?) -> String? {
     guard let details else { return nil }
 
     if let message = details["message"] as? String {
@@ -384,7 +384,7 @@ final class AdvancedErrorHandler: ObservableObject {
     return nil
   }
 
-  private func extractValidationErrors(from details: [String: Any]?) -> [String: [String]]? {
+  nonisolated private func extractValidationErrors(from details: [String: Any]?) -> [String: [String]]? {
     guard let details,
           let errors = details["errors"] as? [String: [String]]
     else {
@@ -393,7 +393,7 @@ final class AdvancedErrorHandler: ObservableObject {
     return errors
   }
 
-  private func extractRetryAfter(from details: [String: Any]?) -> Int? {
+  nonisolated private func extractRetryAfter(from details: [String: Any]?) -> Int? {
     guard let details else { return nil }
 
     if let retryAfter = details["retry_after"] as? Int {

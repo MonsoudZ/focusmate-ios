@@ -1,6 +1,6 @@
 import Foundation
 
-final class AppSettings {
+final class AppSettings: @unchecked Sendable {
     static let shared = AppSettings()
 
     private let defaults: UserDefaults

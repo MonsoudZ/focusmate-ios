@@ -66,14 +66,14 @@ final class AuthStore: ObservableObject {
         keychain: KeychainManaging,
         networking: NetworkingProtocol?,
         autoValidateOnInit: Bool,
-        eventBus: AuthEventBus = .shared,
-        escalationService: EscalationService = .shared
+        eventBus: AuthEventBus? = nil,
+        escalationService: EscalationService? = nil
     ) {
-        self.eventBus = eventBus
+        self.eventBus = eventBus ?? .shared
         self.keychain = keychain
         self.injectedNetworking = networking
         self.autoValidateOnInit = autoValidateOnInit
-        self.escalationService = escalationService
+        self.escalationService = escalationService ?? .shared
 
         bindAuthEvents()
 

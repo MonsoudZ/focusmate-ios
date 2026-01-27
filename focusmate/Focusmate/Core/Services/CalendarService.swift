@@ -2,6 +2,7 @@ import Foundation
 import EventKit
 import UIKit
 
+@MainActor
 final class CalendarService {
     static let shared = CalendarService()
     
@@ -15,7 +16,7 @@ final class CalendarService {
     private let eventsCacheTTL: TimeInterval = 2.0
 
     private init() {}
-    
+
     // MARK: - Permission
     
     func requestPermission() async -> Bool {

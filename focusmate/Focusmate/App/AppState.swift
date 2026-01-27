@@ -13,7 +13,10 @@ final class AppState: ObservableObject {
 
     // Services
     private(set) lazy var listService = ListService(apiClient: auth.api)
-    private(set) lazy var taskService = TaskService(apiClient: auth.api)
+    private(set) lazy var taskService = TaskService(
+        apiClient: auth.api,
+        sideEffects: TaskSideEffectHandler(notificationService: .shared, calendarService: .shared)
+    )
     private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
     private(set) lazy var tagService = TagService(apiClient: auth.api)
 

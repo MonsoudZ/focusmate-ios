@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Legacy ErrorHandler (Backward Compatibility)
 
-final class ErrorHandler {
+final class ErrorHandler: @unchecked Sendable {
   static let shared = ErrorHandler()
   private let advancedHandler = AdvancedErrorHandler.shared
   private let sentryService = SentryService.shared
@@ -26,7 +26,7 @@ final class ErrorHandler {
     return focusmateError
   }
 
-  func showAlert(for error: FocusmateError) -> Alert {
+  @MainActor func showAlert(for error: FocusmateError) -> Alert {
     return self.advancedHandler.showAlert(for: error)
   }
 
@@ -57,7 +57,7 @@ final class ErrorHandler {
     return await self.advancedHandler.handleUnauthorized()
   }
 
-  func shouldRetry(error: FocusmateError, context: String) -> Bool {
+  @MainActor func shouldRetry(error: FocusmateError, context: String) -> Bool {
     return self.advancedHandler.shouldRetry(error: error, context: context)
   }
 }

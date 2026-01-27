@@ -8,6 +8,7 @@ enum AuthEvent: Equatable {
     case tokenUpdated(hasToken: Bool)
 }
 
+@MainActor
 final class AuthEventBus {
     static let shared = AuthEventBus()
 
@@ -18,7 +19,7 @@ final class AuthEventBus {
     private let subject = PassthroughSubject<AuthEvent, Never>()
     private var lastUnauthorizedAt: Date?
 
-    init() {}
+    nonisolated init() {}
 
     func send(_ event: AuthEvent) {
         if event == .unauthorized {

@@ -114,7 +114,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
 
         case 401:
             Logger.warning("401 Unauthorized for \(method) \(path)", category: .api)
-            AuthEventBus.shared.send(.unauthorized)
+            Task { @MainActor in AuthEventBus.shared.send(.unauthorized) }
             throw APIError.unauthorized
 
         case 422:
@@ -191,7 +191,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         case 200...299:
             return data
         case 401:
-            AuthEventBus.shared.send(.unauthorized)
+            Task { @MainActor in AuthEventBus.shared.send(.unauthorized) }
             throw APIError.unauthorized
         default:
             throw APIError.badStatus(http.statusCode, nil, nil)

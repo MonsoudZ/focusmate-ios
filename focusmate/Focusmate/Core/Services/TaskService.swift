@@ -4,7 +4,7 @@ final class TaskService {
     let apiClient: APIClient
     private let sideEffects: TaskSideEffectHandling
 
-    init(apiClient: APIClient, sideEffects: TaskSideEffectHandling = TaskSideEffectHandler()) {
+    init(apiClient: APIClient, sideEffects: TaskSideEffectHandling) {
         self.apiClient = apiClient
         self.sideEffects = sideEffects
     }
@@ -75,8 +75,8 @@ final class TaskService {
                 body: request
             )
             
-            sideEffects.taskCreated(task, isSubtask: parentTaskId != nil)
-            
+            await MainActor.run { sideEffects.taskCreated(task, isSubtask: parentTaskId != nil) }
+
             return task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Creating task")
@@ -100,8 +100,8 @@ final class TaskService {
                 body: request
             )
             
-            sideEffects.taskUpdated(task)
-            
+            await MainActor.run { sideEffects.taskUpdated(task) }
+
             return task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Updating task")
@@ -110,7 +110,7 @@ final class TaskService {
 
     func deleteTask(listId: Int, taskId: Int) async throws {
         do {
-            sideEffects.taskDeleted(taskId: taskId)
+            await MainActor.run { sideEffects.taskDeleted(taskId: taskId) }
 
             _ = try await apiClient.request(
                 "DELETE",
@@ -131,8 +131,8 @@ final class TaskService {
                 body: body
             )
             
-            sideEffects.taskCompleted(taskId: taskId)
-            
+            await MainActor.run { sideEffects.taskCompleted(taskId: taskId) }
+
             return task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Completing task")
@@ -147,8 +147,8 @@ final class TaskService {
                 body: nil as String?
             )
             
-            sideEffects.taskReopened(task)
-            
+            await MainActor.run { sideEffects.taskReopened(task) }
+
             return task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Reopening task")

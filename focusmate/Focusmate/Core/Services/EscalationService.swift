@@ -22,11 +22,11 @@ final class EscalationService: ObservableObject {
     private let notificationService: NotificationService
 
     init(
-        screenTimeService: ScreenTimeService = .shared,
-        notificationService: NotificationService = .shared
+        screenTimeService: ScreenTimeService? = nil,
+        notificationService: NotificationService? = nil
     ) {
-        self.screenTimeService = screenTimeService
-        self.notificationService = notificationService
+        self.screenTimeService = screenTimeService ?? .shared
+        self.notificationService = notificationService ?? .shared
         loadState()
         startPeriodicCheck()
     }
@@ -84,8 +84,9 @@ final class EscalationService: ObservableObject {
             withTimeInterval: TimeInterval(gracePeriodMinutes * 60),
             repeats: false
         ) { [weak self] _ in
+            guard let self else { return }
             Task { @MainActor in
-                self?.gracePeriodEnded()
+                self.gracePeriodEnded()
             }
         }
 
@@ -191,8 +192,9 @@ final class EscalationService: ObservableObject {
 
     private func startPeriodicCheck() {
         checkTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            guard let self else { return }
             Task { @MainActor in
-                self?.checkGracePeriodStatus()
+                self.checkGracePeriodStatus()
             }
         }
     }
@@ -218,8 +220,9 @@ final class EscalationService: ObservableObject {
                     withTimeInterval: remaining,
                     repeats: false
                 ) { [weak self] _ in
+                    guard let self else { return }
                     Task { @MainActor in
-                        self?.gracePeriodEnded()
+                        self.gracePeriodEnded()
                     }
                 }
             }

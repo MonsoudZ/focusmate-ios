@@ -4,8 +4,7 @@ import Sentry
 #endif
 
 /// Service for managing Sentry error tracking and monitoring
-@MainActor
-final class SentryService {
+final class SentryService: @unchecked Sendable {
   static let shared = SentryService()
 
   private var isInitialized = false

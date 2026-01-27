@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 protocol TaskSideEffectHandling {
     func taskCreated(_ task: TaskDTO, isSubtask: Bool)
     func taskUpdated(_ task: TaskDTO)
@@ -8,13 +9,14 @@ protocol TaskSideEffectHandling {
     func taskReopened(_ task: TaskDTO)
 }
 
+@MainActor
 final class TaskSideEffectHandler: TaskSideEffectHandling {
     private let notificationService: NotificationService
     private let calendarService: CalendarService
 
     init(
-        notificationService: NotificationService = .shared,
-        calendarService: CalendarService = .shared
+        notificationService: NotificationService,
+        calendarService: CalendarService
     ) {
         self.notificationService = notificationService
         self.calendarService = calendarService
