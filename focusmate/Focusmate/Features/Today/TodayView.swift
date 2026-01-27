@@ -1,67 +1,37 @@
 import SwiftUI
 
 struct TodayView: View {
-    @EnvironmentObject var state: AppState
-    @State private var todayData: TodayResponse?
-    @State private var isLoading = true
-    @State private var error: FocusmateError?
-    @State private var showingQuickAdd = false
-    @State private var selectedTask: TaskDTO?
-    @ObservedObject private var escalationService = EscalationService.shared
-    @ObservedObject private var screenTimeService = ScreenTimeService.shared
-    
-    var onOverdueCountChange: ((Int) -> Void)? = nil
+    @StateObject private var viewModel: TodayViewModel
 
-    @State private var todayService: TodayService?
-    
-    // MARK: - Progress Calculation
-    
-    private var totalTasks: Int {
-        guard let data = todayData else { return 0 }
-        return data.overdue.count + data.due_today.count + data.completed_today.count
+    init(
+        taskService: TaskService,
+        listService: ListService,
+        tagService: TagService,
+        apiClient: APIClient,
+        escalationService: EscalationService = .shared,
+        screenTimeService: ScreenTimeService = .shared,
+        onOverdueCountChange: ((Int) -> Void)? = nil
+    ) {
+        let vm = TodayViewModel(
+            taskService: taskService,
+            listService: listService,
+            tagService: tagService,
+            apiClient: apiClient,
+            escalationService: escalationService,
+            screenTimeService: screenTimeService
+        )
+        vm.onOverdueCountChange = onOverdueCountChange
+        _viewModel = StateObject(wrappedValue: vm)
     }
-    
-    private var completedCount: Int {
-        todayData?.completed_today.count ?? 0
-    }
-    
-    private var progress: Double {
-        guard totalTasks > 0 else { return 0 }
-        return Double(completedCount) / Double(totalTasks)
-    }
-    
-    private var isAllComplete: Bool {
-        guard let data = todayData else { return false }
-        return data.overdue.isEmpty && data.due_today.isEmpty && !data.completed_today.isEmpty
-    }
-    
-    // MARK: - Time-Based Grouping
 
-    private var groupedTasks: (anytime: [TaskDTO], morning: [TaskDTO], afternoon: [TaskDTO], evening: [TaskDTO]) {
-        guard let data = todayData else { return ([], [], [], []) }
-        var anytime: [TaskDTO] = [], morning: [TaskDTO] = []
-        var afternoon: [TaskDTO] = [], evening: [TaskDTO] = []
-        let calendar = Calendar.current
-        for task in data.due_today {
-            guard let dueDate = task.dueDate else { anytime.append(task); continue }
-            let hour = calendar.component(.hour, from: dueDate)
-            let minute = calendar.component(.minute, from: dueDate)
-            if hour == 0 && minute == 0 { anytime.append(task) }
-            else if hour < 12 { morning.append(task) }
-            else if hour < 17 { afternoon.append(task) }
-            else { evening.append(task) }
-        }
-        return (anytime, morning, afternoon, evening)
-    }
-    
     var body: some View {
         NavigationStack {
             Group {
-                if isLoading {
+                if viewModel.isLoading {
                     ProgressView()
-                } else if let error = error {
+                } else if let error = viewModel.error {
                     errorView(error)
-                } else if let data = todayData {
+                } else if let data = viewModel.todayData {
                     contentView(data)
                 } else {
                     emptyView
@@ -69,53 +39,55 @@ struct TodayView: View {
             }
             .navigationTitle("Today")
             .refreshable {
-                await loadToday()
+                await viewModel.loadToday()
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        showingQuickAdd = true
+                        viewModel.showingQuickAdd = true
                     } label: {
                         Image(systemName: DS.Icon.plus)
                     }
                 }
             }
-            .sheet(isPresented: $showingQuickAdd) {
-                QuickAddTaskView(onTaskCreated: {
-                    await loadToday()
-                })
+            .sheet(isPresented: $viewModel.showingQuickAdd) {
+                QuickAddTaskView(
+                    listService: viewModel.listService,
+                    taskService: viewModel.taskService,
+                    onTaskCreated: {
+                        await viewModel.loadToday()
+                    }
+                )
             }
-            .sheet(item: $selectedTask) { task in
+            .sheet(item: $viewModel.selectedTask) { task in
                 TaskDetailView(
                     task: task,
                     listName: task.list_name ?? "Unknown",
                     onComplete: {
-                        await toggleComplete(task)
-                        selectedTask = nil
+                        await viewModel.toggleComplete(task)
+                        viewModel.selectedTask = nil
                     },
                     onDelete: {
-                        await deleteTask(task)
-                        selectedTask = nil
+                        await viewModel.deleteTask(task)
+                        viewModel.selectedTask = nil
                     },
                     onUpdate: {
-                        await loadToday()
+                        await viewModel.loadToday()
                     },
-                    taskService: state.taskService,
-                    tagService: state.tagService,
+                    taskService: viewModel.taskService,
+                    tagService: viewModel.tagService,
                     listId: task.list_id
                 )
             }
         }
         .task {
-            if todayService == nil {
-                todayService = TodayService(api: state.auth.api)
-            }
-            await loadToday()
+            viewModel.initializeServiceIfNeeded()
+            await viewModel.loadToday()
         }
     }
-    
+
     private func contentView(_ data: TodayResponse) -> some View {
-        let grouped = groupedTasks
+        let grouped = viewModel.groupedTasks
         return ScrollView {
             VStack(spacing: DS.Spacing.lg) {
                 escalationBanner
@@ -176,7 +148,7 @@ struct TodayView: View {
                     )
                 }
 
-                if isAllComplete {
+                if viewModel.isAllComplete {
                     allClearView
                 } else if data.overdue.isEmpty && data.due_today.isEmpty && data.completed_today.isEmpty {
                     nothingDueView
@@ -185,12 +157,12 @@ struct TodayView: View {
             .padding(DS.Spacing.lg)
         }
     }
-    
+
     // MARK: - Escalation Banner
-    
+
     @ViewBuilder
     private var escalationBanner: some View {
-        if screenTimeService.isBlocking {
+        if viewModel.screenTimeService.isBlocking {
             HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: DS.Icon.lock)
                     .font(.title3)
@@ -206,14 +178,14 @@ struct TodayView: View {
             .padding(DS.Spacing.md)
             .background(DS.Colors.error)
             .cornerRadius(DS.Radius.md)
-        } else if escalationService.isInGracePeriod {
+        } else if viewModel.escalationService.isInGracePeriod {
             HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: DS.Icon.timer)
                     .font(.title3)
                 VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                     Text("Grace Period")
                         .font(.body.weight(.semibold))
-                    Text("Apps will be blocked in \(escalationService.gracePeriodRemainingFormatted ?? "...")")
+                    Text("Apps will be blocked in \(viewModel.escalationService.gracePeriodRemainingFormatted ?? "...")")
                         .font(.caption)
                 }
                 Spacer()
@@ -224,45 +196,45 @@ struct TodayView: View {
             .cornerRadius(DS.Radius.md)
         }
     }
-    
+
     // MARK: - Progress Section
-    
+
     private func progressSection(_ data: TodayResponse) -> some View {
         HStack(spacing: DS.Spacing.lg) {
             // Progress Ring
             ZStack {
                 Circle()
                     .stroke(Color(.systemGray5), lineWidth: DS.Size.progressStroke)
-                
+
                 Circle()
-                    .trim(from: 0, to: progress)
+                    .trim(from: 0, to: viewModel.progress)
                     .stroke(
-                        isAllComplete ? DS.Colors.success : DS.Colors.accent,
+                        viewModel.isAllComplete ? DS.Colors.success : DS.Colors.accent,
                         style: StrokeStyle(lineWidth: DS.Size.progressStroke, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.5), value: progress)
-                
-                if isAllComplete {
+                    .animation(.easeInOut(duration: 0.5), value: viewModel.progress)
+
+                if viewModel.isAllComplete {
                     Image(systemName: "checkmark")
                         .font(.title2.weight(.bold))
                         .foregroundStyle(DS.Colors.success)
                 } else {
-                    Text("\(Int(progress * 100))%")
+                    Text("\(Int(viewModel.progress * 100))%")
                         .font(.title2.weight(.bold))
                 }
             }
             .frame(width: DS.Size.progressRing, height: DS.Size.progressRing)
-            
+
             VStack(alignment: .leading, spacing: DS.Spacing.sm) {
                 HStack(spacing: DS.Spacing.md) {
-                    miniStat(count: completedCount, total: totalTasks, label: "Done")
-                    
+                    miniStat(count: viewModel.completedCount, total: viewModel.totalTasks, label: "Done")
+
                     if data.stats.overdue_count > 0 {
                         miniStat(count: data.stats.overdue_count, label: "Overdue", color: DS.Colors.error)
                     }
                 }
-                
+
                 if let streak = data.streak {
                     HStack(spacing: DS.Spacing.xs) {
                         Text("🔥")
@@ -277,14 +249,14 @@ struct TodayView: View {
                     }
                 }
             }
-            
+
             Spacer()
         }
         .padding(DS.Spacing.md)
         .background(Color(.secondarySystemBackground))
         .cornerRadius(DS.Radius.md)
     }
-    
+
     private func miniStat(count: Int, total: Int? = nil, label: String, color: Color? = nil) -> some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
             if let total = total {
@@ -301,9 +273,9 @@ struct TodayView: View {
                 .foregroundStyle(.secondary)
         }
     }
-    
+
     // MARK: - Task Section
-    
+
     private func taskSection(title: String, icon: String, iconColor: Color, tasks: [TaskDTO]) -> some View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             HStack(spacing: DS.Spacing.xs) {
@@ -315,20 +287,20 @@ struct TodayView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-            
+
             ForEach(tasks) { task in
                 TaskRow(
                     task: task,
-                    onComplete: { await loadToday() },
-                    onTap: { selectedTask = task }
+                    onComplete: { await viewModel.loadToday() },
+                    onTap: { viewModel.selectedTask = task }
                 )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
     // MARK: - Empty States
-    
+
     private var allClearView: some View {
         VStack(spacing: DS.Spacing.md) {
             Image(systemName: DS.Icon.checkSeal)
@@ -343,7 +315,7 @@ struct TodayView: View {
         }
         .padding(DS.Spacing.xl)
     }
-    
+
     private var nothingDueView: some View {
         VStack(spacing: DS.Spacing.md) {
             Image(systemName: DS.Icon.calendar)
@@ -357,7 +329,7 @@ struct TodayView: View {
         }
         .padding(DS.Spacing.xl)
     }
-    
+
     private var emptyView: some View {
         VStack(spacing: DS.Spacing.md) {
             Image(systemName: DS.Icon.emptyTray)
@@ -370,7 +342,7 @@ struct TodayView: View {
                 .foregroundStyle(.secondary)
         }
     }
-    
+
     private func errorView(_ error: FocusmateError) -> some View {
         VStack(spacing: DS.Spacing.md) {
             Image(systemName: DS.Icon.overdue)
@@ -379,51 +351,9 @@ struct TodayView: View {
             Text("Something went wrong")
                 .font(.title2.weight(.semibold))
             Button("Try Again") {
-                Task { await loadToday() }
+                Task { await viewModel.loadToday() }
             }
             .buttonStyle(.borderedProminent)
         }
-    }
-    
-    // MARK: - Task Actions
-    
-    private func toggleComplete(_ task: TaskDTO) async {
-        if task.isCompleted {
-            do {
-                _ = try await state.taskService.reopenTask(listId: task.list_id, taskId: task.id)
-                await loadToday()
-            } catch {
-                Logger.error("Failed to reopen task", error: error, category: .api)
-            }
-        } else {
-            await loadToday()
-        }
-    }
-    
-    private func deleteTask(_ task: TaskDTO) async {
-        do {
-            try await state.taskService.deleteTask(listId: task.list_id, taskId: task.id)
-            await loadToday()
-        } catch {
-            Logger.error("Failed to delete task", error: error, category: .api)
-        }
-    }
-    
-    private func loadToday() async {
-        isLoading = todayData == nil
-        error = nil
-        
-        do {
-            guard let todayService else { return }
-            todayData = try await todayService.fetchToday()
-            onOverdueCountChange?(todayData?.stats.overdue_count ?? 0)
-            
-            let totalDueToday = (todayData?.stats.due_today_count ?? 0) + (todayData?.stats.overdue_count ?? 0)
-            NotificationService.shared.scheduleMorningBriefing(taskCount: totalDueToday)
-        } catch {
-            self.error = ErrorHandler.shared.handle(error, context: "Loading Today")
-        }
-        
-        isLoading = false
     }
 }

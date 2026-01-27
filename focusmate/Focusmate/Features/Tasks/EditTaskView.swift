@@ -1,97 +1,57 @@
 import SwiftUI
 
 struct EditTaskView: View {
-    let listId: Int
-    let task: TaskDTO
-    let taskService: TaskService
-    let tagService: TagService
-    var onSave: (() -> Void)? = nil
     @Environment(\.dismiss) var dismiss
 
-    @State private var title: String
-    @State private var note: String
-    @State private var dueDate: Date
-    @State private var dueTime: Date
-    @State private var hasDueDate: Bool
-    @State private var hasSpecificTime: Bool
-    @State private var selectedColor: String?
-    @State private var selectedPriority: TaskPriority
-    @State private var isStarred: Bool
-    @State private var selectedTagIds: Set<Int>
-    @State private var availableTags: [TagDTO] = []
-    @State private var showingCreateTag = false
-    @State private var isLoading = false
-    @State private var error: FocusmateError?
-    
-    private let colors = ["blue", "green", "orange", "red", "purple", "pink", "teal", "yellow", "gray"]
+    @StateObject private var viewModel: TaskFormViewModel
+
+    private let externalOnSave: (() -> Void)?
 
     init(listId: Int, task: TaskDTO, taskService: TaskService, tagService: TagService, onSave: (() -> Void)? = nil) {
-        self.listId = listId
-        self.task = task
-        self.taskService = taskService
-        self.tagService = tagService
-        self.onSave = onSave
-
-        _title = State(initialValue: task.title)
-        _note = State(initialValue: task.note ?? "")
-        _hasDueDate = State(initialValue: task.due_at != nil)
-        _selectedColor = State(initialValue: task.color)
-        _selectedPriority = State(initialValue: TaskPriority(rawValue: task.priority ?? 0) ?? .none)
-        _isStarred = State(initialValue: task.starred ?? false)
-        _selectedTagIds = State(initialValue: Set(task.tags?.map { $0.id } ?? []))
-        
-        // Parse existing due date
-        if let existingDueDate = task.dueDate {
-            _dueDate = State(initialValue: existingDueDate)
-            _dueTime = State(initialValue: existingDueDate)
-            
-            let calendar = Calendar.current
-            let hour = calendar.component(.hour, from: existingDueDate)
-            let minute = calendar.component(.minute, from: existingDueDate)
-            _hasSpecificTime = State(initialValue: !(hour == 0 && minute == 0))
-        } else {
-            _dueDate = State(initialValue: Date())
-            _dueTime = State(initialValue: Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date())
-            _hasSpecificTime = State(initialValue: false)
-        }
+        self.externalOnSave = onSave
+        _viewModel = StateObject(wrappedValue: TaskFormViewModel(
+            mode: .edit(listId: listId, task: task),
+            taskService: taskService,
+            tagService: tagService
+        ))
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Task Details") {
-                    TextField("Title", text: $title)
+                    TextField("Title", text: $viewModel.title)
 
-                    TextField("Notes (Optional)", text: $note, axis: .vertical)
+                    TextField("Notes (Optional)", text: $viewModel.note, axis: .vertical)
                         .lineLimit(3...6)
                 }
 
                 Section("Due Date") {
-                    Toggle("Set due date", isOn: $hasDueDate)
+                    Toggle("Set due date", isOn: $viewModel.hasDueDate)
 
-                    if hasDueDate {
+                    if viewModel.hasDueDate {
                         DatePicker(
                             "Date",
-                            selection: $dueDate,
+                            selection: $viewModel.dueDate,
                             in: Calendar.current.startOfDay(for: Date())...,
                             displayedComponents: [.date]
                         )
-                        
-                        Toggle("Specific time", isOn: $hasSpecificTime)
-                        
-                        if hasSpecificTime {
+
+                        Toggle("Specific time", isOn: $viewModel.hasSpecificTime)
+
+                        if viewModel.hasSpecificTime {
                             DatePicker(
                                 "Time",
-                                selection: $dueTime,
-                                in: minimumTime...,
+                                selection: $viewModel.dueTime,
+                                in: viewModel.minimumTime...,
                                 displayedComponents: [.hourAndMinute]
                             )
                         }
                     }
                 }
-                
+
                 Section("Priority") {
-                    Picker("Priority", selection: $selectedPriority) {
+                    Picker("Priority", selection: $viewModel.selectedPriority) {
                         ForEach(TaskPriority.allCases, id: \.self) { priority in
                             HStack {
                                 if let icon = priority.icon {
@@ -105,9 +65,9 @@ struct EditTaskView: View {
                     }
                     .pickerStyle(.menu)
                 }
-                
+
                 Section {
-                    Toggle(isOn: $isStarred) {
+                    Toggle(isOn: $viewModel.isStarred) {
                         HStack {
                             Image(systemName: "star.fill")
                                 .foregroundColor(.yellow)
@@ -115,36 +75,18 @@ struct EditTaskView: View {
                         }
                     }
                 }
-                
+
                 Section("Tags") {
                     TagPickerView(
-                        selectedTagIds: $selectedTagIds,
-                        availableTags: availableTags,
-                        onCreateTag: { showingCreateTag = true }
+                        selectedTagIds: $viewModel.selectedTagIds,
+                        availableTags: viewModel.availableTags,
+                        onCreateTag: { viewModel.showingCreateTag = true }
                     )
                 }
-                
+
                 Section("Color (Optional)") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
-                        ForEach(colors, id: \.self) { color in
-                            Circle()
-                                .fill(colorFor(color))
-                                .frame(width: 36, height: 36)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.primary, lineWidth: selectedColor == color ? 3 : 0)
-                                )
-                                .onTapGesture {
-                                    HapticManager.selection()
-                                    if selectedColor == color {
-                                        selectedColor = nil
-                                    } else {
-                                        selectedColor = color
-                                    }
-                                }
-                        }
-                    }
-                    .padding(.vertical, 8)
+                    OptionalColorPicker(selected: $viewModel.selectedColor)
+                        .padding(.vertical, 8)
                 }
             }
             .navigationTitle("Edit Task")
@@ -158,107 +100,30 @@ struct EditTaskView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        Task { await updateTask() }
+                        Task { await viewModel.submit() }
                     }
-                    .disabled(title.isEmpty || isLoading)
+                    .disabled(!viewModel.canSubmit)
                 }
             }
-            .errorBanner($error)
+            .errorBanner($viewModel.error)
             .task {
-                await loadTags()
+                await viewModel.loadTags()
             }
-            .onChange(of: dueDate) { oldValue, newValue in
-                if Calendar.current.isDateInToday(newValue) && hasSpecificTime && dueTime < Date() {
-                    dueTime = Date()
+            .onAppear {
+                viewModel.onSave = externalOnSave
+                viewModel.onDismiss = { dismiss() }
+            }
+            .onChange(of: viewModel.dueDate) { _, _ in
+                viewModel.dueDateChanged()
+            }
+            .onChange(of: viewModel.hasSpecificTime) { _, _ in
+                viewModel.hasSpecificTimeChanged()
+            }
+            .sheet(isPresented: $viewModel.showingCreateTag) {
+                CreateTagView(tagService: viewModel.tagService) {
+                    Task { await viewModel.loadTags() }
                 }
             }
-            .onChange(of: hasSpecificTime) { oldValue, newValue in
-                if newValue && Calendar.current.isDateInToday(dueDate) && dueTime < Date() {
-                    dueTime = Date()
-                }
-            }
-            .sheet(isPresented: $showingCreateTag) {
-                CreateTagView(tagService: tagService) {
-                    Task { await loadTags() }
-                }
-            }
-        }
-    }
-    
-    private func loadTags() async {
-        do {
-            availableTags = try await tagService.fetchTags()
-        } catch {
-            Logger.error("Failed to load tags: \(error)", category: .api)
-        }
-    }
-    
-    private var minimumTime: Date {
-        if Calendar.current.isDateInToday(dueDate) {
-            return Date()
-        }
-        return Calendar.current.startOfDay(for: dueDate)
-    }
-    
-    private var finalDueDate: Date? {
-        guard hasDueDate else { return nil }
-        
-        let calendar = Calendar.current
-        
-        if hasSpecificTime {
-            let timeComponents = calendar.dateComponents([.hour, .minute], from: dueTime)
-            return calendar.date(bySettingHour: timeComponents.hour ?? 17,
-                                  minute: timeComponents.minute ?? 0,
-                                  second: 0,
-                                  of: dueDate)
-        } else {
-            return calendar.startOfDay(for: dueDate)
-        }
-    }
-    
-    private func colorFor(_ name: String) -> Color {
-        switch name {
-        case "blue": return .blue
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "purple": return .purple
-        case "pink": return .pink
-        case "teal": return .teal
-        case "yellow": return .yellow
-        case "gray": return .gray
-        default: return .blue
-        }
-    }
-
-    private func updateTask() async {
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTitle.isEmpty else { return }
-
-        isLoading = true
-        defer { isLoading = false }
-
-        do {
-            _ = try await taskService.updateTask(
-                listId: listId,
-                taskId: task.id,
-                title: trimmedTitle,
-                note: note.isEmpty ? nil : note,
-                dueAt: finalDueDate?.ISO8601Format(),
-                color: selectedColor,
-                priority: selectedPriority,
-                starred: isStarred,
-                tagIds: Array(selectedTagIds)
-            )
-            HapticManager.success()
-            onSave?()
-            dismiss()
-        } catch let err as FocusmateError {
-            error = err
-            HapticManager.error()
-        } catch {
-            self.error = .custom("UPDATE_ERROR", error.localizedDescription)
-            HapticManager.error()
         }
     }
 }

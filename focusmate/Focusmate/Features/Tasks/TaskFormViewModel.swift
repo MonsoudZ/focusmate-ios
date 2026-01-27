@@ -1,0 +1,262 @@
+import Combine
+import Foundation
+import SwiftUI
+
+enum TaskFormMode {
+    case create(listId: Int)
+    case edit(listId: Int, task: TaskDTO)
+}
+
+@MainActor
+final class TaskFormViewModel: ObservableObject {
+    let mode: TaskFormMode
+    private let taskService: TaskService
+    let tagService: TagService
+
+    // MARK: - Shared @Published
+
+    @Published var title = ""
+    @Published var note = ""
+    @Published var dueDate = Date()
+    @Published var dueTime = Date()
+    @Published var hasSpecificTime = false
+    @Published var selectedColor: String?
+    @Published var selectedPriority: TaskPriority = .none
+    @Published var isStarred = false
+    @Published var selectedTagIds: Set<Int> = []
+    @Published var availableTags: [TagDTO] = []
+    @Published var showingCreateTag = false
+    @Published var isLoading = false
+    @Published var error: FocusmateError?
+
+    // MARK: - Create-only @Published
+
+    @Published var recurrencePattern: RecurrencePattern = .none
+    @Published var recurrenceInterval = 1
+    @Published var selectedRecurrenceDays: Set<Int> = [1]
+    @Published var hasRecurrenceEndDate = false
+    @Published var recurrenceEndDate: Date?
+
+    // MARK: - Edit-only @Published
+
+    @Published var hasDueDate = true
+
+    // MARK: - Callbacks
+
+    var onSave: (() -> Void)?
+    var onDismiss: (() -> Void)?
+
+    // MARK: - Init
+
+    init(mode: TaskFormMode, taskService: TaskService, tagService: TagService) {
+        self.mode = mode
+        self.taskService = taskService
+        self.tagService = tagService
+
+        switch mode {
+        case .create:
+            let calendar = Calendar.current
+            dueTime = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
+
+        case .edit(_, let task):
+            title = task.title
+            note = task.note ?? ""
+            hasDueDate = task.due_at != nil
+            selectedColor = task.color
+            selectedPriority = TaskPriority(rawValue: task.priority ?? 0) ?? .none
+            isStarred = task.starred ?? false
+            selectedTagIds = Set(task.tags?.map { $0.id } ?? [])
+
+            if let existingDueDate = task.dueDate {
+                dueDate = existingDueDate
+                dueTime = existingDueDate
+                let hour = Calendar.current.component(.hour, from: existingDueDate)
+                let minute = Calendar.current.component(.minute, from: existingDueDate)
+                hasSpecificTime = !(hour == 0 && minute == 0)
+            } else {
+                dueDate = Date()
+                dueTime = Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
+                hasSpecificTime = false
+            }
+        }
+    }
+
+    // MARK: - Computed Properties (Shared)
+
+    var isCreateMode: Bool {
+        if case .create = mode { return true }
+        return false
+    }
+
+    var listId: Int {
+        switch mode {
+        case .create(let listId): return listId
+        case .edit(let listId, _): return listId
+        }
+    }
+
+    var canSubmit: Bool {
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading
+    }
+
+    var finalDueDate: Date? {
+        if !isCreateMode && !hasDueDate { return nil }
+
+        let calendar = Calendar.current
+        if hasSpecificTime {
+            let timeComponents = calendar.dateComponents([.hour, .minute], from: dueTime)
+            return calendar.date(bySettingHour: timeComponents.hour ?? 17,
+                                  minute: timeComponents.minute ?? 0,
+                                  second: 0,
+                                  of: dueDate) ?? dueDate
+        } else {
+            return calendar.startOfDay(for: dueDate)
+        }
+    }
+
+    var minimumTime: Date {
+        if Calendar.current.isDateInToday(dueDate) {
+            return Date()
+        }
+        return Calendar.current.startOfDay(for: dueDate)
+    }
+
+    // MARK: - Create-only Computed
+
+    var isToday: Bool {
+        Calendar.current.isDateInToday(dueDate)
+    }
+
+    var isTomorrow: Bool {
+        Calendar.current.isDateInTomorrow(dueDate)
+    }
+
+    var isNextWeek: Bool {
+        guard let nextWeek = Calendar.current.date(byAdding: .day, value: 7, to: Calendar.current.startOfDay(for: Date())) else { return false }
+        return Calendar.current.isDate(dueDate, inSameDayAs: nextWeek)
+    }
+
+    var recurrenceIntervalUnit: String {
+        switch recurrencePattern {
+        case .none: return ""
+        case .daily: return recurrenceInterval == 1 ? "day" : "days"
+        case .weekly: return recurrenceInterval == 1 ? "week" : "weeks"
+        case .monthly: return recurrenceInterval == 1 ? "month" : "months"
+        case .yearly: return recurrenceInterval == 1 ? "year" : "years"
+        }
+    }
+
+    var isRecurring: Bool {
+        recurrencePattern != .none
+    }
+
+    // MARK: - Methods
+
+    func loadTags() async {
+        do {
+            availableTags = try await tagService.fetchTags()
+        } catch {
+            Logger.error("Failed to load tags: \(error)", category: .api)
+        }
+    }
+
+    func setDueDate(daysFromNow: Int) {
+        let calendar = Calendar.current
+        let now = Date()
+
+        if daysFromNow == 0 {
+            dueDate = now
+        } else {
+            dueDate = calendar.date(byAdding: .day, value: daysFromNow, to: calendar.startOfDay(for: now)) ?? now
+        }
+    }
+
+    func dueDateChanged() {
+        if Calendar.current.isDateInToday(dueDate) && hasSpecificTime && dueTime < Date() {
+            dueTime = Date()
+        }
+    }
+
+    func hasSpecificTimeChanged() {
+        if hasSpecificTime && Calendar.current.isDateInToday(dueDate) && dueTime < Date() {
+            dueTime = Date()
+        }
+    }
+
+    func submit() async {
+        switch mode {
+        case .create(let listId):
+            await createTask(listId: listId)
+        case .edit(let listId, let task):
+            await updateTask(listId: listId, task: task)
+        }
+    }
+
+    // MARK: - Private
+
+    private func createTask(listId: Int) async {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else { return }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            _ = try await taskService.createTask(
+                listId: listId,
+                title: trimmedTitle,
+                note: note.isEmpty ? nil : note,
+                dueAt: finalDueDate,
+                color: selectedColor,
+                priority: selectedPriority,
+                starred: isStarred,
+                tagIds: Array(selectedTagIds),
+                isRecurring: isRecurring,
+                recurrencePattern: recurrencePattern == .none ? nil : recurrencePattern.rawValue,
+                recurrenceInterval: isRecurring ? recurrenceInterval : nil,
+                recurrenceDays: isRecurring && recurrencePattern == .weekly ? Array(selectedRecurrenceDays) : nil,
+                recurrenceEndDate: hasRecurrenceEndDate ? recurrenceEndDate : nil,
+                recurrenceCount: nil
+            )
+            HapticManager.success()
+            onDismiss?()
+        } catch let err as FocusmateError {
+            error = err
+            HapticManager.error()
+        } catch {
+            self.error = .custom("UNKNOWN", error.localizedDescription)
+            HapticManager.error()
+        }
+    }
+
+    private func updateTask(listId: Int, task: TaskDTO) async {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else { return }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            _ = try await taskService.updateTask(
+                listId: listId,
+                taskId: task.id,
+                title: trimmedTitle,
+                note: note.isEmpty ? nil : note,
+                dueAt: finalDueDate?.ISO8601Format(),
+                color: selectedColor,
+                priority: selectedPriority,
+                starred: isStarred,
+                tagIds: Array(selectedTagIds)
+            )
+            HapticManager.success()
+            onSave?()
+            onDismiss?()
+        } catch let err as FocusmateError {
+            error = err
+            HapticManager.error()
+        } catch {
+            self.error = .custom("UPDATE_ERROR", error.localizedDescription)
+            HapticManager.error()
+        }
+    }
+}

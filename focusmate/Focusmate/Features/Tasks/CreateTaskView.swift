@@ -1,112 +1,97 @@
 import SwiftUI
 
 struct CreateTaskView: View {
-    let listId: Int
-    let taskService: TaskService
-    let tagService: TagService
     @Environment(\.dismiss) var dismiss
 
-    @State private var title = ""
-    @State private var note = ""
-    @State private var dueDate = Date()
-    @State private var dueTime = Date()
-    @State private var hasSpecificTime = false
-    @State private var selectedColor: String? = nil
-    @State private var selectedPriority: TaskPriority = .none
-    @State private var isStarred = false
-    @State private var selectedTagIds: Set<Int> = []
-    @State private var availableTags: [TagDTO] = []
-    @State private var showingCreateTag = false
-    @State private var isLoading = false
-    @State private var error: FocusmateError?
-    
-    // Recurrence state
-    @State private var isRecurring = false
-    @State private var recurrencePattern: RecurrencePattern = .none
-    @State private var recurrenceInterval = 1
-    @State private var selectedRecurrenceDays: Set<Int> = [1]
-    @State private var recurrenceEndDate: Date? = nil
-    @State private var hasRecurrenceEndDate = false
+    @StateObject private var viewModel: TaskFormViewModel
+
+    init(listId: Int, taskService: TaskService, tagService: TagService) {
+        _viewModel = StateObject(wrappedValue: TaskFormViewModel(
+            mode: .create(listId: listId),
+            taskService: taskService,
+            tagService: tagService
+        ))
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Task Details") {
-                    TextField("Title *", text: $title)
+                    TextField("Title *", text: $viewModel.title)
 
-                    TextField("Notes (optional)", text: $note, axis: .vertical)
+                    TextField("Notes (optional)", text: $viewModel.note, axis: .vertical)
                         .lineLimit(3...6)
                 }
 
                 Section("Due Date *") {
                     HStack(spacing: DS.Spacing.sm) {
-                        QuickDateButton("Today", isSelected: isToday) {
-                            setDueDate(daysFromNow: 0)
+                        QuickDateButton("Today", isSelected: viewModel.isToday) {
+                            viewModel.setDueDate(daysFromNow: 0)
                         }
-                        QuickDateButton("Tomorrow", isSelected: isTomorrow) {
-                            setDueDate(daysFromNow: 1)
+                        QuickDateButton("Tomorrow", isSelected: viewModel.isTomorrow) {
+                            viewModel.setDueDate(daysFromNow: 1)
                         }
-                        QuickDateButton("Next Week", isSelected: isNextWeek) {
-                            setDueDate(daysFromNow: 7)
+                        QuickDateButton("Next Week", isSelected: viewModel.isNextWeek) {
+                            viewModel.setDueDate(daysFromNow: 7)
                         }
                     }
                     .padding(.vertical, DS.Spacing.xs)
 
                     DatePicker(
                         "Date",
-                        selection: $dueDate,
+                        selection: $viewModel.dueDate,
                         in: Calendar.current.startOfDay(for: Date())...,
                         displayedComponents: [.date]
                     )
-                    
-                    Toggle("Specific time", isOn: $hasSpecificTime)
-                    
-                    if hasSpecificTime {
+
+                    Toggle("Specific time", isOn: $viewModel.hasSpecificTime)
+
+                    if viewModel.hasSpecificTime {
                         DatePicker(
                             "Time",
-                            selection: $dueTime,
-                            in: minimumTime...,
+                            selection: $viewModel.dueTime,
+                            in: viewModel.minimumTime...,
                             displayedComponents: [.hourAndMinute]
                         )
                     }
-                    
-                    Picker("Repeat", selection: $recurrencePattern) {
+
+                    Picker("Repeat", selection: $viewModel.recurrencePattern) {
                         ForEach(RecurrencePattern.allCases, id: \.self) { pattern in
                             Text(pattern.label).tag(pattern)
                         }
                     }
-                    
-                    if recurrencePattern != .none {
-                        Stepper("Every \(recurrenceInterval) \(recurrenceIntervalUnit)", value: $recurrenceInterval, in: 1...99)
-                        
-                        if recurrencePattern == .weekly {
+
+                    if viewModel.recurrencePattern != .none {
+                        Stepper("Every \(viewModel.recurrenceInterval) \(viewModel.recurrenceIntervalUnit)", value: $viewModel.recurrenceInterval, in: 1...99)
+
+                        if viewModel.recurrencePattern == .weekly {
                             VStack(alignment: .leading, spacing: DS.Spacing.sm) {
                                 Text("On these days")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                
-                                WeekdayPicker(selectedDays: $selectedRecurrenceDays)
+
+                                WeekdayPicker(selectedDays: $viewModel.selectedRecurrenceDays)
                             }
                         }
-                        
-                        Toggle("End date", isOn: $hasRecurrenceEndDate)
-                        
-                        if hasRecurrenceEndDate {
+
+                        Toggle("End date", isOn: $viewModel.hasRecurrenceEndDate)
+
+                        if viewModel.hasRecurrenceEndDate {
                             DatePicker(
                                 "Ends on",
                                 selection: Binding(
-                                    get: { recurrenceEndDate ?? Date().addingTimeInterval(86400 * 30) },
-                                    set: { recurrenceEndDate = $0 }
+                                    get: { viewModel.recurrenceEndDate ?? Date().addingTimeInterval(86400 * 30) },
+                                    set: { viewModel.recurrenceEndDate = $0 }
                                 ),
-                                in: dueDate...,
+                                in: viewModel.dueDate...,
                                 displayedComponents: [.date]
                             )
                         }
                     }
                 }
-                
+
                 Section("Priority") {
-                    Picker("Priority", selection: $selectedPriority) {
+                    Picker("Priority", selection: $viewModel.selectedPriority) {
                         ForEach(TaskPriority.allCases, id: \.self) { priority in
                             HStack {
                                 if let icon = priority.icon {
@@ -120,24 +105,24 @@ struct CreateTaskView: View {
                     }
                     .pickerStyle(.menu)
                 }
-                
+
                 Section {
-                    Toggle(isOn: $isStarred) {
+                    Toggle(isOn: $viewModel.isStarred) {
                         Label("Starred", systemImage: DS.Icon.starFilled)
                             .foregroundStyle(.yellow)
                     }
                 }
-                
+
                 Section("Tags") {
                     TagPickerView(
-                        selectedTagIds: $selectedTagIds,
-                        availableTags: availableTags,
-                        onCreateTag: { showingCreateTag = true }
+                        selectedTagIds: $viewModel.selectedTagIds,
+                        availableTags: viewModel.availableTags,
+                        onCreateTag: { viewModel.showingCreateTag = true }
                     )
                 }
-                
+
                 Section("Color (optional)") {
-                    OptionalColorPicker(selected: $selectedColor)
+                    OptionalColorPicker(selected: $viewModel.selectedColor)
                         .padding(.vertical, DS.Spacing.sm)
                 }
             }
@@ -152,154 +137,46 @@ struct CreateTaskView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") {
-                        Task { await createTask() }
+                        Task { await viewModel.submit() }
                     }
-                    .disabled(title.isEmpty || isLoading)
+                    .disabled(!viewModel.canSubmit)
                 }
             }
-            .errorBanner($error)
+            .errorBanner($viewModel.error)
             .task {
-                await loadTags()
+                await viewModel.loadTags()
             }
             .onAppear {
-                let calendar = Calendar.current
-                dueTime = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
+                viewModel.onDismiss = { dismiss() }
             }
-            .onChange(of: dueDate) { oldValue, newValue in
-                if Calendar.current.isDateInToday(newValue) && hasSpecificTime && dueTime < Date() {
-                    dueTime = Date()
+            .onChange(of: viewModel.dueDate) { _, _ in
+                viewModel.dueDateChanged()
+            }
+            .onChange(of: viewModel.hasSpecificTime) { _, _ in
+                viewModel.hasSpecificTimeChanged()
+            }
+            .sheet(isPresented: $viewModel.showingCreateTag) {
+                CreateTagView(tagService: viewModel.tagService) {
+                    Task { await viewModel.loadTags() }
                 }
             }
-            .onChange(of: hasSpecificTime) { oldValue, newValue in
-                if newValue && Calendar.current.isDateInToday(dueDate) && dueTime < Date() {
-                    dueTime = Date()
-                }
-            }
-            .onChange(of: recurrencePattern) { oldValue, newValue in
-                isRecurring = newValue != .none
-            }
-            .sheet(isPresented: $showingCreateTag) {
-                CreateTagView(tagService: tagService) {
-                    Task { await loadTags() }
-                }
-            }
-        }
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func loadTags() async {
-        do {
-            availableTags = try await tagService.fetchTags()
-        } catch {
-            Logger.error("Failed to load tags: \(error)", category: .api)
-        }
-    }
-    
-    private var finalDueDate: Date {
-        let calendar = Calendar.current
-        
-        if hasSpecificTime {
-            let timeComponents = calendar.dateComponents([.hour, .minute], from: dueTime)
-            return calendar.date(bySettingHour: timeComponents.hour ?? 17,
-                                  minute: timeComponents.minute ?? 0,
-                                  second: 0,
-                                  of: dueDate) ?? dueDate
-        } else {
-            return calendar.startOfDay(for: dueDate)
-        }
-    }
-    
-    private var minimumTime: Date {
-        if Calendar.current.isDateInToday(dueDate) {
-            return Date()
-        }
-        return Calendar.current.startOfDay(for: dueDate)
-    }
-    
-    private var recurrenceIntervalUnit: String {
-        switch recurrencePattern {
-        case .none: return ""
-        case .daily: return recurrenceInterval == 1 ? "day" : "days"
-        case .weekly: return recurrenceInterval == 1 ? "week" : "weeks"
-        case .monthly: return recurrenceInterval == 1 ? "month" : "months"
-        case .yearly: return recurrenceInterval == 1 ? "year" : "years"
-        }
-    }
-
-    private func createTask() async {
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTitle.isEmpty else { return }
-
-        isLoading = true
-        defer { isLoading = false }
-
-        do {
-            _ = try await taskService.createTask(
-                listId: listId,
-                title: trimmedTitle,
-                note: note.isEmpty ? nil : note,
-                dueAt: finalDueDate,
-                color: selectedColor,
-                priority: selectedPriority,
-                starred: isStarred,
-                tagIds: Array(selectedTagIds),
-                isRecurring: isRecurring,
-                recurrencePattern: recurrencePattern == .none ? nil : recurrencePattern.rawValue,
-                recurrenceInterval: isRecurring ? recurrenceInterval : nil,
-                recurrenceDays: isRecurring && recurrencePattern == .weekly ? Array(selectedRecurrenceDays) : nil,
-                recurrenceEndDate: hasRecurrenceEndDate ? recurrenceEndDate : nil,
-                recurrenceCount: nil
-            )
-            HapticManager.success()
-            dismiss()
-        } catch let err as FocusmateError {
-            error = err
-            HapticManager.error()
-        } catch {
-            self.error = .custom("UNKNOWN", error.localizedDescription)
-            HapticManager.error()
-        }
-    }
-    
-    private var isToday: Bool {
-        Calendar.current.isDateInToday(dueDate)
-    }
-
-    private var isTomorrow: Bool {
-        Calendar.current.isDateInTomorrow(dueDate)
-    }
-
-    private var isNextWeek: Bool {
-        guard let nextWeek = Calendar.current.date(byAdding: .day, value: 7, to: Calendar.current.startOfDay(for: Date())) else { return false }
-        return Calendar.current.isDate(dueDate, inSameDayAs: nextWeek)
-    }
-
-    private func setDueDate(daysFromNow: Int) {
-        let calendar = Calendar.current
-        let now = Date()
-        
-        if daysFromNow == 0 {
-            dueDate = now
-        } else {
-            dueDate = calendar.date(byAdding: .day, value: daysFromNow, to: calendar.startOfDay(for: now)) ?? now
         }
     }
 }
 
 // MARK: - Supporting Views
 
-private struct QuickDateButton: View {
+struct QuickDateButton: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void
-    
+
     init(_ title: String, isSelected: Bool, action: @escaping () -> Void) {
         self.title = title
         self.isSelected = isSelected
         self.action = action
     }
-    
+
     var body: some View {
         Button(title, action: action)
             .buttonStyle(.bordered)
@@ -307,11 +184,11 @@ private struct QuickDateButton: View {
     }
 }
 
-private struct WeekdayPicker: View {
+struct WeekdayPicker: View {
     @Binding var selectedDays: Set<Int>
-    
+
     private let days = [(0, "S"), (1, "M"), (2, "T"), (3, "W"), (4, "T"), (5, "F"), (6, "S")]
-    
+
     var body: some View {
         HStack(spacing: DS.Spacing.sm) {
             ForEach(days, id: \.0) { day, label in
@@ -338,9 +215,9 @@ private struct WeekdayPicker: View {
     }
 }
 
-private struct OptionalColorPicker: View {
+struct OptionalColorPicker: View {
     @Binding var selected: String?
-    
+
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: DS.Spacing.md) {
             ForEach(DS.Colors.listColorOrder, id: \.self) { name in
@@ -368,7 +245,7 @@ enum RecurrencePattern: String, CaseIterable {
     case weekly = "weekly"
     case monthly = "monthly"
     case yearly = "yearly"
-    
+
     var label: String {
         switch self {
         case .none: return "Never"

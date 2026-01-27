@@ -60,32 +60,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		992D55132F2149DD0000D648 /* Exceptions for "focusmateTests" folder in "IntentiaShield" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Core/API/InternalNetworkingTests.swift,
-				Core/API/MockURLProtocol.swift,
-				Core/Auth/AuthSessionTests.swift,
-				Core/Auth/AuthStoreTests.swift,
-				Core/Auth/AuthStoreUnauthorizedTests.swift,
-				Core/Models/TaskDTOTests.swift,
-				Helpers/MockNetworking.swift,
-			);
-			target = 99A8F0A12F16938700A75CF9 /* IntentiaShield */;
-		};
-		992D55152F2149E10000D648 /* Exceptions for "focusmateTests" folder in "focusmateTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Core/API/InternalNetworkingTests.swift,
-				Core/API/MockURLProtocol.swift,
-				Core/Auth/AuthSessionTests.swift,
-				Core/Auth/AuthStoreTests.swift,
-				Core/Auth/AuthStoreUnauthorizedTests.swift,
-				Core/Models/TaskDTOTests.swift,
-				Helpers/MockNetworking.swift,
-			);
-			target = 99C4FB352E9E05B2003F8E91 /* focusmateTests */;
-		};
 		99A8F0B32F16938700A75CF9 /* Exceptions for "IntentiaShield" folder in "IntentiaShield" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -106,10 +80,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		992D54F92F2138120000D648 /* focusmateTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				992D55152F2149E10000D648 /* Exceptions for "focusmateTests" folder in "focusmateTests" target */,
-				992D55132F2149DD0000D648 /* Exceptions for "focusmateTests" folder in "IntentiaShield" target */,
-			);
 			path = focusmateTests;
 			sourceTree = "<group>";
 		};
@@ -218,7 +188,6 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				992D54F92F2138120000D648 /* focusmateTests */,
 				99A8F0A82F16938700A75CF9 /* IntentiaShield */,
 			);
 			name = IntentiaShield;
@@ -264,6 +233,9 @@
 			);
 			dependencies = (
 				99C4FB382E9E05B2003F8E91 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				992D54F92F2138120000D648 /* focusmateTests */,
 			);
 			name = focusmateTests;
 			packageProductDependencies = (

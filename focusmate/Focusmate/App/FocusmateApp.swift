@@ -60,9 +60,15 @@ struct RootView: View {
                 }
             } else {
                 TabView(selection: $selectedTab) {
-                    TodayView(onOverdueCountChange: { count in
-                        overdueCount = count
-                    })
+                    TodayView(
+                        taskService: state.taskService,
+                        listService: state.listService,
+                        tagService: state.tagService,
+                        apiClient: state.auth.api,
+                        onOverdueCountChange: { count in
+                            overdueCount = count
+                        }
+                    )
                     .tabItem {
                         Image(systemName: DS.Icon.afternoon)
                         Text("Today")
@@ -70,7 +76,11 @@ struct RootView: View {
                     .tag(0)
                     .badge(overdueCount)
 
-                    ListsView()
+                    ListsView(
+                        listService: state.listService,
+                        taskService: state.taskService,
+                        tagService: state.tagService
+                    )
                         .tabItem {
                             Image(systemName: "list.bullet")
                             Text("Lists")

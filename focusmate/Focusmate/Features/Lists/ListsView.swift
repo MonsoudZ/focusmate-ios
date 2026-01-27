@@ -1,38 +1,38 @@
 import SwiftUI
 
 struct ListsView: View {
-    @EnvironmentObject var state: AppState
-    @State private var showingCreateList = false
-    @State private var showingSearch = false
-    @State private var showingDeleteConfirmation = false
-    @State private var listToDelete: ListDTO?
-    @State private var lists: [ListDTO] = []
-    @State private var isLoading = false
-    @State private var error: FocusmateError?
-    @State private var selectedList: ListDTO?
+    @StateObject private var viewModel: ListsViewModel
+
+    init(listService: ListService, taskService: TaskService, tagService: TagService) {
+        _viewModel = StateObject(wrappedValue: ListsViewModel(
+            listService: listService,
+            taskService: taskService,
+            tagService: tagService
+        ))
+    }
 
     var body: some View {
         NavigationStack {
             Group {
-                if isLoading && lists.isEmpty {
+                if viewModel.isLoading && viewModel.lists.isEmpty {
                     ListsLoadingView()
-                } else if lists.isEmpty {
+                } else if viewModel.lists.isEmpty {
                     EmptyStateView(
                         title: "No lists yet",
                         message: "Create a list to organize your tasks",
                         icon: DS.Icon.emptyList,
                         actionTitle: "Create List",
-                        action: { showingCreateList = true }
+                        action: { viewModel.showingCreateList = true }
                     )
                 } else {
                     ScrollView {
                         LazyVStack(spacing: DS.Spacing.sm) {
-                            ForEach(lists, id: \.id) { list in
+                            ForEach(viewModel.lists, id: \.id) { list in
                                 NavigationLink(destination: ListDetailView(
                                     list: list,
-                                    taskService: state.taskService,
-                                    listService: state.listService,
-                                    tagService: state.tagService
+                                    taskService: viewModel.taskService,
+                                    listService: viewModel.listService,
+                                    tagService: viewModel.tagService
                                 )) {
                                     ListRowView(list: list)
                                 }
@@ -40,8 +40,8 @@ struct ListsView: View {
                                 .contextMenu {
                                     if list.role == "owner" || list.role == nil {
                                         Button(role: .destructive) {
-                                            listToDelete = list
-                                            showingDeleteConfirmation = true
+                                            viewModel.listToDelete = list
+                                            viewModel.showingDeleteConfirmation = true
                                         } label: {
                                             Label("Delete List", systemImage: DS.Icon.trash)
                                         }
@@ -58,94 +58,67 @@ struct ListsView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: DS.Spacing.md) {
                         Button {
-                            showingSearch = true
+                            viewModel.showingSearch = true
                         } label: {
                             Image(systemName: DS.Icon.search)
                         }
-                        
+
                         Button {
-                            showingCreateList = true
+                            viewModel.showingCreateList = true
                         } label: {
                             Image(systemName: DS.Icon.plus)
                         }
                     }
                 }
             }
-            .sheet(isPresented: $showingCreateList) {
-                CreateListView(listService: state.listService)
+            .sheet(isPresented: $viewModel.showingCreateList) {
+                CreateListView(listService: viewModel.listService)
             }
-            .sheet(isPresented: $showingSearch) {
+            .sheet(isPresented: $viewModel.showingSearch) {
                 SearchView(
-                    taskService: state.taskService,
-                    listService: state.listService,
-                    tagService: state.tagService,
+                    taskService: viewModel.taskService,
+                    listService: viewModel.listService,
+                    tagService: viewModel.tagService,
                     onSelectList: { list in
-                        selectedList = list
+                        viewModel.selectedList = list
                     }
                 )
             }
-            .navigationDestination(item: $selectedList) { list in
+            .navigationDestination(item: $viewModel.selectedList) { list in
                 ListDetailView(
                     list: list,
-                    taskService: state.taskService,
-                    listService: state.listService,
-                    tagService: state.tagService
+                    taskService: viewModel.taskService,
+                    listService: viewModel.listService,
+                    tagService: viewModel.tagService
                 )
             }
-            .errorBanner($error) {
-                Task { await loadLists() }
+            .errorBanner($viewModel.error) {
+                Task { await viewModel.loadLists() }
             }
             .task {
-                await loadLists()
+                await viewModel.loadLists()
             }
             .refreshable {
-                await loadLists()
+                await viewModel.loadLists()
             }
-            .alert("Delete List", isPresented: $showingDeleteConfirmation) {
+            .alert("Delete List", isPresented: $viewModel.showingDeleteConfirmation) {
                 Button("Cancel", role: .cancel) {
-                    listToDelete = nil
+                    viewModel.listToDelete = nil
                 }
                 Button("Delete", role: .destructive) {
-                    if let list = listToDelete {
-                        Task { await deleteList(list) }
+                    if let list = viewModel.listToDelete {
+                        Task { await viewModel.deleteList(list) }
                     }
-                    listToDelete = nil
+                    viewModel.listToDelete = nil
                 }
             } message: {
-                Text("Are you sure you want to delete '\(listToDelete?.name ?? "")'? This action cannot be undone.")
+                Text("Are you sure you want to delete '\(viewModel.listToDelete?.name ?? "")'? This action cannot be undone.")
             }
-            .onChange(of: showingCreateList) { _, isPresented in
+            .onChange(of: viewModel.showingCreateList) { _, isPresented in
                 if !isPresented {
-                    Task { await loadLists() }
+                    Task { await viewModel.loadLists() }
                 }
             }
-        }
-    }
-
-    private func loadLists() async {
-        isLoading = true
-        error = nil
-
-        do {
-            lists = try await state.listService.fetchLists()
-        } catch let err as FocusmateError {
-            error = err
-        } catch {
-            self.error = ErrorHandler.shared.handle(error)
-        }
-
-        isLoading = false
-    }
-
-    private func deleteList(_ list: ListDTO) async {
-        let originalLists = lists
-        lists.removeAll { $0.id == list.id }
-
-        do {
-            try await state.listService.deleteList(id: list.id)
-        } catch {
-            lists = originalLists
-            self.error = ErrorHandler.shared.handle(error, context: "Delete List")
         }
     }
 }

@@ -28,12 +28,14 @@ final class AuthStore: ObservableObject {
 
     private let authSession = AuthSession()
     private lazy var authAPI: AuthAPI = AuthAPI(api: api, session: authSession)
+    private lazy var authService: AuthService = AuthService(api: api, authAPI: authAPI, session: authSession)
     private let errorHandler = ErrorHandler.shared
 
     private let eventBus: AuthEventBus
     private let keychain: KeychainManaging
     private let injectedNetworking: NetworkingProtocol?
     private let autoValidateOnInit: Bool
+    private let escalationService: EscalationService
 
     private var cancellables = Set<AnyCancellable>()
     private var unauthorizedTask: Task<Void, Never>?
@@ -44,6 +46,7 @@ final class AuthStore: ObservableObject {
         self.keychain = KeychainManager.shared
         self.injectedNetworking = nil
         self.autoValidateOnInit = true
+        self.escalationService = .shared
 
         bindAuthEvents()
 
@@ -63,12 +66,14 @@ final class AuthStore: ObservableObject {
         keychain: KeychainManaging,
         networking: NetworkingProtocol?,
         autoValidateOnInit: Bool,
-        eventBus: AuthEventBus = .shared
+        eventBus: AuthEventBus = .shared,
+        escalationService: EscalationService = .shared
     ) {
         self.eventBus = eventBus
         self.keychain = keychain
         self.injectedNetworking = networking
         self.autoValidateOnInit = autoValidateOnInit
+        self.escalationService = escalationService
 
         bindAuthEvents()
 
@@ -122,12 +127,9 @@ final class AuthStore: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let user = try await authAPI.signIn(email: email, password: password)
+            let result = try await authService.signIn(email: email, password: password)
             Logger.info("Sign in successful", category: .auth)
-
-            let token = try await authSession.access()
-            await setAuthenticatedSession(token: token, user: user)
-
+            await setAuthenticatedSession(token: result.token, user: result.user)
             eventBus.send(.signedIn)
         } catch {
             Logger.error("Sign in failed", error: error, category: .auth)
@@ -142,12 +144,9 @@ final class AuthStore: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let user = try await authAPI.signUp(name: name, email: email, password: password)
+            let result = try await authService.register(name: name, email: email, password: password)
             Logger.info("Registration successful", category: .auth)
-
-            let token = try await authSession.access()
-            await setAuthenticatedSession(token: token, user: user)
-
+            await setAuthenticatedSession(token: result.token, user: result.user)
             eventBus.send(.signedIn)
         } catch {
             Logger.error("Registration failed", error: error, category: .auth)
@@ -162,7 +161,7 @@ final class AuthStore: ObservableObject {
         // Stop app blocking and escalation BEFORE clearing auth state.
         // If we clear auth first, the UI switches to SignInView and
         // the user has no way to remove the block.
-        EscalationService.shared.resetAll()
+        escalationService.resetAll()
 
         do {
             _ = try await api.request("DELETE", API.Auth.signOut, body: nil as String?) as EmptyResponse
@@ -212,22 +211,10 @@ final class AuthStore: ObservableObject {
         error = nil
         defer { isLoading = false }
 
-        guard let tokenString = String(data: identityToken, encoding: .utf8) else {
-            Logger.error("Failed to convert Apple identity token to string", category: .auth)
-            self.error = FocusmateError.custom("Sign In Failed", "Invalid Apple credentials")
-            return
-        }
-
         do {
-            let response: AuthSignInResponse = try await api.request(
-                "POST",
-                API.Auth.apple,
-                body: AppleAuthRequest(idToken: tokenString, name: name)
-            )
-
+            let result = try await authService.signInWithApple(identityToken: identityToken, name: name)
             Logger.info("Apple Sign In successful", category: .auth)
-            await setAuthenticatedSession(token: response.token, user: response.user)
-
+            await setAuthenticatedSession(token: result.token, user: result.user)
             eventBus.send(.signedIn)
         } catch {
             Logger.error("Apple Sign In failed", error: error, category: .auth)
@@ -243,11 +230,7 @@ final class AuthStore: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let _: EmptyResponse = try await api.request(
-                "POST",
-                API.Auth.password,
-                body: ForgotPasswordRequest(email: email)
-            )
+            try await authService.forgotPassword(email: email)
             Logger.info("Password reset email sent", category: .auth)
         } catch {
             Logger.error("Password reset failed", error: error, category: .auth)
@@ -264,7 +247,7 @@ final class AuthStore: ObservableObject {
             Logger.warning("Global unauthorized received. Clearing local session.", category: .auth)
 
             // Stop app blocking before clearing auth to prevent stuck blocks
-            EscalationService.shared.resetAll()
+            escalationService.resetAll()
 
             _ = await errorHandler.handleUnauthorized()
             await clearLocalSession()

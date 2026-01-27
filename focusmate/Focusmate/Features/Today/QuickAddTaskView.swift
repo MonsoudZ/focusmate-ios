@@ -1,22 +1,20 @@
 import SwiftUI
 
 struct QuickAddTaskView: View {
-    @EnvironmentObject var state: AppState
+    @StateObject private var viewModel: QuickAddViewModel
     @Environment(\.dismiss) var dismiss
     @FocusState private var isTitleFocused: Bool
-    @State private var title = ""
-    @State private var selectedList: ListDTO?
-    @State private var lists: [ListDTO] = []
-    @State private var isLoading = false
-    @State private var isLoadingLists = true
-    @State private var error: FocusmateError?
 
-    var onTaskCreated: (() async -> Void)?
+    init(listService: ListService, taskService: TaskService, onTaskCreated: (() async -> Void)? = nil) {
+        let vm = QuickAddViewModel(listService: listService, taskService: taskService)
+        vm.onTaskCreated = onTaskCreated
+        _viewModel = StateObject(wrappedValue: vm)
+    }
 
     var body: some View {
         NavigationStack {
             Form {
-                if isLoadingLists {
+                if viewModel.isLoadingLists {
                     Section {
                         HStack {
                             Spacer()
@@ -24,7 +22,7 @@ struct QuickAddTaskView: View {
                             Spacer()
                         }
                     }
-                } else if lists.isEmpty {
+                } else if viewModel.lists.isEmpty {
                     Section {
                         VStack(spacing: DS.Spacing.sm) {
                             Image(systemName: DS.Icon.emptyList)
@@ -42,11 +40,11 @@ struct QuickAddTaskView: View {
                         .padding(.vertical, DS.Spacing.md)
                     }
                 } else {
-                    TextField("Task title", text: $title)
+                    TextField("Task title", text: $viewModel.title)
                         .focused($isTitleFocused)
 
-                    Picker("List", selection: $selectedList) {
-                        ForEach(lists) { list in
+                    Picker("List", selection: $viewModel.selectedList) {
+                        ForEach(viewModel.lists) { list in
                             Text(list.name).tag(list as ListDTO?)
                         }
                     }
@@ -67,67 +65,32 @@ struct QuickAddTaskView: View {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    if isLoading {
+                    if viewModel.isLoading {
                         ProgressView()
                     } else {
                         Button("Add") {
-                            Task { await createTask() }
+                            Task {
+                                if await viewModel.createTask() {
+                                    dismiss()
+                                }
+                            }
                         }
-                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedList == nil || isLoading)
+                        .disabled(!viewModel.canSubmit)
                     }
                 }
             }
             .task {
-                await loadLists()
-                isTitleFocused = !lists.isEmpty
+                await viewModel.loadLists()
+                isTitleFocused = !viewModel.lists.isEmpty
             }
             .alert("Error", isPresented: .init(
-                get: { error != nil },
-                set: { if !$0 { error = nil } }
+                get: { viewModel.error != nil },
+                set: { if !$0 { viewModel.error = nil } }
             )) {
-                Button("OK") { error = nil }
+                Button("OK") { viewModel.error = nil }
             } message: {
-                Text(error?.message ?? "Something went wrong. Please try again.")
+                Text(viewModel.error?.message ?? "Something went wrong. Please try again.")
             }
-        }
-    }
-
-    private func loadLists() async {
-        isLoadingLists = true
-        do {
-            lists = try await state.listService.fetchLists()
-            selectedList = lists.first
-        } catch {
-            Logger.error("Failed to load lists", error: error, category: .api)
-        }
-        isLoadingLists = false
-    }
-
-    private func createTask() async {
-        guard let list = selectedList else { return }
-
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTitle.isEmpty else { return }
-
-        isLoading = true
-
-        do {
-            let dueDate = Calendar.current.date(bySettingHour: 23, minute: 59, second: 0, of: Date()) ?? Date()
-
-            _ = try await state.taskService.createTask(
-                listId: list.id,
-                title: trimmedTitle,
-                note: nil,
-                dueAt: dueDate
-            )
-
-            HapticManager.success()
-            await onTaskCreated?()
-            dismiss()
-        } catch {
-            self.error = ErrorHandler.shared.handle(error, context: "Creating task")
-            HapticManager.error()
-            isLoading = false
         }
     }
 }

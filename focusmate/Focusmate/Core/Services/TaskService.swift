@@ -2,9 +2,11 @@ import Foundation
 
 final class TaskService {
     let apiClient: APIClient
+    private let sideEffects: TaskSideEffectHandling
 
-    init(apiClient: APIClient) {
+    init(apiClient: APIClient, sideEffects: TaskSideEffectHandling = TaskSideEffectHandler()) {
         self.apiClient = apiClient
+        self.sideEffects = sideEffects
     }
 
     func fetchTasks(listId: Int) async throws -> [TaskDTO] {
@@ -73,11 +75,7 @@ final class TaskService {
                 body: request
             )
             
-            // Only schedule notifications for parent tasks
-            if parentTaskId == nil {
-                NotificationService.shared.scheduleTaskNotifications(for: task)
-                CalendarService.shared.addTaskToCalendar(task)
-            }
+            sideEffects.taskCreated(task, isSubtask: parentTaskId != nil)
             
             return task
         } catch {
@@ -102,11 +100,7 @@ final class TaskService {
                 body: request
             )
             
-            // Update notifications
-            NotificationService.shared.scheduleTaskNotifications(for: task)
-            
-            // Update calendar
-            CalendarService.shared.updateTaskInCalendar(task)
+            sideEffects.taskUpdated(task)
             
             return task
         } catch {
@@ -116,10 +110,8 @@ final class TaskService {
 
     func deleteTask(listId: Int, taskId: Int) async throws {
         do {
-            // Cancel notifications before deleting
-            NotificationService.shared.cancelTaskNotifications(for: taskId)
-            CalendarService.shared.removeTaskFromCalendar(taskId: taskId)
-            
+            sideEffects.taskDeleted(taskId: taskId)
+
             _ = try await apiClient.request(
                 "DELETE",
                 API.Lists.task(String(listId), String(taskId)),
@@ -139,9 +131,7 @@ final class TaskService {
                 body: body
             )
             
-            // Cancel notifications for completed task
-            NotificationService.shared.cancelTaskNotifications(for: taskId)
-            CalendarService.shared.removeTaskFromCalendar(taskId: taskId)
+            sideEffects.taskCompleted(taskId: taskId)
             
             return task
         } catch {
@@ -157,11 +147,7 @@ final class TaskService {
                 body: nil as String?
             )
             
-            // Re-add notifications
-            NotificationService.shared.scheduleTaskNotifications(for: task)
-            
-            // Re-add to calendar
-            CalendarService.shared.addTaskToCalendar(task)
+            sideEffects.taskReopened(task)
             
             return task
         } catch {

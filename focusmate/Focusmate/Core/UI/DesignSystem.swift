@@ -411,6 +411,7 @@ struct ListColorPicker: View {
                             .stroke(Color.primary, lineWidth: selected == name ? 3 : 0)
                     )
                     .onTapGesture {
+                        HapticManager.selection()
                         selected = name
                     }
             }
