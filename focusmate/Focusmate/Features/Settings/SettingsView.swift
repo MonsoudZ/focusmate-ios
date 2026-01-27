@@ -83,12 +83,16 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     
-                    Link(destination: URL(string: "https://intentia.app/privacy")!) {
-                        SettingsRow("Privacy Policy", icon: "hand.raised", external: true)
+                    if let privacyURL = URL(string: "https://intentia.app/privacy") {
+                        Link(destination: privacyURL) {
+                            SettingsRow("Privacy Policy", icon: "hand.raised", external: true)
+                        }
                     }
-                    
-                    Link(destination: URL(string: "https://intentia.app/terms")!) {
-                        SettingsRow("Terms of Service", icon: "doc.text", external: true)
+
+                    if let termsURL = URL(string: "https://intentia.app/terms") {
+                        Link(destination: termsURL) {
+                            SettingsRow("Terms of Service", icon: "doc.text", external: true)
+                        }
                     }
                 }
                 

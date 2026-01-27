@@ -132,7 +132,7 @@ final class TaskService {
 
     func completeTask(listId: Int, taskId: Int, reason: String? = nil) async throws -> TaskDTO {
         do {
-            let body: CompleteTaskRequest? = reason != nil ? CompleteTaskRequest(missed_reason: reason!) : nil
+            let body: CompleteTaskRequest? = reason.map { CompleteTaskRequest(missed_reason: $0) }
             let task: TaskDTO = try await apiClient.request(
                 "PATCH",
                 API.Lists.taskAction(String(listId), String(taskId), "complete"),
@@ -166,19 +166,6 @@ final class TaskService {
             return task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Reopening task")
-        }
-    }
-
-    func snoozeTask(listId: Int, taskId: Int, until: Date) async throws -> TaskDTO {
-        do {
-            let request = SnoozeRequest(snooze_until: until.ISO8601Format())
-            return try await apiClient.request(
-                "PATCH",
-                API.Lists.taskAction(String(listId), String(taskId), "snooze"),
-                body: request
-            )
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Snoozing task")
         }
     }
 
@@ -218,14 +205,6 @@ final class TaskService {
                 title: title,
                 parent_task_id: parentTaskId
             ))
-            
-            // DEBUG: Log what we're sending
-            let encoder = JSONEncoder()
-            encoder.keyEncodingStrategy = .convertToSnakeCase
-            if let jsonData = try? encoder.encode(request),
-               let jsonString = String(data: jsonData, encoding: .utf8) {
-                Logger.debug("TaskService: Creating subtask request: \(LogRedactor.redact(jsonString))", category: .api)
-            }
             
             let subtask: TaskDTO = try await apiClient.request(
                 "POST",
@@ -325,10 +304,6 @@ private struct UpdateTaskRequest: Encodable {
         let starred: Bool?
         let tag_ids: [Int]?
     }
-}
-
-private struct SnoozeRequest: Encodable {
-    let snooze_until: String
 }
 
 private struct CompleteTaskRequest: Encodable {

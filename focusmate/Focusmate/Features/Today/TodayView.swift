@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 struct TodayView: View {
     @EnvironmentObject var state: AppState
@@ -7,16 +6,13 @@ struct TodayView: View {
     @State private var isLoading = true
     @State private var error: FocusmateError?
     @State private var showingQuickAdd = false
-    @State private var isBlocking = false
-    @State private var isInGracePeriod = false
-    @State private var gracePeriodRemaining: String?
     @State private var selectedTask: TaskDTO?
+    @ObservedObject private var escalationService = EscalationService.shared
+    @ObservedObject private var screenTimeService = ScreenTimeService.shared
     
     var onOverdueCountChange: ((Int) -> Void)? = nil
-    
-    private var todayService: TodayService {
-        TodayService(api: state.auth.api)
-    }
+
+    @State private var todayService: TodayService?
     
     // MARK: - Progress Calculation
     
@@ -111,21 +107,10 @@ struct TodayView: View {
             }
         }
         .task {
+            if todayService == nil {
+                todayService = TodayService(api: state.auth.api)
+            }
             await loadToday()
-        }
-        .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { _ in
-            updateEscalationState()
-        }
-        .onAppear {
-            updateEscalationState()
-        }
-    }
-    
-    private func updateEscalationState() {
-        Task { @MainActor in
-            isBlocking = ScreenTimeService.shared.isBlocking
-            isInGracePeriod = EscalationService.shared.isInGracePeriod
-            gracePeriodRemaining = EscalationService.shared.gracePeriodRemainingFormatted
         }
     }
     
@@ -205,7 +190,7 @@ struct TodayView: View {
     
     @ViewBuilder
     private var escalationBanner: some View {
-        if isBlocking {
+        if screenTimeService.isBlocking {
             HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: DS.Icon.lock)
                     .font(.title3)
@@ -221,14 +206,14 @@ struct TodayView: View {
             .padding(DS.Spacing.md)
             .background(DS.Colors.error)
             .cornerRadius(DS.Radius.md)
-        } else if isInGracePeriod {
+        } else if escalationService.isInGracePeriod {
             HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: DS.Icon.timer)
                     .font(.title3)
                 VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                     Text("Grace Period")
                         .font(.body.weight(.semibold))
-                    Text("Apps will be blocked in \(gracePeriodRemaining ?? "...")")
+                    Text("Apps will be blocked in \(escalationService.gracePeriodRemainingFormatted ?? "...")")
                         .font(.caption)
                 }
                 Spacer()
@@ -429,6 +414,7 @@ struct TodayView: View {
         error = nil
         
         do {
+            guard let todayService else { return }
             todayData = try await todayService.fetchToday()
             onOverdueCountChange?(todayData?.stats.overdue_count ?? 0)
             

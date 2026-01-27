@@ -36,7 +36,11 @@ final class AuthAPI {
     }
 
     func signOut() async {
-        _ = try? await api.request("DELETE", API.Auth.signOut, body: nil as String?) as EmptyResponse
+        do {
+            _ = try await api.request("DELETE", API.Auth.signOut, body: nil as String?) as EmptyResponse
+        } catch {
+            Logger.warning("Sign out request failed: \(error)", category: .auth)
+        }
         await session.clear()
     }
 }

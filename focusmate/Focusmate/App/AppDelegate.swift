@@ -37,11 +37,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) {
         let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
 
-        #if DEBUG
-        Logger.info("APNs token received (debug): \(token)", category: .general)
-        #else
         Logger.info("APNs token received", category: .general)
-        #endif
 
         AppDelegate.pushToken = token
         NotificationCenter.default.post(name: .didReceivePushToken, object: nil, userInfo: ["token": token])

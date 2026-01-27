@@ -273,13 +273,13 @@ final class AdvancedErrorHandler: ObservableObject {
   private func clearStoredCredentials() async {
     // Clear JWT token and user data
     // This would integrate with your AuthStore
-    Logger.debug("🧹 AdvancedErrorHandler: Clearing stored credentials", category: .general)
+    Logger.debug("AdvancedErrorHandler: Clearing stored credentials", category: .general)
   }
 
   private func navigateToSignIn() async {
     // Navigate to sign-in screen
     // This would integrate with your navigation system
-    Logger.debug("🔐 AdvancedErrorHandler: Navigating to sign-in", category: .general)
+    Logger.debug("AdvancedErrorHandler: Navigating to sign-in", category: .general)
   }
 
   // MARK: - Rate Limiting and Backoff
@@ -314,7 +314,7 @@ final class AdvancedErrorHandler: ObservableObject {
     self.retryCount[retryKey, default: 0] += 1
     self.lastRetryTime[retryKey] = Date()
 
-    Logger.debug("AdvancedErrorHandler: Recorded retry attempt \(self.retryCount[retryKey]!) for \(retryKey)", category: .general)
+    Logger.debug("AdvancedErrorHandler: Recorded retry attempt \(self.retryCount[retryKey] ?? 0) for \(retryKey)", category: .general)
   }
 
   func resetRetryCount(context: String) {

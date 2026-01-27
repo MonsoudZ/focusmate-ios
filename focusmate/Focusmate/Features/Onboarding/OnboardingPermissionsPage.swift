@@ -127,8 +127,7 @@ struct OnboardingPermissionsPage: View {
             break
         }
 
-        let screenTimeSvc = await ScreenTimeService.shared
-        if screenTimeSvc.isAuthorized {
+        if ScreenTimeService.shared.isAuthorized {
             screenTimeStatus = .granted
         }
     }

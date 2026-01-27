@@ -2,7 +2,7 @@ import SwiftUI
 import FamilyControls
 
 struct AppBlockingSettingsView: View {
-    @StateObject private var screenTime = ScreenTimeService.shared
+    @ObservedObject private var screenTime = ScreenTimeService.shared
     @State private var showingAppPicker = false
     @State private var selection = FamilyActivitySelection()
     @State private var showingAuthError = false

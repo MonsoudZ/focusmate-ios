@@ -78,23 +78,34 @@ final class ScreenTimeService: ObservableObject {
     // MARK: - Persistence
     
     private func saveSelections() {
-        // Note: ApplicationToken and ActivityCategoryToken are Codable
-        if let appsData = try? JSONEncoder().encode(selectedApps) {
+        do {
+            let appsData = try JSONEncoder().encode(selectedApps)
             UserDefaults.standard.set(appsData, forKey: appsKey)
+        } catch {
+            Logger.error("Failed to encode selected apps: \(error)", category: .general)
         }
-        if let categoriesData = try? JSONEncoder().encode(selectedCategories) {
+        do {
+            let categoriesData = try JSONEncoder().encode(selectedCategories)
             UserDefaults.standard.set(categoriesData, forKey: categoriesKey)
+        } catch {
+            Logger.error("Failed to encode selected categories: \(error)", category: .general)
         }
     }
     
     private func loadSelections() {
-        if let appsData = UserDefaults.standard.data(forKey: appsKey),
-           let apps = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: appsData) {
-            selectedApps = apps
+        if let appsData = UserDefaults.standard.data(forKey: appsKey) {
+            do {
+                selectedApps = try JSONDecoder().decode(Set<ApplicationToken>.self, from: appsData)
+            } catch {
+                Logger.error("Failed to decode selected apps: \(error)", category: .general)
+            }
         }
-        if let categoriesData = UserDefaults.standard.data(forKey: categoriesKey),
-           let categories = try? JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: categoriesData) {
-            selectedCategories = categories
+        if let categoriesData = UserDefaults.standard.data(forKey: categoriesKey) {
+            do {
+                selectedCategories = try JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: categoriesData)
+            } catch {
+                Logger.error("Failed to decode selected categories: \(error)", category: .general)
+            }
         }
     }
     
