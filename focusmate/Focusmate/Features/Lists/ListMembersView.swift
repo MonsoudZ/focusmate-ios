@@ -1,38 +1,35 @@
 import SwiftUI
 
 struct ListMembersView: View {
-    let list: ListDTO
-    let apiClient: APIClient
-    
     @Environment(\.dismiss) private var dismiss
-    @State private var memberships: [MembershipDTO] = []
-    @State private var isLoading = true
-    @State private var error: FocusmateError?
-    @State private var showingInvite = false
-    @State private var memberToRemove: MembershipDTO?
-    
+    @State private var viewModel: ListMembersViewModel
+
+    init(list: ListDTO, apiClient: APIClient) {
+        _viewModel = State(initialValue: ListMembersViewModel(list: list, apiClient: apiClient))
+    }
+
     var body: some View {
         NavigationStack {
             Group {
-                if isLoading {
+                if viewModel.isLoading {
                     ProgressView()
-                } else if memberships.isEmpty {
+                } else if viewModel.memberships.isEmpty {
                     EmptyState(
                         "No members yet",
                         message: "Invite people to collaborate on this list",
                         icon: DS.Icon.share,
                         actionTitle: "Invite Someone"
                     ) {
-                        showingInvite = true
+                        viewModel.showingInvite = true
                     }
                 } else {
                     List {
                         Section {
-                            ForEach(memberships) { membership in
+                            ForEach(viewModel.memberships) { membership in
                                 MemberRowView(membership: membership)
                                     .swipeActions(edge: .trailing) {
                                         Button("Remove", role: .destructive) {
-                                            memberToRemove = membership
+                                            viewModel.memberToRemove = membership
                                         }
                                     }
                             }
@@ -53,79 +50,46 @@ struct ListMembersView: View {
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        showingInvite = true
+                        viewModel.showingInvite = true
                     } label: {
                         Image(systemName: DS.Icon.plus)
                     }
                 }
             }
-            .sheet(isPresented: $showingInvite) {
-                InviteMemberView(list: list, apiClient: apiClient) {
-                    Task { await loadMembers() }
+            .sheet(isPresented: $viewModel.showingInvite) {
+                InviteMemberView(list: viewModel.list, apiClient: viewModel.apiClient) {
+                    Task { await viewModel.loadMembers() }
                 }
             }
-            .alert("Remove Member", isPresented: .constant(memberToRemove != nil)) {
-                Button("Cancel", role: .cancel) { memberToRemove = nil }
+            .alert("Remove Member", isPresented: .constant(viewModel.memberToRemove != nil)) {
+                Button("Cancel", role: .cancel) { viewModel.memberToRemove = nil }
                 Button("Remove", role: .destructive) {
-                    if let member = memberToRemove {
-                        Task { await removeMember(member) }
+                    if let member = viewModel.memberToRemove {
+                        Task { await viewModel.removeMember(member) }
                     }
                 }
             } message: {
-                if let member = memberToRemove {
+                if let member = viewModel.memberToRemove {
                     Text("Remove \(member.user.name ?? member.user.email ?? "this member") from the list?")
                 }
             }
-            .errorBanner($error) {
-                Task { await loadMembers() }
+            .errorBanner($viewModel.error) {
+                Task { await viewModel.loadMembers() }
             }
             .task {
-                await loadMembers()
+                await viewModel.loadMembers()
             }
-        }
-    }
-    
-    private func loadMembers() async {
-        isLoading = true
-        do {
-            let response: MembershipsResponse = try await apiClient.request(
-                "GET",
-                API.Lists.memberships(String(list.id)),
-                body: nil as String?
-            )
-            memberships = response.memberships
-        } catch let err as FocusmateError {
-            error = err
-        } catch {
-            self.error = ErrorHandler.shared.handle(error)
-        }
-        isLoading = false
-    }
-    
-    private func removeMember(_ membership: MembershipDTO) async {
-        do {
-            let _: EmptyResponse = try await apiClient.request(
-                "DELETE",
-                API.Lists.membership(String(list.id), String(membership.id)),
-                body: nil as String?
-            )
-            memberships.removeAll { $0.id == membership.id }
-            memberToRemove = nil
-        } catch let err as FocusmateError {
-            error = err
-        } catch {
-            self.error = ErrorHandler.shared.handle(error)
         }
     }
 }
 
 struct MemberRowView: View {
     let membership: MembershipDTO
-    
+
     var body: some View {
         HStack(spacing: DS.Spacing.md) {
             Avatar(membership.user.name ?? membership.user.email, size: 40)
-            
+
             VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text(membership.user.name ?? "Unknown")
                     .font(.body)
@@ -133,9 +97,9 @@ struct MemberRowView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            
+
             Spacer()
-            
+
             RoleBadge(role: membership.role, isEditor: membership.isEditor)
         }
         .padding(.vertical, DS.Spacing.xs)
@@ -147,7 +111,7 @@ struct MemberRowView: View {
 private struct RoleBadge: View {
     let role: String
     let isEditor: Bool
-    
+
     var body: some View {
         Text(role.capitalized)
             .font(.caption)

@@ -3,24 +3,13 @@ import SwiftUI
 struct DeleteAccountView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var appState: AppState
-    
-    @State private var password = ""
-    @State private var confirmText = ""
-    @State private var isLoading = false
-    @State private var error: FocusmateError?
-    @State private var showFinalConfirmation = false
-    
-    private let requiredConfirmText = "DELETE"
-    
-    private var isAppleUser: Bool {
-        appState.auth.currentUser?.hasPassword == false
+
+    @State private var viewModel: DeleteAccountViewModel
+
+    init(apiClient: APIClient, authStore: AuthStore) {
+        _viewModel = State(initialValue: DeleteAccountViewModel(apiClient: apiClient, authStore: authStore))
     }
-    
-    private var canDelete: Bool {
-        confirmText == requiredConfirmText &&
-        (isAppleUser || !password.isEmpty)
-    }
-    
+
     var body: some View {
         NavigationStack {
             Form {
@@ -28,33 +17,33 @@ struct DeleteAccountView: View {
                     Text("This action cannot be undone. All your data, including lists, tasks, and settings will be permanently deleted.")
                         .foregroundColor(.secondary)
                 }
-                
-                if !isAppleUser {
+
+                if !viewModel.isAppleUser {
                     Section {
-                        SecureField("Enter your password", text: $password)
+                        SecureField("Enter your password", text: $viewModel.password)
                             .textContentType(.password)
                     } header: {
                         Text("Verify Your Identity")
                     }
                 }
-                
+
                 Section {
-                    TextField("Type \(requiredConfirmText) to confirm", text: $confirmText)
+                    TextField("Type \(viewModel.requiredConfirmText) to confirm", text: $viewModel.confirmText)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                 } header: {
                     Text("Confirm Deletion")
                 } footer: {
-                    Text("Type \(requiredConfirmText) to confirm you want to delete your account.")
+                    Text("Type \(viewModel.requiredConfirmText) to confirm you want to delete your account.")
                 }
-                
+
                 Section {
                     Button(role: .destructive) {
-                        showFinalConfirmation = true
+                        viewModel.showFinalConfirmation = true
                     } label: {
                         HStack {
                             Spacer()
-                            if isLoading {
+                            if viewModel.isLoading {
                                 ProgressView()
                             } else {
                                 Text("Delete My Account")
@@ -62,7 +51,7 @@ struct DeleteAccountView: View {
                             Spacer()
                         }
                     }
-                    .disabled(!canDelete || isLoading)
+                    .disabled(!viewModel.canDelete || viewModel.isLoading)
                 }
             }
             .surfaceFormBackground()
@@ -75,37 +64,16 @@ struct DeleteAccountView: View {
                     }
                 }
             }
-            .errorBanner($error)
-            .alert("Are you absolutely sure?", isPresented: $showFinalConfirmation) {
+            .errorBanner($viewModel.error)
+            .alert("Are you absolutely sure?", isPresented: $viewModel.showFinalConfirmation) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete Forever", role: .destructive) {
-                    Task { await deleteAccount() }
+                    Task { await viewModel.deleteAccount() }
                 }
             } message: {
                 Text("This will permanently delete your account and all associated data. This cannot be undone.")
             }
         }
-    }
-    
-    private func deleteAccount() async {
-        isLoading = true
-        error = nil
-        
-        do {
-            let _: EmptyResponse = try await appState.auth.api.request(
-                "DELETE",
-                API.Users.profile,
-                body: DeleteAccountRequest(password: isAppleUser ? nil : password)
-            )
-            
-            await appState.auth.signOut()
-        } catch let err as FocusmateError {
-            error = err
-        } catch {
-            self.error = ErrorHandler.shared.handle(error)
-        }
-        
-        isLoading = false
     }
 }
 

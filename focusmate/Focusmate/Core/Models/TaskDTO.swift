@@ -1,115 +1,6 @@
 import Foundation
 import SwiftUI
 
-// MARK: - User
-
-struct UserDTO: Codable, Identifiable, Hashable {
-    let id: Int
-    let email: String
-    let name: String?
-    let role: String
-    let timezone: String?
-    let hasPassword: Bool?
-    
-    enum CodingKeys: String, CodingKey {
-        case id, email, name, role, timezone
-        case hasPassword = "has_password"
-    }
-}
-
-// MARK: - List
-
-struct ListDTO: Codable, Identifiable, Hashable {
-    let id: Int
-    let name: String
-    let description: String?
-    let visibility: String
-    let color: String?
-    let role: String?
-    let tasks_count: Int?
-    let created_at: String?
-    let updated_at: String?
-    
-    var listColor: Color {
-        switch color ?? "blue" {
-        case "blue": return .blue
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "purple": return .purple
-        case "pink": return .pink
-        case "teal": return .teal
-        case "yellow": return .yellow
-        case "gray": return .gray
-        default: return .blue
-        }
-    }
-}
-
-struct ListsResponse: Codable {
-    let lists: [ListDTO]
-    let tombstones: [String]?
-}
-
-// MARK: - Priority
-
-enum TaskPriority: Int, Codable, CaseIterable {
-    case none = 0
-    case low = 1
-    case medium = 2
-    case high = 3
-    case urgent = 4
-    
-    var label: String {
-        switch self {
-        case .none: return "None"
-        case .low: return "Low"
-        case .medium: return "Medium"
-        case .high: return "High"
-        case .urgent: return "Urgent"
-        }
-    }
-    
-    var icon: String? {
-        switch self {
-        case .urgent: return "flag.fill"
-        case .high: return "exclamationmark.3"
-        case .medium: return "exclamationmark.2"
-        case .low: return "exclamationmark"
-        case .none: return nil
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .urgent: return .red
-        case .high: return .orange
-        case .medium: return .yellow
-        case .low: return .gray
-        case .none: return .clear
-        }
-    }
-}
-
-// MARK: - Subtask
-
-struct SubtaskDTO: Codable, Identifiable {
-    let id: Int
-    let task_id: Int?
-    let title: String
-    let note: String?
-    let status: String?
-    let completed_at: String?
-    let position: Int?
-    let created_at: String?
-
-    var isCompleted: Bool {
-        completed_at != nil
-    }
-}
-
-// MARK: - Task
-
 private let _iso8601Formatter: ISO8601DateFormatter = {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -140,7 +31,7 @@ struct TaskDTO: Codable, Identifiable {
     let tags: [TagDTO]?
     let parent_task_id: Int?
     var subtasks: [SubtaskDTO]?
-    
+
     // Recurring fields
     let is_recurring: Bool?
     let recurrence_pattern: String?
@@ -151,49 +42,49 @@ struct TaskDTO: Codable, Identifiable {
     let template_id: Int?
     let instance_date: String?
     let instance_number: Int?
-    
+
     let overdue: Bool?
     let minutes_overdue: Int?
     let requires_explanation_if_missed: Bool?
     let missed_reason: String?
     let missed_reason_submitted_at: String?
-    
+
     // MARK: - Computed Properties
-    
+
     var isCompleted: Bool {
         completed_at != nil
     }
-    
+
     var isOverdue: Bool {
         overdue ?? false
     }
-    
+
     var isStarred: Bool {
         starred ?? false
     }
-    
+
     var isRecurring: Bool {
         is_recurring ?? false
     }
-    
+
     var isRecurringInstance: Bool {
         template_id != nil
     }
-    
+
     var needsReason: Bool {
         isOverdue && (requires_explanation_if_missed ?? false) && missed_reason == nil
     }
-    
+
     var dueDate: Date? {
         guard let due_at else { return nil }
         return _iso8601Formatter.date(from: due_at)
             ?? _iso8601FormatterNoFrac.date(from: due_at)
     }
-    
+
     var taskPriority: TaskPriority {
         TaskPriority(rawValue: priority ?? 0) ?? .none
     }
-    
+
     var taskColor: Color {
         switch color {
         case "blue": return .blue
@@ -208,7 +99,7 @@ struct TaskDTO: Codable, Identifiable {
         default: return .blue
         }
     }
-    
+
     var isAnytime: Bool {
         guard let dueDate = dueDate else { return false }
         let calendar = Calendar.current
@@ -216,7 +107,7 @@ struct TaskDTO: Codable, Identifiable {
         let minute = calendar.component(.minute, from: dueDate)
         return hour == 0 && minute == 0
     }
-    
+
     var isActuallyOverdue: Bool {
         guard let dueDate = dueDate, !isCompleted else { return false }
 
@@ -235,12 +126,12 @@ struct TaskDTO: Codable, Identifiable {
 
         return now > dueDate
     }
-    
+
     var recurrenceDescription: String? {
         guard isRecurringInstance || isRecurring else { return nil }
-        
+
         let interval = recurrence_interval ?? 1
-        
+
         switch recurrence_pattern {
         case "daily":
             return interval == 1 ? "Daily" : "Every \(interval) days"
@@ -258,7 +149,7 @@ struct TaskDTO: Codable, Identifiable {
             return nil
         }
     }
-    
+
     private func dayName(for day: Int) -> String? {
         switch day {
         case 0: return "Sun"
@@ -271,26 +162,26 @@ struct TaskDTO: Codable, Identifiable {
         default: return nil
         }
     }
-    
+
     // MARK: - Subtask Helpers
-    
+
     var hasSubtasks: Bool {
         guard let subtasks = subtasks else { return false }
         return !subtasks.isEmpty
     }
-    
+
     var subtaskCount: Int {
         subtasks?.count ?? 0
     }
-    
+
     var completedSubtaskCount: Int {
         subtasks?.filter { $0.isCompleted }.count ?? 0
     }
-    
+
     var subtaskProgress: String {
         "\(completedSubtaskCount)/\(subtaskCount)"
     }
-    
+
     var isSubtask: Bool {
         parent_task_id != nil
     }
@@ -299,115 +190,4 @@ struct TaskDTO: Codable, Identifiable {
 struct TasksResponse: Codable {
     let tasks: [TaskDTO]
     let tombstones: [String]?
-}
-
-// MARK: - Tag
-
-struct TagDTO: Codable, Identifiable, Hashable {
-    let id: Int
-    let name: String
-    let color: String?
-    let tasks_count: Int?
-    let created_at: String?
-    
-    var tagColor: Color {
-        switch color {
-        case "blue": return .blue
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "purple": return .purple
-        case "pink": return .pink
-        case "teal": return .teal
-        case "yellow": return .yellow
-        case "gray": return .gray
-        default: return .blue
-        }
-    }
-}
-
-struct TagsResponse: Codable {
-    let tags: [TagDTO]
-}
-
-// MARK: - Today
-
-struct TodayResponse: Codable {
-    let overdue: [TaskDTO]
-    let due_today: [TaskDTO]
-    let completed_today: [TaskDTO]
-    let stats: TodayStats?
-    let streak: StreakInfo?
-}
-
-struct TodayStats: Codable {
-    let overdue_count: Int?
-    let due_today_count: Int?
-    let completed_today_count: Int?
-}
-
-struct StreakInfo: Codable {
-    let current: Int
-    let longest: Int
-}
-
-// MARK: - Sharing
-
-struct ListShare: Codable, Identifiable {
-    let id: Int
-    let list_id: Int
-    let user_id: Int?
-    let role: String
-    let user: UserDTO?
-    let created_at: String?
-    let updated_at: String?
-}
-
-struct ShareListRequest: Codable {
-    let email: String
-    let role: String
-}
-
-struct ShareListResponse: Codable {
-    let id: Int
-    let list_id: Int
-    let role: String
-    let user: UserDTO?
-}
-
-// MARK: - Membership
-
-struct MembershipDTO: Codable, Identifiable {
-    let id: Int
-    let user: MemberUser
-    let role: String
-    let created_at: String?
-    let updated_at: String?
-    
-    var isEditor: Bool {
-        role == "editor"
-    }
-}
-
-struct MemberUser: Codable {
-    let id: Int
-    let email: String?
-    let name: String?
-}
-
-struct MembershipsResponse: Codable {
-    let memberships: [MembershipDTO]
-}
-
-struct CreateMembershipRequest: Codable {
-    let membership: MembershipParams
-}
-
-struct MembershipParams: Codable {
-    let user_identifier: String
-    let role: String
-}
-
-struct MembershipResponse: Codable {
-    let membership: MembershipDTO
 }

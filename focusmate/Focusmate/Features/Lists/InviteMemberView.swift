@@ -1,26 +1,21 @@
 import SwiftUI
 
 struct InviteMemberView: View {
-    let list: ListDTO
-    let apiClient: APIClient
     let onInvited: () -> Void
-    
+
     @Environment(\.dismiss) private var dismiss
-    @State private var email = ""
-    @State private var role = "editor"
-    @State private var isLoading = false
-    @State private var error: FocusmateError?
-    
-    private var isValid: Bool {
-        !email.trimmingCharacters(in: .whitespaces).isEmpty &&
-        email.contains("@")
+    @State private var viewModel: InviteMemberViewModel
+
+    init(list: ListDTO, apiClient: APIClient, onInvited: @escaping () -> Void) {
+        self.onInvited = onInvited
+        _viewModel = State(initialValue: InviteMemberViewModel(list: list, apiClient: apiClient))
     }
-    
+
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Email address", text: $email)
+                    TextField("Email address", text: $viewModel.email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
@@ -30,9 +25,9 @@ struct InviteMemberView: View {
                 } footer: {
                     Text("Enter the email address of the person you want to invite.")
                 }
-                
+
                 Section {
-                    Picker("Role", selection: $role) {
+                    Picker("Role", selection: $viewModel.role) {
                         Text("Editor").tag("editor")
                         Text("Viewer").tag("viewer")
                     }
@@ -40,7 +35,7 @@ struct InviteMemberView: View {
                 } header: {
                     Text("Permission")
                 } footer: {
-                    Text(role == "editor"
+                    Text(viewModel.role == "editor"
                          ? "Editors can add, edit, and complete tasks."
                          : "Viewers can only see tasks.")
                 }
@@ -54,46 +49,25 @@ struct InviteMemberView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Invite") {
-                        Task { await inviteMember() }
+                        Task {
+                            if await viewModel.invite() {
+                                onInvited()
+                                dismiss()
+                            }
+                        }
                     }
-                    .disabled(!isValid || isLoading)
+                    .disabled(!viewModel.isValid || viewModel.isLoading)
                 }
             }
             .overlay {
-                if isLoading {
+                if viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(1.5)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color.black.opacity(0.2))
                 }
             }
-            .errorBanner($error)
+            .errorBanner($viewModel.error)
         }
-    }
-    
-    private func inviteMember() async {
-        isLoading = true
-        error = nil
-        
-        do {
-            let _: MembershipResponse = try await apiClient.request(
-                "POST",
-                API.Lists.memberships(String(list.id)),
-                body: CreateMembershipRequest(
-                    membership: MembershipParams(
-                        user_identifier: email.trimmingCharacters(in: .whitespaces).lowercased(),
-                        role: role
-                    )
-                )
-            )
-            onInvited()
-            dismiss()
-        } catch let err as FocusmateError {
-            error = err
-        } catch {
-            self.error = ErrorHandler.shared.handle(error)
-        }
-        
-        isLoading = false
     }
 }

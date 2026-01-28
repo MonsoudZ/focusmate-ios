@@ -1,27 +1,18 @@
 import SwiftUI
 
 struct SearchView: View {
-    let taskService: TaskService
-    let listService: ListService
     let tagService: TagService
     var onSelectList: ((ListDTO) -> Void)?
     @Environment(\.dismiss) private var dismiss
-    
-    @State private var query = ""
-    @State private var results: [TaskDTO] = []
-    @State private var isSearching = false
-    @State private var hasSearched = false
-    @State private var taskToEdit: TaskDTO?
-    @State private var error: FocusmateError?
-    @State private var lists: [Int: ListDTO] = [:]
-    
-    // Group tasks by list_id
-    private var groupedResults: [(listId: Int, tasks: [TaskDTO])] {
-        let grouped = Dictionary(grouping: results) { $0.list_id }
-        return grouped.map { (listId: $0.key, tasks: $0.value) }
-            .sorted { $0.listId < $1.listId }
+
+    @State private var viewModel: SearchViewModel
+
+    init(taskService: TaskService, listService: ListService, tagService: TagService, onSelectList: ((ListDTO) -> Void)? = nil) {
+        self.tagService = tagService
+        self.onSelectList = onSelectList
+        _viewModel = State(initialValue: SearchViewModel(taskService: taskService, listService: listService))
     }
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -36,43 +27,42 @@ struct SearchView: View {
                     }
                 }
             }
-            .searchable(text: $query, prompt: "Search tasks...")
+            .searchable(text: $viewModel.query, prompt: "Search tasks...")
             .onSubmit(of: .search) {
-                Task { await search() }
+                Task { await viewModel.search() }
             }
-            .onChange(of: query) { oldValue, newValue in
+            .onChange(of: viewModel.query) { oldValue, newValue in
                 if newValue.isEmpty {
-                    results = []
-                    hasSearched = false
+                    viewModel.clearSearch()
                 }
             }
-            .sheet(item: $taskToEdit) { task in
+            .sheet(item: $viewModel.taskToEdit) { task in
                 EditTaskView(
                     listId: task.list_id,
                     task: task,
-                    taskService: taskService,
+                    taskService: viewModel.taskService,
                     tagService: tagService,
                     onSave: {
-                        Task { await search() }
+                        Task { await viewModel.search() }
                     }
                 )
             }
-            .errorBanner($error)
+            .errorBanner($viewModel.error)
         }
     }
-    
+
     @ViewBuilder
     private var searchResults: some View {
-        if isSearching {
+        if viewModel.isSearching {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if results.isEmpty && hasSearched {
+        } else if viewModel.results.isEmpty && viewModel.hasSearched {
             ContentUnavailableView(
                 "No Results",
                 systemImage: DS.Icon.search,
-                description: Text("No tasks found for \"\(query)\"")
+                description: Text("No tasks found for \"\(viewModel.query)\"")
             )
-        } else if results.isEmpty {
+        } else if viewModel.results.isEmpty {
             ContentUnavailableView(
                 "Search Tasks",
                 systemImage: DS.Icon.search,
@@ -80,18 +70,18 @@ struct SearchView: View {
             )
         } else {
             List {
-                ForEach(groupedResults, id: \.listId) { group in
+                ForEach(viewModel.groupedResults, id: \.listId) { group in
                     Section {
                         ForEach(group.tasks, id: \.id) { task in
                             SearchResultRow(task: task)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     HapticManager.selection()
-                                    taskToEdit = task
+                                    viewModel.taskToEdit = task
                                 }
                         }
                     } header: {
-                        if let list = lists[group.listId] {
+                        if let list = viewModel.lists[group.listId] {
                             Button {
                                 HapticManager.selection()
                                 dismiss()
@@ -119,58 +109,22 @@ struct SearchView: View {
             .surfaceFormBackground()
         }
     }
-
-    private func search() async {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        
-        isSearching = true
-        hasSearched = true
-        
-        do {
-            results = try await taskService.searchTasks(query: trimmed)
-            await loadListsForResults()
-        } catch let err as FocusmateError {
-            error = err
-            HapticManager.error()
-        } catch {
-            self.error = .custom("SEARCH_ERROR", error.localizedDescription)
-            HapticManager.error()
-        }
-        
-        isSearching = false
-    }
-    
-    private func loadListsForResults() async {
-        let listIds = Set(results.map { $0.list_id })
-        
-        do {
-            let allLists = try await listService.fetchLists()
-            for list in allLists {
-                if listIds.contains(list.id) {
-                    lists[list.id] = list
-                }
-            }
-        } catch {
-            Logger.error("Failed to load lists for search results: \(error)", category: .api)
-        }
-    }
 }
 
 struct SearchResultRow: View {
     let task: TaskDTO
-    
+
     private var isOverdue: Bool {
         guard let dueDate = task.dueDate, !task.isCompleted else { return false }
         return dueDate < Date()
     }
-    
+
     var body: some View {
         HStack(spacing: DS.Spacing.md) {
             Image(systemName: task.isCompleted ? DS.Icon.circleChecked : DS.Icon.circle)
                 .foregroundStyle(task.isCompleted ? DS.Colors.success : task.taskColor)
                 .font(.title3)
-            
+
             VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 HStack(spacing: DS.Spacing.xs) {
                     if let icon = task.taskPriority.icon {
@@ -178,19 +132,19 @@ struct SearchResultRow: View {
                             .foregroundStyle(task.taskPriority.color)
                             .font(.caption)
                     }
-                    
+
                     Text(task.title)
                         .font(.body.weight(.medium))
                         .strikethrough(task.isCompleted)
                         .foregroundStyle(isOverdue ? DS.Colors.overdue : .primary)
-                    
+
                     if task.isStarred {
                         Image(systemName: DS.Icon.starFilled)
                             .foregroundStyle(.yellow)
                             .font(.caption)
                     }
                 }
-                
+
                 if let note = task.note, !note.isEmpty {
                     Text(note)
                         .font(.caption)
@@ -198,9 +152,9 @@ struct SearchResultRow: View {
                         .lineLimit(1)
                 }
             }
-            
+
             Spacer()
-            
+
             Image(systemName: DS.Icon.chevronRight)
                 .font(.caption)
                 .foregroundStyle(.tertiary)

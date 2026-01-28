@@ -2,26 +2,18 @@ import SwiftUI
 
 struct ChangePasswordView: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var appState: AppState
-    
-    @State private var currentPassword = ""
-    @State private var newPassword = ""
-    @State private var confirmPassword = ""
-    @State private var isLoading = false
-    @State private var error: FocusmateError?
-    @State private var showSuccess = false
-    
-    private var isValid: Bool {
-        !currentPassword.isEmpty &&
-        newPassword.count >= 6 &&
-        newPassword == confirmPassword
+
+    @State private var viewModel: ChangePasswordViewModel
+
+    init(apiClient: APIClient) {
+        _viewModel = State(initialValue: ChangePasswordViewModel(apiClient: apiClient))
     }
-    
+
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    SecureField("Current Password", text: $currentPassword)
+                    SecureField("Current Password", text: $viewModel.currentPassword)
                         .textContentType(.password)
                 } footer: {
                     HStack {
@@ -35,18 +27,18 @@ struct ChangePasswordView: View {
                         .font(.subheadline)
                     }
                 }
-                
+
                 Section {
-                    SecureField("New Password", text: $newPassword)
+                    SecureField("New Password", text: $viewModel.newPassword)
                         .textContentType(.newPassword)
-                    
-                    SecureField("Confirm New Password", text: $confirmPassword)
+
+                    SecureField("Confirm New Password", text: $viewModel.confirmPassword)
                         .textContentType(.newPassword)
                 } footer: {
-                    if newPassword.count > 0 && newPassword.count < 6 {
+                    if viewModel.newPassword.count > 0 && viewModel.newPassword.count < 6 {
                         Text("Password must be at least 6 characters.")
                             .foregroundColor(.red)
-                    } else if !confirmPassword.isEmpty && newPassword != confirmPassword {
+                    } else if !viewModel.confirmPassword.isEmpty && viewModel.newPassword != viewModel.confirmPassword {
                         Text("Passwords don't match.")
                             .foregroundColor(.red)
                     }
@@ -61,53 +53,29 @@ struct ChangePasswordView: View {
                         dismiss()
                     }
                 }
-                
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        Task { await changePassword() }
+                        Task { await viewModel.changePassword() }
                     }
-                    .disabled(!isValid || isLoading)
+                    .disabled(!viewModel.isValid || viewModel.isLoading)
                 }
             }
             .overlay {
-                if isLoading {
+                if viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(1.5)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color.black.opacity(0.2))
                 }
             }
-            .errorBanner($error)
-            .alert("Success", isPresented: $showSuccess) {
+            .errorBanner($viewModel.error)
+            .alert("Success", isPresented: $viewModel.showSuccess) {
                 Button("OK") { dismiss() }
             } message: {
                 Text("Your password has been changed.")
             }
         }
-    }
-    
-    private func changePassword() async {
-        isLoading = true
-        error = nil
-        
-        do {
-            let _: EmptyResponse = try await appState.auth.api.request(
-                "PUT",
-                API.Users.password,
-                body: ChangePasswordRequest(
-                    currentPassword: currentPassword,
-                    password: newPassword,
-                    passwordConfirmation: confirmPassword
-                )
-            )
-            showSuccess = true
-        } catch let err as FocusmateError {
-            error = err
-        } catch {
-            self.error = ErrorHandler.shared.handle(error)
-        }
-        
-        isLoading = false
     }
 }
 
@@ -115,7 +83,7 @@ struct ChangePasswordRequest: Encodable {
     let currentPassword: String
     let password: String
     let passwordConfirmation: String
-    
+
     enum CodingKeys: String, CodingKey {
         case currentPassword = "current_password"
         case password

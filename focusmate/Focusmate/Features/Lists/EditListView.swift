@@ -1,35 +1,25 @@
 import SwiftUI
 
 struct EditListView: View {
-    let list: ListDTO
-    let listService: ListService
     @Environment(\.dismiss) var dismiss
 
-    @State private var name: String
-    @State private var description: String
-    @State private var selectedColor: String
-    @State private var isLoading = false
-    @State private var error: FocusmateError?
-    
+    @State private var viewModel: EditListViewModel
+
     init(list: ListDTO, listService: ListService) {
-        self.list = list
-        self.listService = listService
-        _name = State(initialValue: list.name)
-        _description = State(initialValue: list.description ?? "")
-        _selectedColor = State(initialValue: list.color ?? "blue")
+        _viewModel = State(initialValue: EditListViewModel(list: list, listService: listService))
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("List Details") {
-                    TextField("List Name", text: $name)
-                    TextField("Description (Optional)", text: $description, axis: .vertical)
+                    TextField("List Name", text: $viewModel.name)
+                    TextField("Description (Optional)", text: $viewModel.description, axis: .vertical)
                         .lineLimit(3...6)
                 }
 
                 Section("Color") {
-                    ListColorPicker(selected: $selectedColor)
+                    ListColorPicker(selected: $viewModel.selectedColor)
                         .padding(.vertical, 8)
                 }
             }
@@ -45,37 +35,16 @@ struct EditListView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        Task { await updateList() }
+                        Task {
+                            if await viewModel.updateList() {
+                                dismiss()
+                            }
+                        }
                     }
-                    .disabled(name.isEmpty || isLoading)
+                    .disabled(viewModel.name.isEmpty || viewModel.isLoading)
                 }
             }
-            .errorBanner($error)
-        }
-    }
-    
-    private func updateList() async {
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return }
-
-        isLoading = true
-        defer { isLoading = false }
-
-        do {
-            _ = try await listService.updateList(
-                id: list.id,
-                name: trimmedName,
-                description: description.isEmpty ? nil : description,
-                color: selectedColor
-            )
-            HapticManager.success()
-            dismiss()
-        } catch let err as FocusmateError {
-            error = err
-            HapticManager.error()
-        } catch {
-            self.error = .custom("UPDATE_ERROR", error.localizedDescription)
-            HapticManager.error()
+            .errorBanner($viewModel.error)
         }
     }
 }

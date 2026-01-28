@@ -124,14 +124,14 @@ struct SettingsView: View {
             .navigationTitle("Profile")
             .sheet(isPresented: $showingEditProfile) {
                 if let user {
-                    EditProfileView(user: user)
+                    EditProfileView(user: user, apiClient: appState.auth.api)
                 }
             }
             .sheet(isPresented: $showingChangePassword) {
-                ChangePasswordView()
+                ChangePasswordView(apiClient: appState.auth.api)
             }
             .sheet(isPresented: $showingDeleteAccount) {
-                DeleteAccountView()
+                DeleteAccountView(apiClient: appState.auth.api, authStore: appState.auth)
             }
             .alert("Sign Out", isPresented: $showingSignOutConfirmation) {
                 Button("Cancel", role: .cancel) {}
