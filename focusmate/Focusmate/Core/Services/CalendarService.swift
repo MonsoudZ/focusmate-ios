@@ -130,7 +130,12 @@ final class CalendarService {
     
     func addTaskToCalendar(_ task: TaskDTO) {
         Logger.debug("Adding task to calendar: \(task.title)", category: .general)
-        
+
+        guard AppSettings.shared.calendarSyncEnabled else {
+            Logger.debug("Calendar: Sync disabled by user", category: .general)
+            return
+        }
+
         guard checkPermission() else {
             Logger.error("Calendar: No permission", error: nil, category: .general)
             return

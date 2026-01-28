@@ -15,6 +15,7 @@ final class AppSettings: @unchecked Sendable {
         static let didRequestNotificationsPermission = "did_request_notifications_permission"
         static let didRequestCalendarPermission = "did_request_calendar_permission"
         static let didRequestScreenTimePermission = "did_request_screentime_permission"
+        static let calendarSyncEnabled = "calendar_sync_enabled"
 
         // ✅ NEW
         static let didCompleteAuthenticatedBoot = "did_complete_authenticated_boot"
@@ -54,6 +55,18 @@ final class AppSettings: @unchecked Sendable {
     var didRequestScreenTimePermission: Bool {
         get { defaults.bool(forKey: Key.didRequestScreenTimePermission) }
         set { defaults.set(newValue, forKey: Key.didRequestScreenTimePermission) }
+    }
+
+    /// Whether calendar sync is enabled (user can toggle off even with permission granted)
+    var calendarSyncEnabled: Bool {
+        get {
+            // Default to true if key doesn't exist but permission was granted
+            if defaults.object(forKey: Key.calendarSyncEnabled) == nil {
+                return didRequestCalendarPermission
+            }
+            return defaults.bool(forKey: Key.calendarSyncEnabled)
+        }
+        set { defaults.set(newValue, forKey: Key.calendarSyncEnabled) }
     }
 
     // MARK: - Authenticated Boot

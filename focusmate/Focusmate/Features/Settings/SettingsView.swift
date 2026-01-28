@@ -6,6 +6,8 @@ struct SettingsView: View {
     @State private var showingChangePassword = false
     @State private var showingDeleteAccount = false
     @State private var showingSignOutConfirmation = false
+    @State private var calendarPermissionGranted = CalendarService.shared.checkPermission()
+    @State private var calendarSyncEnabled = AppSettings.shared.calendarSyncEnabled
 
     private var user: UserDTO? {
         appState.auth.currentUser
@@ -16,66 +18,79 @@ struct SettingsView: View {
             List {
                 // MARK: - Profile Header
                 Section {
-                    HStack(spacing: DS.Spacing.lg) {
-                        Avatar(user?.name ?? user?.email, size: DS.Size.avatarLarge)
-
-                        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-                            Text(user?.name ?? "No Name")
-                                .font(DS.Typography.headline)
-                            Text(user?.email ?? "")
-                                .font(DS.Typography.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-                    }
-                    .padding(.vertical, DS.Spacing.sm)
-                }
-
-                // MARK: - Account
-                Section("Account") {
                     Button {
                         showingEditProfile = true
                     } label: {
-                        SettingsRow("Edit Profile", icon: "person")
-                    }
+                        HStack(spacing: DS.Spacing.lg) {
+                            Avatar(user?.name ?? user?.email, size: DS.Size.avatarLarge)
 
-                    if user?.hasPassword == true {
+                            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                                Text(user?.name ?? "No Name")
+                                    .font(DS.Typography.headline)
+                                Text(user?.email ?? "")
+                                    .font(DS.Typography.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: DS.Icon.chevronRight)
+                                .font(DS.Typography.footnote)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, DS.Spacing.sm)
+                    }
+                    .foregroundStyle(.primary)
+                }
+
+                // MARK: - Account
+                if user?.hasPassword == true {
+                    Section("Account") {
                         Button {
                             showingChangePassword = true
                         } label: {
                             SettingsRow("Change Password", icon: "lock")
                         }
                     }
-
-                    HStack {
-                        Label("Timezone", systemImage: "clock")
-                        Spacer()
-                        Text(user?.timezone ?? "Not set")
-                            .foregroundStyle(.secondary)
-                    }
                 }
 
-                // MARK: - Notifications
-                Section("Notifications") {
+                // MARK: - Preferences
+                Section("Preferences") {
                     NavigationLink {
                         NotificationSettingsView()
                     } label: {
-                        Label("Notification Preferences", systemImage: DS.Icon.bell)
+                        Label("Notifications", systemImage: DS.Icon.bell)
                     }
-                }
 
-                // MARK: - App Blocking
-                Section("App Blocking") {
                     NavigationLink {
                         AppBlockingSettingsView()
                     } label: {
-                        Label("Blocked Apps", systemImage: DS.Icon.shield)
+                        Label("App Blocking", systemImage: DS.Icon.shield)
+                    }
+
+                    if calendarPermissionGranted {
+                        Toggle(isOn: $calendarSyncEnabled) {
+                            Label("Calendar Sync", systemImage: "calendar")
+                        }
+                        .onChange(of: calendarSyncEnabled) { _, newValue in
+                            AppSettings.shared.calendarSyncEnabled = newValue
+                        }
+                    } else {
+                        HStack {
+                            Label("Calendar Sync", systemImage: "calendar")
+                            Spacer()
+                            Button("Enable") {
+                                requestCalendarAccess()
+                            }
+                            .font(DS.Typography.subheadline)
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
                     }
                 }
 
                 // MARK: - About
-                Section("About") {
+                Section {
                     HStack {
                         Label("Version", systemImage: DS.Icon.info)
                         Spacer()
@@ -96,32 +111,38 @@ struct SettingsView: View {
                     }
                 }
 
-                // MARK: - Danger Zone
+                // MARK: - Sign Out
                 Section {
                     Button {
                         showingSignOutConfirmation = true
                     } label: {
                         HStack {
                             Spacer()
-                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            Text("Sign Out")
                             Spacer()
                         }
                     }
-                    .foregroundStyle(DS.Colors.warning)
+                    .foregroundStyle(DS.Colors.error)
+                }
 
+                // MARK: - Delete Account
+                Section {
                     Button(role: .destructive) {
                         showingDeleteAccount = true
                     } label: {
                         HStack {
                             Spacer()
-                            Label("Delete Account", systemImage: DS.Icon.trash)
+                            Text("Delete Account")
                             Spacer()
                         }
                     }
+                } footer: {
+                    Text("Permanently delete your account and all data.")
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             .surfaceFormBackground()
-            .navigationTitle("Profile")
+            .navigationTitle("Settings")
             .sheet(isPresented: $showingEditProfile) {
                 if let user {
                     EditProfileView(user: user, apiClient: appState.auth.api)
@@ -148,6 +169,20 @@ struct SettingsView: View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "\(version) (\(build))"
+    }
+
+    private func requestCalendarAccess() {
+        Task {
+            let granted = await CalendarService.shared.requestPermission()
+            await MainActor.run {
+                calendarPermissionGranted = granted
+                if granted {
+                    AppSettings.shared.didRequestCalendarPermission = true
+                    AppSettings.shared.calendarSyncEnabled = true
+                    calendarSyncEnabled = true
+                }
+            }
+        }
     }
 }
 
