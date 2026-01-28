@@ -17,6 +17,7 @@ final class TodayService {
             return cached
         }
         let response: TodayResponse = try await api.request("GET", API.Today.root, body: nil as String?)
+        Logger.debug("TodayService: streak = \(String(describing: response.streak))", category: .api)
         await cache.set(Self.cacheKey, value: response, ttl: Self.cacheTTL)
         return response
     }

@@ -267,17 +267,15 @@ struct TodayView: View {
                     }
                 }
 
-                if let streak = data.streak {
-                    HStack(spacing: DS.Spacing.xs) {
-                        Text("🔥")
-                        if streak.current > 0 {
-                            Text("\(streak.current) day streak")
-                                .font(DS.Typography.subheadline.weight(.medium))
-                        } else {
-                            Text("Complete all tasks to start a streak!")
-                                .font(DS.Typography.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                HStack(spacing: DS.Spacing.xs) {
+                    Text("🔥")
+                    if let streak = data.streak, streak.current > 0 {
+                        Text("\(streak.current) day streak")
+                            .font(DS.Typography.subheadline.weight(.medium))
+                    } else {
+                        Text("Complete all tasks to start a streak!")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }

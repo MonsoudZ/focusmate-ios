@@ -28,7 +28,7 @@ final class ChangePasswordViewModel {
 
         do {
             let _: EmptyResponse = try await apiClient.request(
-                "PUT",
+                "PATCH",
                 API.Users.password,
                 body: ChangePasswordRequest(
                     currentPassword: currentPassword,

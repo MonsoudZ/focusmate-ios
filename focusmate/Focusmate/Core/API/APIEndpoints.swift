@@ -72,7 +72,7 @@ enum API {
     enum Users {
         static let deviceToken = "api/v1/devices"
         static let profile = "api/v1/users/profile"
-        static let password = "api/v1/users/me/password"
+        static let password = "api/v1/users/profile/password"
     }
 
     enum Lists {
