@@ -97,9 +97,9 @@ final class TodayViewModel: ObservableObject {
         do {
             guard let todayService else { return }
             todayData = try await todayService.fetchToday()
-            onOverdueCountChange?(todayData?.stats.overdue_count ?? 0)
+            onOverdueCountChange?(todayData?.stats?.overdue_count ?? 0)
 
-            let totalDueToday = (todayData?.stats.due_today_count ?? 0) + (todayData?.stats.overdue_count ?? 0)
+            let totalDueToday = (todayData?.stats?.due_today_count ?? 0) + (todayData?.stats?.overdue_count ?? 0)
             notificationService.scheduleMorningBriefing(taskCount: totalDueToday)
         } catch {
             self.error = ErrorHandler.shared.handle(error, context: "Loading Today")

@@ -185,14 +185,10 @@ final class TaskService {
     // MARK: - Subtask Methods
     
     /// Create a subtask under a parent task
-    func createSubtask(listId: Int, parentTaskId: Int, title: String) async throws -> TaskDTO {
+    func createSubtask(listId: Int, parentTaskId: Int, title: String) async throws -> SubtaskDTO {
         do {
-            let request = CreateSubtaskRequest(task: .init(
-                title: title,
-                parent_task_id: parentTaskId
-            ))
-
-            let subtask: TaskDTO = try await apiClient.request(
+            let request = CreateSubtaskRequest(subtask: .init(title: title))
+            let subtask: SubtaskDTO = try await apiClient.request(
                 "POST",
                 API.Lists.subtasks(String(listId), String(parentTaskId)),
                 body: request
@@ -203,11 +199,11 @@ final class TaskService {
             throw ErrorHandler.shared.handle(error, context: "Creating subtask")
         }
     }
-    
+
     /// Complete a subtask
-    func completeSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> TaskDTO {
+    func completeSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> SubtaskDTO {
         do {
-            let subtask: TaskDTO = try await apiClient.request(
+            let subtask: SubtaskDTO = try await apiClient.request(
                 "PATCH",
                 API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), "complete"),
                 body: nil as String?
@@ -220,9 +216,9 @@ final class TaskService {
     }
 
     /// Reopen a subtask
-    func reopenSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> TaskDTO {
+    func reopenSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> SubtaskDTO {
         do {
-            let subtask: TaskDTO = try await apiClient.request(
+            let subtask: SubtaskDTO = try await apiClient.request(
                 "PATCH",
                 API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), "reopen"),
                 body: nil as String?
@@ -235,18 +231,10 @@ final class TaskService {
     }
 
     /// Update a subtask
-    func updateSubtask(listId: Int, parentTaskId: Int, subtaskId: Int, title: String) async throws -> TaskDTO {
+    func updateSubtask(listId: Int, parentTaskId: Int, subtaskId: Int, title: String) async throws -> SubtaskDTO {
         do {
-            let request = UpdateTaskRequest(task: .init(
-                title: title,
-                note: nil,
-                due_at: nil,
-                color: nil,
-                priority: nil,
-                starred: nil,
-                tag_ids: nil
-            ))
-            let subtask: TaskDTO = try await apiClient.request(
+            let request = UpdateSubtaskRequest(subtask: .init(title: title))
+            let subtask: SubtaskDTO = try await apiClient.request(
                 "PUT",
                 API.Lists.subtask(String(listId), String(parentTaskId), String(subtaskId)),
                 body: request
@@ -296,10 +284,16 @@ private struct CreateTaskRequest: Encodable {
 }
 
 private struct CreateSubtaskRequest: Encodable {
-    let task: SubtaskData
+    let subtask: SubtaskData
     struct SubtaskData: Encodable {
         let title: String
-        let parent_task_id: Int
+    }
+}
+
+private struct UpdateSubtaskRequest: Encodable {
+    let subtask: SubtaskData
+    struct SubtaskData: Encodable {
+        let title: String
     }
 }
 

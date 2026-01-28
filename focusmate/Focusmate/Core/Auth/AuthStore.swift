@@ -107,12 +107,12 @@ final class AuthStore: ObservableObject {
         defer { isValidatingSession = false }
 
         do {
-            let user: UserDTO = try await api.request(
+            let response: UserResponse = try await api.request(
                 "GET",
                 API.Users.profile,
                 body: nil as String?
             )
-            currentUser = user
+            currentUser = response.user
             Logger.info("Session validated", category: .auth)
         } catch {
             Logger.warning("Session invalid, clearing: \(error)", category: .auth)

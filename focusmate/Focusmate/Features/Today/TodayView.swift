@@ -262,8 +262,8 @@ struct TodayView: View {
                 HStack(spacing: DS.Spacing.md) {
                     miniStat(count: viewModel.completedCount, total: viewModel.totalTasks, label: "Done")
 
-                    if data.stats.overdue_count > 0 {
-                        miniStat(count: data.stats.overdue_count, label: "Overdue", color: DS.Colors.error)
+                    if (data.stats?.overdue_count ?? 0) > 0 {
+                        miniStat(count: data.stats?.overdue_count ?? 0, label: "Overdue", color: DS.Colors.error)
                     }
                 }
 

@@ -40,6 +40,7 @@ struct AuthSignInResponse: Decodable {
     let token: String
 }
 
+
 struct ForgotPasswordRequest: Encodable {
     let user: User
     
