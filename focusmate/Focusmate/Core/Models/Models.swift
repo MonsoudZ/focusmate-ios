@@ -128,10 +128,10 @@ struct TaskDTO: Codable, Identifiable {
     let title: String
     let note: String?
     let due_at: String?
-    let completed_at: String?
+    var completed_at: String?
     let priority: Int?
-    let starred: Bool?
-    let position: Int?
+    var starred: Bool?
+    var position: Int?
     let status: String?
     let can_edit: Bool?
     let can_delete: Bool?
@@ -139,7 +139,7 @@ struct TaskDTO: Codable, Identifiable {
     let updated_at: String?
     let tags: [TagDTO]?
     let parent_task_id: Int?
-    let subtasks: [SubtaskDTO]?
+    var subtasks: [SubtaskDTO]?
     
     // Recurring fields
     let is_recurring: Bool?

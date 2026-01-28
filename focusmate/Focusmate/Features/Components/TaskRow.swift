@@ -7,6 +7,7 @@ struct TaskRow: View {
     let onTap: () -> Void
     let onNudge: () async -> Void
     let onSubtaskEdit: (SubtaskDTO) -> Void
+    let onSubtaskChanged: () async -> Void
     let onAddSubtask: () -> Void
     let showStar: Bool
     let showNudge: Bool
@@ -46,6 +47,7 @@ struct TaskRow: View {
         onTap: @escaping () -> Void = {},
         onNudge: @escaping () async -> Void = {},
         onSubtaskEdit: @escaping (SubtaskDTO) -> Void = { _ in },
+        onSubtaskChanged: @escaping () async -> Void = {},
         onAddSubtask: @escaping () -> Void = {},
         showStar: Bool = true,
         showNudge: Bool = false
@@ -56,6 +58,7 @@ struct TaskRow: View {
         self.onTap = onTap
         self.onNudge = onNudge
         self.onSubtaskEdit = onSubtaskEdit
+        self.onSubtaskChanged = onSubtaskChanged
         self.onAddSubtask = onAddSubtask
         self.showStar = showStar
         self.showNudge = showNudge
@@ -339,7 +342,7 @@ struct TaskRow: View {
                                     Logger.error("Failed to toggle subtask: \(error)", category: .api)
                                     HapticManager.error()
                                 }
-                                await onComplete()
+                                await onSubtaskChanged()
                             },
                             onDelete: {
                                 do {
@@ -353,7 +356,7 @@ struct TaskRow: View {
                                     Logger.error("Failed to delete subtask: \(error)", category: .api)
                                     HapticManager.error()
                                 }
-                                await onComplete()
+                                await onSubtaskChanged()
                             },
                             onTap: {
                                 onSubtaskEdit(subtask)

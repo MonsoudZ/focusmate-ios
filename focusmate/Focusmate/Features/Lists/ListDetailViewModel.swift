@@ -145,8 +145,13 @@ final class ListDetailViewModel: ObservableObject {
     func toggleStar(_ task: TaskDTO) async {
         guard canEdit else { return }
 
+        let originalTasks = tasks
+        if let idx = tasks.firstIndex(where: { $0.id == task.id }) {
+            tasks[idx].starred = !(tasks[idx].starred ?? false)
+        }
+
         do {
-            _ = try await taskService.updateTask(
+            let updated = try await taskService.updateTask(
                 listId: task.list_id,
                 taskId: task.id,
                 title: nil,
@@ -154,24 +159,41 @@ final class ListDetailViewModel: ObservableObject {
                 dueAt: nil,
                 starred: !task.isStarred
             )
-            await loadTasks()
+            if let idx = tasks.firstIndex(where: { $0.id == updated.id }) {
+                tasks[idx] = updated
+            }
         } catch {
+            tasks = originalTasks
             Logger.error("Failed to toggle star: \(error)", category: .api)
         }
     }
 
     func toggleComplete(_ task: TaskDTO) async {
         if task.isCompleted {
+            let originalTasks = tasks
+            if let idx = tasks.firstIndex(where: { $0.id == task.id }) {
+                tasks[idx].completed_at = nil
+            }
+
             do {
-                _ = try await taskService.reopenTask(listId: list.id, taskId: task.id)
+                let updated = try await taskService.reopenTask(listId: list.id, taskId: task.id)
                 HapticManager.light()
-                await loadTasks()
+                if let idx = tasks.firstIndex(where: { $0.id == updated.id }) {
+                    tasks[idx] = updated
+                }
             } catch {
+                tasks = originalTasks
                 self.error = ErrorHandler.shared.handle(error)
                 HapticManager.error()
             }
         } else {
-            await loadTasks()
+            markTaskCompleted(task.id)
+        }
+    }
+
+    func markTaskCompleted(_ taskId: Int) {
+        if let idx = tasks.firstIndex(where: { $0.id == taskId }) {
+            tasks[idx].completed_at = ISO8601DateFormatter().string(from: Date())
         }
     }
 
@@ -213,13 +235,17 @@ final class ListDetailViewModel: ObservableObject {
 
     func createSubtask(parentTask: TaskDTO, title: String) async {
         do {
-            _ = try await taskService.createSubtask(
+            let subtask = try await taskService.createSubtask(
                 listId: parentTask.list_id,
                 parentTaskId: parentTask.id,
                 title: title
             )
             HapticManager.success()
-            await loadTasks()
+            if let idx = tasks.firstIndex(where: { $0.id == parentTask.id }) {
+                var existing = tasks[idx].subtasks ?? []
+                existing.append(subtask)
+                tasks[idx].subtasks = existing
+            }
         } catch {
             Logger.error("Failed to create subtask: \(error)", category: .api)
             self.error = ErrorHandler.shared.handle(error)
@@ -229,14 +255,19 @@ final class ListDetailViewModel: ObservableObject {
 
     func updateSubtask(info: SubtaskEditInfo, title: String) async {
         do {
-            _ = try await taskService.updateSubtask(
+            let updated = try await taskService.updateSubtask(
                 listId: info.parentTask.list_id,
                 parentTaskId: info.parentTask.id,
                 subtaskId: info.subtask.id,
                 title: title
             )
             HapticManager.success()
-            await loadTasks()
+            if let taskIdx = tasks.firstIndex(where: { $0.id == info.parentTask.id }),
+               var subs = tasks[taskIdx].subtasks,
+               let subIdx = subs.firstIndex(where: { $0.id == info.subtask.id }) {
+                subs[subIdx] = updated
+                tasks[taskIdx].subtasks = subs
+            }
         } catch {
             Logger.error("Failed to update subtask: \(error)", category: .api)
             self.error = ErrorHandler.shared.handle(error)
@@ -244,11 +275,13 @@ final class ListDetailViewModel: ObservableObject {
         }
     }
 
-    func reorderTasks(_ updates: [(id: Int, position: Int)]) async {
+    func reorderTasks(_ updates: [(id: Int, position: Int)], originalTasks: [TaskDTO]? = nil) async {
         do {
             try await taskService.reorderTasks(listId: list.id, tasks: updates)
-            await loadTasks()
         } catch {
+            if let originalTasks {
+                tasks = originalTasks
+            }
             Logger.error("Failed to reorder tasks: \(error)", category: .api)
             self.error = ErrorHandler.shared.handle(error)
             HapticManager.error()
@@ -275,10 +308,18 @@ final class ListDetailViewModel: ObservableObject {
             (id: task.id, position: index)
         }
 
+        let originalTasks = tasks
+
+        for (id, position) in updates {
+            if let idx = tasks.firstIndex(where: { $0.id == id }) {
+                tasks[idx].position = position
+            }
+        }
+
         HapticManager.selection()
 
         Task {
-            await reorderTasks(updates)
+            await reorderTasks(updates, originalTasks: originalTasks)
         }
     }
 

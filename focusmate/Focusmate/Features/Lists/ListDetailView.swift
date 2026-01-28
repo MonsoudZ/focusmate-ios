@@ -248,13 +248,16 @@ struct ListDetailView: View {
             canEdit: task.can_edit ?? viewModel.canEdit,
             canDelete: task.can_delete ?? viewModel.canEdit,
             isSharedList: viewModel.isSharedList,
-            onComplete: { await viewModel.loadTasks() },
+            onComplete: { viewModel.markTaskCompleted(task.id) },
             onStar: { await viewModel.toggleStar(task) },
             onTap: { viewModel.selectedTask = task },
             onNudge: { await viewModel.nudgeAboutTask(task) },
             onDelete: { await viewModel.deleteTask(task) },
             onSubtaskEdit: { subtask in
                 viewModel.startEditSubtask(subtask, parentTask: task)
+            },
+            onSubtaskChanged: {
+                await viewModel.loadTasks()
             },
             onAddSubtask: {
                 viewModel.startAddSubtask(for: task)
@@ -276,6 +279,7 @@ struct TaskRowContainer: View {
     let onNudge: () async -> Void
     let onDelete: () async -> Void
     let onSubtaskEdit: (SubtaskDTO) -> Void
+    let onSubtaskChanged: () async -> Void
     let onAddSubtask: () -> Void
 
     var body: some View {
@@ -286,6 +290,7 @@ struct TaskRowContainer: View {
             onTap: onTap,
             onNudge: onNudge,
             onSubtaskEdit: onSubtaskEdit,
+            onSubtaskChanged: onSubtaskChanged,
             onAddSubtask: onAddSubtask,
             showStar: canEdit,
             showNudge: isSharedList
