@@ -55,6 +55,7 @@ struct QuickAddTaskView: View {
                     }
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("Quick Add")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @MainActor
 struct FocusmateApp: App {
@@ -11,6 +12,40 @@ struct FocusmateApp: App {
         let auth = AuthStore()
         _state = StateObject(wrappedValue: AppState(auth: auth))
         _bootstrapper = StateObject(wrappedValue: AppBootstrapper(auth: auth))
+
+        Self.configureAppearance()
+    }
+
+    private static func configureAppearance() {
+        let accentUIColor = UIColor(Color("AccentColor"))
+
+        // Tab bar
+        UITabBar.appearance().tintColor = accentUIColor
+
+        // Navigation bar — SF Rounded large titles + accent tint
+        let navAppearance = UINavigationBarAppearance()
+        navAppearance.configureWithDefaultBackground()
+
+        // Large title: SF Rounded Bold 34pt
+        if let roundedDesc = UIFont.systemFont(ofSize: 34, weight: .bold)
+            .fontDescriptor.withDesign(.rounded) {
+            navAppearance.largeTitleTextAttributes = [
+                .font: UIFont(descriptor: roundedDesc, size: 34),
+                .foregroundColor: accentUIColor
+            ]
+        }
+
+        // Inline title: SF Rounded Semibold 17pt
+        if let roundedInline = UIFont.systemFont(ofSize: 17, weight: .semibold)
+            .fontDescriptor.withDesign(.rounded) {
+            navAppearance.titleTextAttributes = [
+                .font: UIFont(descriptor: roundedInline, size: 17)
+            ]
+        }
+
+        UINavigationBar.appearance().standardAppearance = navAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+        UINavigationBar.appearance().tintColor = accentUIColor
     }
 
     var body: some Scene {
@@ -40,7 +75,7 @@ struct RootView: View {
                 VStack {
                     ProgressView()
                     Text("Loading...")
-                        .font(.caption)
+                        .font(DS.Typography.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, DS.Spacing.sm)
                 }
@@ -94,6 +129,7 @@ struct RootView: View {
                         }
                         .tag(2)
                 }
+                .tint(DS.Colors.accent)
                 .task(id: auth.jwt != nil) {
                     guard auth.jwt != nil else { return }
                     await bootstrapper.runAuthenticatedBootTasksIfNeeded()

@@ -48,9 +48,9 @@ struct ErrorBannerView: View {
         }
         .padding(DS.Spacing.md)
         .background(DS.Colors.error.opacity(0.1))
-        .cornerRadius(DS.Radius.md)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: DS.Radius.md)
+            RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous)
                 .stroke(DS.Colors.error.opacity(0.3), lineWidth: 1)
         )
         .padding(.horizontal)

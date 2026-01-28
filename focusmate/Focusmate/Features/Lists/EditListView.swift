@@ -33,6 +33,7 @@ struct EditListView: View {
                         .padding(.vertical, 8)
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("Edit List")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

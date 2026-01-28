@@ -79,6 +79,16 @@ struct TodayView: View {
                     listId: task.list_id
                 )
             }
+            .sheet(item: $viewModel.taskForSubtask) { parentTask in
+                AddSubtaskSheet(parentTask: parentTask) { title in
+                    await viewModel.createSubtask(parentTask: parentTask, title: title)
+                }
+            }
+            .sheet(item: $viewModel.subtaskEditInfo) { info in
+                EditSubtaskSheet(subtask: info.subtask) { newTitle in
+                    await viewModel.updateSubtask(info: info, title: newTitle)
+                }
+            }
         }
         .task {
             viewModel.initializeServiceIfNeeded()
@@ -156,6 +166,7 @@ struct TodayView: View {
             }
             .padding(DS.Spacing.lg)
         }
+        .surfaceBackground()
     }
 
     // MARK: - Escalation Banner
@@ -165,35 +176,47 @@ struct TodayView: View {
         if viewModel.screenTimeService.isBlocking {
             HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: DS.Icon.lock)
-                    .font(.title3)
+                    .font(DS.Typography.title3)
                 VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                     Text("Apps Blocked")
-                        .font(.body.weight(.semibold))
+                        .font(DS.Typography.bodyMedium)
                     Text("Complete your overdue tasks to unlock")
-                        .font(.caption)
+                        .font(DS.Typography.caption)
                 }
                 Spacer()
             }
             .foregroundStyle(.white)
             .padding(DS.Spacing.md)
-            .background(DS.Colors.error)
-            .cornerRadius(DS.Radius.md)
+            .background(
+                LinearGradient(
+                    colors: [DS.Colors.error, DS.Colors.error.opacity(0.8)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
         } else if viewModel.escalationService.isInGracePeriod {
             HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: DS.Icon.timer)
-                    .font(.title3)
+                    .font(DS.Typography.title3)
                 VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                     Text("Grace Period")
-                        .font(.body.weight(.semibold))
+                        .font(DS.Typography.bodyMedium)
                     Text("Apps will be blocked in \(viewModel.escalationService.gracePeriodRemainingFormatted ?? "...")")
-                        .font(.caption)
+                        .font(DS.Typography.caption)
                 }
                 Spacer()
             }
             .foregroundStyle(.black)
             .padding(DS.Spacing.md)
-            .background(DS.Colors.warning)
-            .cornerRadius(DS.Radius.md)
+            .background(
+                LinearGradient(
+                    colors: [DS.Colors.warning, DS.Colors.warning.opacity(0.8)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
         }
     }
 
@@ -209,7 +232,16 @@ struct TodayView: View {
                 Circle()
                     .trim(from: 0, to: viewModel.progress)
                     .stroke(
-                        viewModel.isAllComplete ? DS.Colors.success : DS.Colors.accent,
+                        viewModel.isAllComplete
+                            ? AnyShapeStyle(DS.Colors.success)
+                            : AnyShapeStyle(
+                                AngularGradient(
+                                    colors: [DS.Colors.accent.opacity(0.6), DS.Colors.accent],
+                                    center: .center,
+                                    startAngle: .degrees(-90),
+                                    endAngle: .degrees(-90 + 360 * viewModel.progress)
+                                )
+                            ),
                         style: StrokeStyle(lineWidth: DS.Size.progressStroke, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
@@ -217,11 +249,11 @@ struct TodayView: View {
 
                 if viewModel.isAllComplete {
                     Image(systemName: "checkmark")
-                        .font(.title2.weight(.bold))
+                        .font(DS.Typography.title2)
                         .foregroundStyle(DS.Colors.success)
                 } else {
                     Text("\(Int(viewModel.progress * 100))%")
-                        .font(.title2.weight(.bold))
+                        .font(DS.Typography.title2)
                 }
             }
             .frame(width: DS.Size.progressRing, height: DS.Size.progressRing)
@@ -240,10 +272,10 @@ struct TodayView: View {
                         Text("🔥")
                         if streak.current > 0 {
                             Text("\(streak.current) day streak")
-                                .font(.subheadline.weight(.medium))
+                                .font(DS.Typography.subheadline.weight(.medium))
                         } else {
                             Text("Complete all tasks to start a streak!")
-                                .font(.caption)
+                                .font(DS.Typography.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -252,24 +284,22 @@ struct TodayView: View {
 
             Spacer()
         }
-        .padding(DS.Spacing.md)
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(DS.Radius.md)
+        .heroCard()
     }
 
     private func miniStat(count: Int, total: Int? = nil, label: String, color: Color? = nil) -> some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
             if let total = total {
                 Text("\(count)/\(total)")
-                    .font(.title3.weight(.semibold))
+                    .font(DS.Typography.title3)
                     .foregroundStyle(color ?? .primary)
             } else {
                 Text("\(count)")
-                    .font(.title3.weight(.semibold))
+                    .font(DS.Typography.title3)
                     .foregroundStyle(color ?? .primary)
             }
             Text(label)
-                .font(.caption2)
+                .font(DS.Typography.caption2)
                 .foregroundStyle(.secondary)
         }
     }
@@ -282,9 +312,9 @@ struct TodayView: View {
                 Image(systemName: icon)
                     .foregroundStyle(iconColor)
                 Text(title)
-                    .font(.title3.weight(.semibold))
+                    .font(DS.Typography.title3)
                 Text("(\(tasks.count))")
-                    .font(.subheadline)
+                    .font(DS.Typography.subheadline)
                     .foregroundStyle(.secondary)
             }
 
@@ -292,7 +322,19 @@ struct TodayView: View {
                 TaskRow(
                     task: task,
                     onComplete: { await viewModel.loadToday() },
-                    onTap: { viewModel.selectedTask = task }
+                    onTap: { viewModel.selectedTask = task },
+                    onSubtaskComplete: { subtask in
+                        await viewModel.toggleSubtaskComplete(subtask: subtask, parentTask: task)
+                    },
+                    onSubtaskDelete: { subtask in
+                        await viewModel.deleteSubtask(subtask: subtask, parentTask: task)
+                    },
+                    onSubtaskEdit: { subtask in
+                        viewModel.startEditSubtask(subtask, parentTask: task)
+                    },
+                    onAddSubtask: {
+                        viewModel.startAddSubtask(for: task)
+                    }
                 )
             }
         }
@@ -304,12 +346,12 @@ struct TodayView: View {
     private var allClearView: some View {
         VStack(spacing: DS.Spacing.md) {
             Image(systemName: DS.Icon.checkSeal)
-                .font(.system(size: DS.Size.iconJumbo))
+                .font(.system(size: 64))
                 .foregroundStyle(DS.Colors.success)
             Text("All Clear!")
-                .font(.title2.weight(.semibold))
+                .font(DS.Typography.title2)
             Text("You've completed all your tasks for today!")
-                .font(.body)
+                .font(DS.Typography.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -319,12 +361,12 @@ struct TodayView: View {
     private var nothingDueView: some View {
         VStack(spacing: DS.Spacing.md) {
             Image(systemName: DS.Icon.calendar)
-                .font(.system(size: DS.Size.iconJumbo))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 64))
+                .foregroundStyle(DS.Colors.accent)
             Text("Nothing Due Today")
-                .font(.title2.weight(.semibold))
+                .font(DS.Typography.title2)
             Text("Enjoy your free day or plan ahead!")
-                .font(.body)
+                .font(DS.Typography.body)
                 .foregroundStyle(.secondary)
         }
         .padding(DS.Spacing.xl)
@@ -333,12 +375,12 @@ struct TodayView: View {
     private var emptyView: some View {
         VStack(spacing: DS.Spacing.md) {
             Image(systemName: DS.Icon.emptyTray)
-                .font(.system(size: DS.Size.iconJumbo))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 64))
+                .foregroundStyle(DS.Colors.accent)
             Text("No tasks yet")
-                .font(.title2.weight(.semibold))
+                .font(DS.Typography.title2)
             Text("Create a task to get started")
-                .font(.body)
+                .font(DS.Typography.body)
                 .foregroundStyle(.secondary)
         }
     }
@@ -346,14 +388,14 @@ struct TodayView: View {
     private func errorView(_ error: FocusmateError) -> some View {
         VStack(spacing: DS.Spacing.md) {
             Image(systemName: DS.Icon.overdue)
-                .font(.system(size: DS.Size.iconJumbo))
+                .font(.system(size: 64))
                 .foregroundStyle(DS.Colors.error)
             Text("Something went wrong")
-                .font(.title2.weight(.semibold))
+                .font(DS.Typography.title2)
             Button("Try Again") {
                 Task { await viewModel.loadToday() }
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(IntentiaPrimaryButtonStyle())
         }
     }
 }

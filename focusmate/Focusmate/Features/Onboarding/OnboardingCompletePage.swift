@@ -25,10 +25,10 @@ struct OnboardingCompletePage: View {
 
                 VStack(spacing: DS.Spacing.sm) {
                     Text("You're All Set")
-                        .font(.largeTitle.weight(.bold))
+                        .font(DS.Typography.largeTitle)
 
                     Text("Time to focus on what matters.")
-                        .font(.title3)
+                        .font(DS.Typography.title3)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -38,11 +38,9 @@ struct OnboardingCompletePage: View {
 
             Button(action: onFinish) {
                 Text("Start Using Intentia")
-                    .font(.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(IntentiaPrimaryButtonStyle())
         }
         .padding(DS.Spacing.xl)
         .onAppear {

@@ -116,9 +116,10 @@ struct SearchView: View {
                 }
             }
             .listStyle(.plain)
+            .surfaceFormBackground()
         }
     }
-    
+
     private func search() async {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }

@@ -25,13 +25,21 @@ struct RegisterView: View {
                 VStack(spacing: DS.Spacing.md) {
                     TextField("Name", text: $name)
                         .textInputAutocapitalization(.words)
-                        .textFieldStyle(.roundedBorder)
+                        .font(DS.Typography.body)
+                        .padding(DS.Spacing.md)
+                        .background(DS.Colors.surfaceElevated)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
 
                     TextField("Email", text: $email)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .textContentType(.emailAddress)
-                        .textFieldStyle(.roundedBorder)
+                        .font(DS.Typography.body)
+                        .padding(DS.Spacing.md)
+                        .background(DS.Colors.surfaceElevated)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
 
                     if !email.isEmpty && !InputValidation.isValidEmail(email) {
                         Text("Enter a valid email address")
@@ -42,7 +50,11 @@ struct RegisterView: View {
 
                     SecureField("Password", text: $password)
                         .textContentType(.newPassword)
-                        .textFieldStyle(.roundedBorder)
+                        .font(DS.Typography.body)
+                        .padding(DS.Spacing.md)
+                        .background(DS.Colors.surfaceElevated)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
 
                     if let pwError = InputValidation.passwordError(password) {
                         Text(pwError)
@@ -53,7 +65,11 @@ struct RegisterView: View {
 
                     SecureField("Confirm Password", text: $confirmPassword)
                         .textContentType(.newPassword)
-                        .textFieldStyle(.roundedBorder)
+                        .font(DS.Typography.body)
+                        .padding(DS.Spacing.md)
+                        .background(DS.Colors.surfaceElevated)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
 
                     if passwordMismatch {
                         Text("Passwords do not match")
@@ -69,7 +85,7 @@ struct RegisterView: View {
                     Text(state.auth.isLoading ? "Creating Account…" : "Create Account")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(IntentiaPrimaryButtonStyle())
                 .disabled(state.auth.isLoading || !isValid)
 
                 if let error = state.auth.error {

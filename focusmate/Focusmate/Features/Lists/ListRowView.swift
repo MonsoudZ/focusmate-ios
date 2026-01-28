@@ -2,11 +2,11 @@ import SwiftUI
 
 struct ListRowView: View {
     let list: ListDTO
-    
+
     private var isSharedList: Bool {
         list.role != nil && list.role != "owner"
     }
-    
+
     private var roleIcon: String {
         switch list.role {
         case "editor": return DS.Icon.edit
@@ -14,7 +14,7 @@ struct ListRowView: View {
         default: return DS.Icon.share
         }
     }
-    
+
     private var roleColor: Color {
         switch list.role {
         case "editor": return DS.Colors.accent
@@ -25,18 +25,18 @@ struct ListRowView: View {
 
     var body: some View {
         HStack(spacing: DS.Spacing.md) {
-            // Color indicator
+            // Color indicator — capsule variant
             ColorBar(color: list.listColor)
-            
+
             // List info
             VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                 HStack(spacing: DS.Spacing.sm) {
                     Text(list.name)
-                        .font(.body.weight(.medium))
-                    
+                        .font(DS.Typography.bodyMedium)
+
                     if isSharedList {
                         Image(systemName: roleIcon)
-                            .font(.caption)
+                            .font(DS.Typography.caption)
                             .foregroundStyle(roleColor)
                     }
                 }
@@ -44,39 +44,37 @@ struct ListRowView: View {
                 HStack(spacing: DS.Spacing.sm) {
                     if let count = list.tasks_count {
                         Text(count == 1 ? "1 task" : "\(count) tasks")
-                            .font(.caption)
+                            .font(DS.Typography.caption)
                             .foregroundStyle(.secondary)
                     }
-                    
+
                     if isSharedList {
                         Text("•")
-                            .font(.caption)
+                            .font(DS.Typography.caption)
                             .foregroundStyle(.secondary)
-                        
+
                         Text(list.role?.capitalized ?? "Shared")
-                            .font(.caption)
+                            .font(DS.Typography.caption)
                             .foregroundStyle(roleColor)
                     } else if let description = list.description, !description.isEmpty {
                         Text("•")
-                            .font(.caption)
+                            .font(DS.Typography.caption)
                             .foregroundStyle(.secondary)
-                        
+
                         Text(description)
-                            .font(.caption)
+                            .font(DS.Typography.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 }
             }
-            
+
             Spacer()
-            
+
             Image(systemName: DS.Icon.chevronRight)
-                .font(.caption)
+                .font(DS.Typography.caption)
                 .foregroundStyle(.tertiary)
         }
-        .padding(DS.Spacing.md)
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(DS.Radius.md)
+        .card()
     }
 }

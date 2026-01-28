@@ -126,6 +126,7 @@ struct CreateTaskView: View {
                         .padding(.vertical, DS.Spacing.sm)
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("New Task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

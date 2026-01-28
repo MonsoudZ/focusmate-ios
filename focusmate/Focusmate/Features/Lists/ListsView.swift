@@ -51,6 +51,7 @@ struct ListsView: View {
                         }
                         .padding(DS.Spacing.md)
                     }
+                    .surfaceBackground()
                 }
             }
             .navigationTitle("Lists")

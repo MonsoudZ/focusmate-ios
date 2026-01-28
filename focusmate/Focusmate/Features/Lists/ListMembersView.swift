@@ -44,6 +44,7 @@ struct ListMembersView: View {
                     }
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("Share List")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -154,6 +155,6 @@ private struct RoleBadge: View {
             .padding(.vertical, DS.Spacing.xs)
             .background(isEditor ? DS.Colors.accent.opacity(0.1) : Color.gray.opacity(0.1))
             .foregroundStyle(isEditor ? DS.Colors.accent : .gray)
-            .cornerRadius(DS.Radius.sm)
+            .clipShape(Capsule())
     }
 }

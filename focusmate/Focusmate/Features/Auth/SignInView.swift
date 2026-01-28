@@ -9,11 +9,24 @@ struct SignInView: View {
     @State private var showingForgotPassword = false
 
     var body: some View {
-        VStack(spacing: DS.Spacing.lg) {
+        VStack(spacing: DS.Spacing.xl) {
             Spacer()
 
-            Text("Intentia")
-                .font(.largeTitle.weight(.bold))
+            // Brand
+            VStack(spacing: DS.Spacing.sm) {
+                Image(systemName: "target")
+                    .font(.system(size: 56, weight: .light))
+                    .foregroundStyle(DS.Colors.accent)
+
+                Text("Intentia")
+                    .font(DS.Typography.largeTitle)
+                    .foregroundStyle(DS.Colors.accent)
+
+                Text("Intentional focus, real accountability")
+                    .font(DS.Typography.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.bottom, DS.Spacing.lg)
 
             // Apple Sign In Button
             SignInWithAppleButton(.signIn) { request in
@@ -22,7 +35,8 @@ struct SignInView: View {
                 state.auth.handleAppleSignIn(result)
             }
             .signInWithAppleButtonStyle(.black)
-            .frame(height: 50)
+            .frame(height: 54)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
 
             DSDivider("or")
 
@@ -32,18 +46,32 @@ struct SignInView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .textContentType(.emailAddress)
-                    .textFieldStyle(.roundedBorder)
+                    .font(DS.Typography.body)
+                    .padding(DS.Spacing.md)
+                    .background(DS.Colors.surfaceElevated)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
+                            .stroke(Color(.separator), lineWidth: 0.5)
+                    )
 
                 SecureField("Password", text: $password)
                     .textContentType(.password)
-                    .textFieldStyle(.roundedBorder)
-                
+                    .font(DS.Typography.body)
+                    .padding(DS.Spacing.md)
+                    .background(DS.Colors.surfaceElevated)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
+                            .stroke(Color(.separator), lineWidth: 0.5)
+                    )
+
                 HStack {
                     Spacer()
                     Button("Forgot Password?") {
                         showingForgotPassword = true
                     }
-                    .font(.subheadline)
+                    .font(DS.Typography.subheadline)
                     .foregroundStyle(DS.Colors.accent)
                 }
             }
@@ -52,10 +80,10 @@ struct SignInView: View {
                 Button {
                     Task { await state.auth.signIn(email: email, password: password) }
                 } label: {
-                    Text(state.auth.isLoading ? "Signing in…" : "Sign In")
+                    Text(state.auth.isLoading ? "Signing in..." : "Sign In")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(IntentiaPrimaryButtonStyle())
                 .disabled(state.auth.isLoading || !InputValidation.isValidEmail(email) || password.isEmpty)
 
                 Button {
@@ -64,7 +92,7 @@ struct SignInView: View {
                     Text("Create Account")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(IntentiaSecondaryButtonStyle())
                 .disabled(state.auth.isLoading)
             }
 
@@ -83,6 +111,7 @@ struct SignInView: View {
             Spacer()
         }
         .padding(DS.Spacing.xl)
+        .surfaceBackground()
         .sheet(isPresented: $showingRegister) {
             RegisterView()
         }

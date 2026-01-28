@@ -25,11 +25,8 @@ final class ListDetailViewModel: ObservableObject {
 
     // MARK: - Subtask
 
-    @Published var showingAddSubtask = false
     @Published var taskForSubtask: TaskDTO?
-    @Published var showingEditSubtask = false
-    @Published var subtaskToEdit: SubtaskDTO?
-    @Published var parentTaskForSubtaskEdit: TaskDTO?
+    @Published var subtaskEditInfo: SubtaskEditInfo?
 
     // MARK: - UI
 
@@ -233,9 +230,9 @@ final class ListDetailViewModel: ObservableObject {
     func toggleSubtaskComplete(subtask: SubtaskDTO, parentTask: TaskDTO) async {
         do {
             if subtask.isCompleted {
-                _ = try await taskService.reopenSubtask(listId: parentTask.list_id, subtaskId: subtask.apiId)
+                _ = try await taskService.reopenSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
             } else {
-                _ = try await taskService.completeSubtask(listId: parentTask.list_id, subtaskId: subtask.apiId)
+                _ = try await taskService.completeSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
             }
             HapticManager.light()
             await loadTasks()
@@ -248,7 +245,7 @@ final class ListDetailViewModel: ObservableObject {
 
     func deleteSubtask(subtask: SubtaskDTO, parentTask: TaskDTO) async {
         do {
-            try await taskService.deleteSubtask(listId: parentTask.list_id, subtaskId: subtask.apiId)
+            try await taskService.deleteSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
             HapticManager.medium()
             await loadTasks()
         } catch {
@@ -258,14 +255,13 @@ final class ListDetailViewModel: ObservableObject {
         }
     }
 
-    func updateSubtask(subtask: SubtaskDTO, parentTask: TaskDTO, title: String) async {
+    func updateSubtask(info: SubtaskEditInfo, title: String) async {
         do {
-            _ = try await taskService.updateTask(
-                listId: parentTask.list_id,
-                taskId: subtask.apiId,
-                title: title,
-                note: nil,
-                dueAt: nil
+            _ = try await taskService.updateSubtask(
+                listId: info.parentTask.list_id,
+                parentTaskId: info.parentTask.id,
+                subtaskId: info.subtask.id,
+                title: title
             )
             HapticManager.success()
             await loadTasks()
@@ -329,12 +325,17 @@ final class ListDetailViewModel: ObservableObject {
 
     func startAddSubtask(for task: TaskDTO) {
         taskForSubtask = task
-        showingAddSubtask = true
     }
 
     func startEditSubtask(_ subtask: SubtaskDTO, parentTask: TaskDTO) {
-        subtaskToEdit = subtask
-        parentTaskForSubtaskEdit = parentTask
-        showingEditSubtask = true
+        subtaskEditInfo = SubtaskEditInfo(subtask: subtask, parentTask: parentTask)
     }
+}
+
+// MARK: - Subtask Edit Info
+
+struct SubtaskEditInfo: Identifiable {
+    let id = UUID()
+    let subtask: SubtaskDTO
+    let parentTask: TaskDTO
 }

@@ -32,6 +32,7 @@ struct EditProfileView: View {
                     .pickerStyle(.navigationLink)
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

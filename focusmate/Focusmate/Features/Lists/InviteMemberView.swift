@@ -45,6 +45,7 @@ struct InviteMemberView: View {
                          : "Viewers can only see tasks.")
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("Invite Member")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

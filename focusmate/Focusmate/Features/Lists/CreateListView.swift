@@ -24,6 +24,7 @@ struct CreateListView: View {
                         .padding(.vertical, 8)
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("New List")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

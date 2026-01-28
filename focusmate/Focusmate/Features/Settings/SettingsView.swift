@@ -6,11 +6,11 @@ struct SettingsView: View {
     @State private var showingChangePassword = false
     @State private var showingDeleteAccount = false
     @State private var showingSignOutConfirmation = false
-    
+
     private var user: UserDTO? {
         appState.auth.currentUser
     }
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -18,20 +18,20 @@ struct SettingsView: View {
                 Section {
                     HStack(spacing: DS.Spacing.lg) {
                         Avatar(user?.name ?? user?.email, size: DS.Size.avatarLarge)
-                        
+
                         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                             Text(user?.name ?? "No Name")
-                                .font(.headline)
+                                .font(DS.Typography.headline)
                             Text(user?.email ?? "")
-                                .font(.subheadline)
+                                .font(DS.Typography.subheadline)
                                 .foregroundStyle(.secondary)
                         }
-                        
+
                         Spacer()
                     }
                     .padding(.vertical, DS.Spacing.sm)
                 }
-                
+
                 // MARK: - Account
                 Section("Account") {
                     Button {
@@ -39,7 +39,7 @@ struct SettingsView: View {
                     } label: {
                         SettingsRow("Edit Profile", icon: "person")
                     }
-                    
+
                     if user?.hasPassword == true {
                         Button {
                             showingChangePassword = true
@@ -47,7 +47,7 @@ struct SettingsView: View {
                             SettingsRow("Change Password", icon: "lock")
                         }
                     }
-                    
+
                     HStack {
                         Label("Timezone", systemImage: "clock")
                         Spacer()
@@ -55,7 +55,7 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                
+
                 // MARK: - Notifications
                 Section("Notifications") {
                     NavigationLink {
@@ -64,7 +64,7 @@ struct SettingsView: View {
                         Label("Notification Preferences", systemImage: DS.Icon.bell)
                     }
                 }
-                
+
                 // MARK: - App Blocking
                 Section("App Blocking") {
                     NavigationLink {
@@ -73,7 +73,7 @@ struct SettingsView: View {
                         Label("Blocked Apps", systemImage: DS.Icon.shield)
                     }
                 }
-                
+
                 // MARK: - About
                 Section("About") {
                     HStack {
@@ -82,7 +82,7 @@ struct SettingsView: View {
                         Text(appVersion)
                             .foregroundStyle(.secondary)
                     }
-                    
+
                     if let privacyURL = URL(string: "https://intentia.app/privacy") {
                         Link(destination: privacyURL) {
                             SettingsRow("Privacy Policy", icon: "hand.raised", external: true)
@@ -95,7 +95,7 @@ struct SettingsView: View {
                         }
                     }
                 }
-                
+
                 // MARK: - Danger Zone
                 Section {
                     Button {
@@ -108,7 +108,7 @@ struct SettingsView: View {
                         }
                     }
                     .foregroundStyle(DS.Colors.warning)
-                    
+
                     Button(role: .destructive) {
                         showingDeleteAccount = true
                     } label: {
@@ -120,6 +120,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("Settings")
             .sheet(isPresented: $showingEditProfile) {
                 if let user {
@@ -142,7 +143,7 @@ struct SettingsView: View {
             }
         }
     }
-    
+
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
@@ -156,19 +157,19 @@ private struct SettingsRow: View {
     let title: String
     let icon: String
     let external: Bool
-    
+
     init(_ title: String, icon: String, external: Bool = false) {
         self.title = title
         self.icon = icon
         self.external = external
     }
-    
+
     var body: some View {
         HStack {
             Label(title, systemImage: icon)
             Spacer()
             Image(systemName: external ? DS.Icon.externalLink : DS.Icon.chevronRight)
-                .font(.footnote)
+                .font(DS.Typography.footnote)
                 .foregroundStyle(.tertiary)
         }
         .foregroundStyle(.primary)

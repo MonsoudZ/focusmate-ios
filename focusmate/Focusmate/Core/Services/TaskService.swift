@@ -191,10 +191,10 @@ final class TaskService {
                 title: title,
                 parent_task_id: parentTaskId
             ))
-            
+
             let subtask: TaskDTO = try await apiClient.request(
                 "POST",
-                API.Lists.tasks(String(listId)),
+                API.Lists.subtasks(String(listId), String(parentTaskId)),
                 body: request
             )
             Logger.debug("TaskService: Created subtask '\(title)' under task \(parentTaskId)", category: .api)
@@ -205,11 +205,11 @@ final class TaskService {
     }
     
     /// Complete a subtask
-    func completeSubtask(listId: Int, subtaskId: Int) async throws -> TaskDTO {
+    func completeSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> TaskDTO {
         do {
             let subtask: TaskDTO = try await apiClient.request(
                 "PATCH",
-                API.Lists.taskAction(String(listId), String(subtaskId), "complete"),
+                API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), "complete"),
                 body: nil as String?
             )
             Logger.debug("TaskService: Completed subtask \(subtaskId)", category: .api)
@@ -218,13 +218,13 @@ final class TaskService {
             throw ErrorHandler.shared.handle(error, context: "Completing subtask")
         }
     }
-    
+
     /// Reopen a subtask
-    func reopenSubtask(listId: Int, subtaskId: Int) async throws -> TaskDTO {
+    func reopenSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> TaskDTO {
         do {
             let subtask: TaskDTO = try await apiClient.request(
                 "PATCH",
-                API.Lists.taskAction(String(listId), String(subtaskId), "reopen"),
+                API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), "reopen"),
                 body: nil as String?
             )
             Logger.debug("TaskService: Reopened subtask \(subtaskId)", category: .api)
@@ -233,13 +233,37 @@ final class TaskService {
             throw ErrorHandler.shared.handle(error, context: "Reopening subtask")
         }
     }
-    
+
+    /// Update a subtask
+    func updateSubtask(listId: Int, parentTaskId: Int, subtaskId: Int, title: String) async throws -> TaskDTO {
+        do {
+            let request = UpdateTaskRequest(task: .init(
+                title: title,
+                note: nil,
+                due_at: nil,
+                color: nil,
+                priority: nil,
+                starred: nil,
+                tag_ids: nil
+            ))
+            let subtask: TaskDTO = try await apiClient.request(
+                "PUT",
+                API.Lists.subtask(String(listId), String(parentTaskId), String(subtaskId)),
+                body: request
+            )
+            Logger.debug("TaskService: Updated subtask \(subtaskId)", category: .api)
+            return subtask
+        } catch {
+            throw ErrorHandler.shared.handle(error, context: "Updating subtask")
+        }
+    }
+
     /// Delete a subtask
-    func deleteSubtask(listId: Int, subtaskId: Int) async throws {
+    func deleteSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws {
         do {
             _ = try await apiClient.request(
                 "DELETE",
-                API.Lists.task(String(listId), String(subtaskId)),
+                API.Lists.subtask(String(listId), String(parentTaskId), String(subtaskId)),
                 body: nil as String?
             ) as EmptyResponse
             Logger.debug("TaskService: Deleted subtask \(subtaskId)", category: .api)

@@ -27,7 +27,7 @@ struct EditSubtaskSheet: View {
                         .font(.body)
                         .padding()
                         .background(Color(.secondarySystemBackground))
-                        .cornerRadius(DS.Radius.md)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
                         .focused($isFocused)
                         .submitLabel(.done)
                         .onSubmit {
@@ -38,7 +38,7 @@ struct EditSubtaskSheet: View {
                 Spacer()
             }
             .padding()
-            .background(Color(.systemBackground))
+            .surfaceBackground()
             .navigationTitle("Edit Subtask")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

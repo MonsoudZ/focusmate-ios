@@ -52,6 +52,7 @@ struct ChangePasswordView: View {
                     }
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("Change Password")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

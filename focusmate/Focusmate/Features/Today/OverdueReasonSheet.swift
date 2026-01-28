@@ -27,7 +27,7 @@ struct OverdueReasonSheet: View {
                         .foregroundStyle(DS.Colors.warning)
                     
                     Text("Why was this task late?")
-                        .font(.title2.weight(.semibold))
+                        .font(DS.Typography.title2)
                     
                     Text(task.title)
                         .font(.body)
@@ -64,7 +64,7 @@ struct OverdueReasonSheet: View {
                     Text("Complete Task")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(IntentiaPrimaryButtonStyle())
                 .disabled(!canSubmit)
                 .padding(.horizontal)
                 .padding(.bottom, DS.Spacing.lg)
@@ -108,9 +108,9 @@ struct ReasonButton: View {
             }
             .padding(DS.Spacing.md)
             .background(isSelected ? DS.Colors.accent.opacity(0.1) : Color(.secondarySystemBackground))
-            .cornerRadius(DS.Radius.md)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: DS.Radius.md)
+                RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous)
                     .stroke(isSelected ? DS.Colors.accent : .clear, lineWidth: 2)
             )
         }

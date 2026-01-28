@@ -18,6 +18,10 @@ final class TodayViewModel: ObservableObject {
     @Published var showingQuickAdd = false
     @Published var selectedTask: TaskDTO?
 
+    // Subtask sheets
+    @Published var taskForSubtask: TaskDTO?
+    @Published var subtaskEditInfo: SubtaskEditInfo?
+
     var onOverdueCountChange: ((Int) -> Void)?
 
     // MARK: - Computed Properties
@@ -123,6 +127,69 @@ final class TodayViewModel: ObservableObject {
             await loadToday()
         } catch {
             Logger.error("Failed to delete task", error: error, category: .api)
+        }
+    }
+
+    // MARK: - Subtask Actions
+
+    func startAddSubtask(for task: TaskDTO) {
+        taskForSubtask = task
+    }
+
+    func startEditSubtask(_ subtask: SubtaskDTO, parentTask: TaskDTO) {
+        subtaskEditInfo = SubtaskEditInfo(subtask: subtask, parentTask: parentTask)
+    }
+
+    func createSubtask(parentTask: TaskDTO, title: String) async {
+        do {
+            _ = try await taskService.createSubtask(
+                listId: parentTask.list_id,
+                parentTaskId: parentTask.id,
+                title: title
+            )
+            HapticManager.success()
+            await loadToday()
+        } catch {
+            Logger.error("Failed to create subtask", error: error, category: .api)
+        }
+    }
+
+    func toggleSubtaskComplete(subtask: SubtaskDTO, parentTask: TaskDTO) async {
+        do {
+            if subtask.isCompleted {
+                _ = try await taskService.reopenSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
+            } else {
+                _ = try await taskService.completeSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
+            }
+            HapticManager.light()
+            await loadToday()
+        } catch {
+            Logger.error("Failed to toggle subtask", error: error, category: .api)
+        }
+    }
+
+    func deleteSubtask(subtask: SubtaskDTO, parentTask: TaskDTO) async {
+        do {
+            try await taskService.deleteSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
+            HapticManager.medium()
+            await loadToday()
+        } catch {
+            Logger.error("Failed to delete subtask", error: error, category: .api)
+        }
+    }
+
+    func updateSubtask(info: SubtaskEditInfo, title: String) async {
+        do {
+            _ = try await taskService.updateSubtask(
+                listId: info.parentTask.list_id,
+                parentTaskId: info.parentTask.id,
+                subtaskId: info.subtask.id,
+                title: title
+            )
+            HapticManager.success()
+            await loadToday()
+        } catch {
+            Logger.error("Failed to update subtask", error: error, category: .api)
         }
     }
 }

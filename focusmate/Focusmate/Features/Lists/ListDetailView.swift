@@ -56,18 +56,14 @@ struct ListDetailView: View {
                 listId: viewModel.list.id
             )
         }
-        .sheet(isPresented: $viewModel.showingAddSubtask) {
-            if let parentTask = viewModel.taskForSubtask {
-                AddSubtaskSheet(parentTask: parentTask) { title in
-                    await viewModel.createSubtask(parentTask: parentTask, title: title)
-                }
+        .sheet(item: $viewModel.taskForSubtask) { parentTask in
+            AddSubtaskSheet(parentTask: parentTask) { title in
+                await viewModel.createSubtask(parentTask: parentTask, title: title)
             }
         }
-        .sheet(isPresented: $viewModel.showingEditSubtask) {
-            if let subtask = viewModel.subtaskToEdit, let parentTask = viewModel.parentTaskForSubtaskEdit {
-                EditSubtaskSheet(subtask: subtask) { newTitle in
-                    await viewModel.updateSubtask(subtask: subtask, parentTask: parentTask, title: newTitle)
-                }
+        .sheet(item: $viewModel.subtaskEditInfo) { info in
+            EditSubtaskSheet(subtask: info.subtask) { newTitle in
+                await viewModel.updateSubtask(info: info, title: newTitle)
             }
         }
         .alert("Delete List", isPresented: $viewModel.showingDeleteConfirmation) {
@@ -226,6 +222,7 @@ struct ListDetailView: View {
                 }
             }
             .listStyle(.plain)
+            .surfaceFormBackground()
             .environment(\.editMode, viewModel.canEdit ? .constant(.active) : .constant(.inactive))
         }
     }
@@ -339,7 +336,7 @@ struct NudgeToast: View {
             .padding(.horizontal, DS.Spacing.lg)
             .padding(.vertical, DS.Spacing.sm)
             .background(DS.Colors.accent)
-            .cornerRadius(DS.Radius.lg)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
             .shadow(radius: 4)
             .padding(.bottom, DS.Spacing.xl)
     }

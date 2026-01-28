@@ -66,6 +66,7 @@ struct NotificationSettingsView: View {
                 .foregroundStyle(.secondary)
             }
         }
+        .surfaceFormBackground()
         .navigationTitle("Notifications")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

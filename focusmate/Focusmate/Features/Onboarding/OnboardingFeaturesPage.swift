@@ -30,10 +30,10 @@ struct OnboardingFeaturesPage: View {
 
             VStack(spacing: DS.Spacing.sm) {
                 Text("How It Works")
-                    .font(.largeTitle.weight(.bold))
+                    .font(DS.Typography.largeTitle)
 
                 Text("Three pillars to keep you on track.")
-                    .font(.subheadline)
+                    .font(DS.Typography.subheadline)
                     .foregroundStyle(.secondary)
             }
 
@@ -41,16 +41,16 @@ struct OnboardingFeaturesPage: View {
                 ForEach(features, id: \.title) { feature in
                     HStack(spacing: DS.Spacing.lg) {
                         Image(systemName: feature.icon)
-                            .font(.title2)
+                            .font(DS.Typography.title2)
                             .foregroundStyle(feature.color)
                             .frame(width: DS.Size.iconXL, height: DS.Size.iconXL)
 
                         VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                             Text(feature.title)
-                                .font(.body.weight(.semibold))
+                                .font(DS.Typography.bodyMedium)
 
                             Text(feature.description)
-                                .font(.subheadline)
+                                .font(DS.Typography.subheadline)
                                 .foregroundStyle(.secondary)
                         }
 
@@ -64,11 +64,9 @@ struct OnboardingFeaturesPage: View {
 
             Button(action: onNext) {
                 Text("Next")
-                    .font(.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(IntentiaPrimaryButtonStyle())
         }
         .padding(DS.Spacing.xl)
     }

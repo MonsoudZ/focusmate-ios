@@ -12,14 +12,14 @@ struct TaskRow: View {
     let onAddSubtask: () -> Void
     let showStar: Bool
     let showNudge: Bool
-    
+
     @EnvironmentObject var state: AppState
     @State private var showingReasonSheet = false
     @State private var isNudging = false
     @State private var isExpanded = false
     @State private var isCompleting = false
     @State private var completionError: FocusmateError?
-    
+
     private var isOverdue: Bool { task.isActuallyOverdue }
     private var canEdit: Bool { task.can_edit ?? true }
     private var canDelete: Bool { task.can_delete ?? true }
@@ -66,17 +66,18 @@ struct TaskRow: View {
         self.showStar = showStar
         self.showNudge = showNudge
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             mainTaskRow
-            
+
             if isExpanded {
                 subtasksList
             }
         }
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(DS.Radius.md)
+        .background(DS.Colors.surfaceElevated)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
+        .shadow(color: DS.Shadow.md.color, radius: DS.Shadow.md.radius, y: DS.Shadow.md.y)
         .opacity(task.isCompleted ? 0.7 : 1.0)
         .sheet(isPresented: $showingReasonSheet) {
             OverdueReasonSheet(task: task) { reason in
@@ -95,9 +96,9 @@ struct TaskRow: View {
         }
         .errorBanner($completionError)
     }
-    
+
     // MARK: - Main Task Row
-    
+
     private var mainTaskRow: some View {
         HStack(spacing: DS.Spacing.md) {
             completeButton
@@ -107,7 +108,7 @@ struct TaskRow: View {
         }
         .padding(DS.Spacing.md)
     }
-    
+
     private var completeButton: some View {
         Group {
             if canEdit {
@@ -129,24 +130,24 @@ struct TaskRow: View {
             }
         }
     }
-    
+
     private var checkboxIcon: some View {
         Image(systemName: task.isCompleted ? DS.Icon.circleChecked : DS.Icon.circle)
             .font(.system(size: DS.Size.checkbox))
             .foregroundStyle(task.isCompleted ? DS.Colors.success : .secondary)
     }
-    
+
     private var taskContent: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
             titleRow
-            
+
             if let note = task.note, !note.isEmpty {
                 Text(note)
-                    .font(.caption)
+                    .font(DS.Typography.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            
+
             tagsRow
             metadataRow
         }
@@ -156,28 +157,28 @@ struct TaskRow: View {
             onTap()
         }
     }
-    
+
     private var titleRow: some View {
         HStack(spacing: DS.Spacing.xs) {
             if let icon = task.taskPriority.icon {
                 Image(systemName: icon)
-                    .font(.caption)
+                    .font(DS.Typography.caption)
                     .foregroundStyle(task.taskPriority.color)
             }
-            
+
             Text(task.title)
-                .font(task.isCompleted ? .body : .body.weight(.medium))
+                .font(task.isCompleted ? DS.Typography.body : DS.Typography.bodyMedium)
                 .strikethrough(task.isCompleted)
                 .foregroundStyle(titleColor)
-            
+
             if !canEdit {
                 Image(systemName: DS.Icon.lock)
-                    .font(.caption2)
+                    .font(DS.Typography.caption2)
                     .foregroundStyle(.tertiary)
             }
         }
     }
-    
+
     private var titleColor: Color {
         if task.isCompleted {
             return Color(.secondaryLabel)
@@ -187,7 +188,7 @@ struct TaskRow: View {
             return Color(.label)
         }
     }
-    
+
     @ViewBuilder
     private var tagsRow: some View {
         if let tags = task.tags, !tags.isEmpty {
@@ -195,58 +196,58 @@ struct TaskRow: View {
                 ForEach(tags.prefix(3)) { tag in
                     TagPill(tag: tag)
                 }
-                
+
                 if tags.count > 3 {
                     Text("+\(tags.count - 3)")
-                        .font(.caption2)
+                        .font(DS.Typography.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
         }
     }
-    
+
     private var metadataRow: some View {
         HStack(spacing: DS.Spacing.sm) {
             if let dueDate = task.dueDate {
                 Label(formatDueDate(dueDate), systemImage: DS.Icon.clock)
-                    .font(.caption)
+                    .font(DS.Typography.caption)
                     .foregroundStyle(isOverdue ? DS.Colors.overdue : .secondary)
             }
-            
+
             if isOverdue, let minutes = task.minutes_overdue {
                 Text("• \(formatOverdue(minutes))")
-                    .font(.caption)
+                    .font(DS.Typography.caption)
                     .foregroundStyle(DS.Colors.overdue)
             }
-            
+
             if task.isRecurring || task.isRecurringInstance {
                 Image(systemName: DS.Icon.recurring)
-                    .font(.caption2)
+                    .font(DS.Typography.caption2)
                     .foregroundStyle(.secondary)
             }
-            
+
             if task.hasSubtasks || canEdit {
                 subtaskIndicator
             }
         }
     }
-    
+
     private var subtaskIndicator: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(DS.Anim.quick) {
                 isExpanded.toggle()
             }
             HapticManager.selection()
         } label: {
             HStack(spacing: DS.Spacing.xs) {
                 Image(systemName: DS.Icon.subtasks)
-                    .font(.caption2)
-                
+                    .font(DS.Typography.caption2)
+
                 if task.hasSubtasks {
                     Text(task.subtaskProgress)
-                        .font(.caption2)
+                        .font(DS.Typography.caption2)
                 }
-                
+
                 Image(systemName: isExpanded ? DS.Icon.chevronUp : DS.Icon.chevronDown)
                     .font(.system(size: 8, weight: .semibold))
             }
@@ -254,29 +255,29 @@ struct TaskRow: View {
             .padding(.horizontal, DS.Spacing.sm)
             .padding(.vertical, DS.Spacing.xs)
             .background((task.hasSubtasks ? DS.Colors.accent : Color.secondary).opacity(0.1))
-            .cornerRadius(DS.Radius.sm)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xs, style: .continuous))
         }
         .buttonStyle(.plain)
     }
-    
+
     private var rightIndicators: some View {
         HStack(spacing: DS.Spacing.sm) {
             if isOverdue && !task.isCompleted {
                 Image(systemName: "exclamationmark.circle.fill")
-                    .font(.subheadline)
+                    .font(DS.Typography.subheadline)
                     .foregroundStyle(DS.Colors.error)
             }
-            
+
             if canNudge {
                 nudgeButton
             }
-            
+
             if showStar && canEdit {
                 starButton
             }
         }
     }
-    
+
     private var nudgeButton: some View {
         Button {
             HapticManager.selection()
@@ -291,33 +292,33 @@ struct TaskRow: View {
                     .scaleEffect(0.7)
             } else {
                 Image(systemName: "hand.point.right.fill")
-                    .font(.subheadline)
+                    .font(DS.Typography.subheadline)
                     .foregroundStyle(DS.Colors.accent)
             }
         }
         .buttonStyle(.plain)
         .disabled(isNudging)
     }
-    
+
     private var starButton: some View {
         Button {
             HapticManager.selection()
             Task { await onStar() }
         } label: {
             Image(systemName: task.isStarred ? DS.Icon.starFilled : DS.Icon.star)
-                .font(.subheadline)
+                .font(DS.Typography.subheadline)
                 .foregroundStyle(task.isStarred ? Color.yellow : Color(.tertiaryLabel))
         }
         .buttonStyle(.plain)
     }
-    
+
     // MARK: - Subtasks List
-    
+
     private var subtasksList: some View {
         VStack(spacing: 0) {
             Divider()
                 .padding(.horizontal, DS.Spacing.md)
-            
+
             VStack(spacing: 0) {
                 if let subtasks = task.subtasks {
                     ForEach(subtasks) { subtask in
@@ -328,18 +329,18 @@ struct TaskRow: View {
                             onDelete: { await onSubtaskDelete(subtask) },
                             onTap: { onSubtaskEdit(subtask) }
                         )
-                        
+
                         if subtask.id != subtasks.last?.id {
                             Divider()
                                 .padding(.leading, 52)
                         }
                     }
                 }
-                
+
                 if canEdit {
                     Divider()
                         .padding(.leading, 52)
-                    
+
                     addSubtaskButton
                 }
             }
@@ -347,7 +348,7 @@ struct TaskRow: View {
         }
         .background(Color(.tertiarySystemBackground))
     }
-    
+
     private var addSubtaskButton: some View {
         Button {
             HapticManager.selection()
@@ -356,10 +357,10 @@ struct TaskRow: View {
             HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: "plus.circle")
                     .font(.system(size: DS.Size.iconMedium))
-                
+
                 Text("Add subtask")
-                    .font(.caption)
-                
+                    .font(DS.Typography.caption)
+
                 Spacer()
             }
             .foregroundStyle(DS.Colors.accent)
@@ -368,9 +369,9 @@ struct TaskRow: View {
         }
         .buttonStyle(.plain)
     }
-    
+
     // MARK: - Actions
-    
+
     private func handleCompleteTap() {
         guard canEdit else { return }
         HapticManager.selection()
@@ -390,7 +391,7 @@ struct TaskRow: View {
             }
         }
     }
-    
+
     private func completeTask(reason: String?) async {
         defer { isCompleting = false }
         do {
@@ -412,9 +413,9 @@ struct TaskRow: View {
             completionError = ErrorHandler.shared.handle(error, context: "Completing task")
         }
     }
-    
+
     // MARK: - Formatting
-    
+
     private func formatDueDate(_ date: Date) -> String {
         let calendar = Calendar.current
 
@@ -436,7 +437,7 @@ struct TaskRow: View {
         }
         return Self.dateTimeFormatter.string(from: date)
     }
-    
+
     private func formatOverdue(_ minutes: Int) -> String {
         if minutes < 60 { return "\(minutes)m overdue" }
         if minutes < 1440 { return "\(minutes / 60)h overdue" }
@@ -444,24 +445,24 @@ struct TaskRow: View {
     }
 }
 
-// MARK: - Tag Pill
+// MARK: - Tag Pill (larger, capsule shape)
 
 private struct TagPill: View {
     let tag: TagDTO
-    
+
     var body: some View {
         HStack(spacing: DS.Spacing.xxs) {
             Circle()
                 .fill(tag.tagColor)
                 .frame(width: 6, height: 6)
-            
+
             Text(tag.name)
-                .font(.caption2)
+                .font(DS.Typography.caption2)
         }
         .padding(.horizontal, DS.Spacing.sm)
-        .padding(.vertical, DS.Spacing.xxs)
+        .padding(.vertical, DS.Spacing.xs)
         .background(tag.tagColor.opacity(0.15))
-        .cornerRadius(DS.Radius.sm)
+        .clipShape(Capsule())
     }
 }
 
@@ -473,9 +474,9 @@ struct SubtaskRow: View {
     let onComplete: () async -> Void
     let onDelete: () async -> Void
     let onTap: () -> Void
-    
+
     @State private var isCompleting = false
-    
+
     init(
         subtask: SubtaskDTO,
         canEdit: Bool,
@@ -489,7 +490,7 @@ struct SubtaskRow: View {
         self.onDelete = onDelete
         self.onTap = onTap
     }
-    
+
     var body: some View {
         HStack(spacing: DS.Spacing.sm) {
             // Checkbox
@@ -521,7 +522,7 @@ struct SubtaskRow: View {
                 onTap()
             } label: {
                 Text(subtask.title)
-                    .font(.caption)
+                    .font(DS.Typography.caption)
                     .strikethrough(subtask.isCompleted)
                     .foregroundStyle(subtask.isCompleted ? .secondary : .primary)
                     .frame(maxWidth: .infinity, alignment: .leading)

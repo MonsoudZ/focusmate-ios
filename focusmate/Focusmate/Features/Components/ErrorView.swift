@@ -23,19 +23,19 @@ struct ErrorView: View {
 private extension ErrorView {
     var errorIcon: some View {
         Image(systemName: iconName)
-            .font(.system(size: DS.Size.iconJumbo))
+            .font(.system(size: 64))
             .foregroundStyle(DS.Colors.error)
     }
 
     var titleText: some View {
         Text(error.title)
-            .font(.title2.weight(.semibold))
+            .font(DS.Typography.title2)
             .multilineTextAlignment(.center)
     }
 
     var messageText: some View {
         Text(error.message)
-            .font(.body)
+            .font(DS.Typography.body)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
             .padding(.horizontal)
@@ -61,8 +61,7 @@ private extension ErrorView {
             Label("Try Again", systemImage: "arrow.clockwise")
                 .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
+        .buttonStyle(IntentiaPrimaryButtonStyle())
     }
 
     func dismissButton(action: @escaping () -> Void) -> some View {
@@ -70,8 +69,7 @@ private extension ErrorView {
             Text("Dismiss")
                 .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.bordered)
-        .controlSize(.large)
+        .buttonStyle(IntentiaSecondaryButtonStyle())
     }
 }
 
@@ -106,8 +104,8 @@ struct ErrorBanner: View {
             bannerContent
                 .padding(DS.Spacing.md)
                 .background(DS.Colors.error)
-                .cornerRadius(DS.Radius.md)
-                .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
+                .shadow(color: DS.Shadow.sm.color, radius: DS.Shadow.sm.radius, y: DS.Shadow.sm.y)
                 .padding(.horizontal)
                 .transition(.move(edge: .top).combined(with: .opacity))
         }
@@ -133,11 +131,11 @@ private extension ErrorBanner {
     var textContent: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
             Text(error.title)
-                .font(.subheadline.weight(.medium))
+                .font(DS.Typography.subheadline.weight(.medium))
                 .foregroundStyle(.white)
 
             Text(error.message)
-                .font(.caption)
+                .font(DS.Typography.caption)
                 .foregroundStyle(.white.opacity(0.9))
                 .lineLimit(2)
         }

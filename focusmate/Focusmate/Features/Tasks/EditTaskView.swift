@@ -89,6 +89,7 @@ struct EditTaskView: View {
                         .padding(.vertical, 8)
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("Edit Task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

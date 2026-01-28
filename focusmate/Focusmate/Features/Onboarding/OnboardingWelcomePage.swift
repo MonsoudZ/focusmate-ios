@@ -14,11 +14,11 @@ struct OnboardingWelcomePage: View {
 
                 VStack(spacing: DS.Spacing.sm) {
                     Text("Welcome to Intentia")
-                        .font(.largeTitle.weight(.bold))
+                        .font(DS.Typography.largeTitle)
                         .multilineTextAlignment(.center)
 
                     Text("Intentional productivity.\nFocus on what matters most.")
-                        .font(.title3)
+                        .font(DS.Typography.title3)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -28,11 +28,9 @@ struct OnboardingWelcomePage: View {
 
             Button(action: onNext) {
                 Text("Next")
-                    .font(.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(IntentiaPrimaryButtonStyle())
         }
         .padding(DS.Spacing.xl)
     }

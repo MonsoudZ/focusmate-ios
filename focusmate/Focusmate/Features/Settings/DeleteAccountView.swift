@@ -65,6 +65,7 @@ struct DeleteAccountView: View {
                     .disabled(!canDelete || isLoading)
                 }
             }
+            .surfaceFormBackground()
             .navigationTitle("Delete Account")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

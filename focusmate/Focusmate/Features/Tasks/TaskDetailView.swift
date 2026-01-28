@@ -117,7 +117,7 @@ struct TaskDetailView: View {
                 
                 // Title
                 Text(task.title)
-                    .font(.title3.weight(.semibold))
+                    .font(DS.Typography.title3)
                     .strikethrough(task.isCompleted)
                     .foregroundStyle(isOverdue ? DS.Colors.error : .primary)
                 
@@ -148,9 +148,9 @@ struct TaskDetailView: View {
         .padding(.horizontal, DS.Spacing.sm)
         .padding(.vertical, DS.Spacing.xs)
         .background(task.taskPriority.color.opacity(0.15))
-        .cornerRadius(DS.Radius.sm)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
     }
-    
+
     private var overdueBadge: some View {
         HStack(spacing: DS.Spacing.xs) {
             Image(systemName: DS.Icon.overdue)
@@ -241,12 +241,12 @@ struct TaskDetailView: View {
                     .padding(.horizontal, DS.Spacing.sm)
                     .padding(.vertical, DS.Spacing.xs)
                     .background(tag.tagColor.opacity(0.15))
-                    .cornerRadius(DS.Radius.md)
+                    .clipShape(Capsule())
                 }
             }
         }
     }
-    
+
     // MARK: - Notes Section
     
     private func notesSection(_ note: String) -> some View {
@@ -261,10 +261,10 @@ struct TaskDetailView: View {
                 .padding(DS.Spacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(.secondarySystemBackground))
-                .cornerRadius(DS.Radius.md)
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
         }
     }
-    
+
     // MARK: - Actions Section
     
     private var actionsSection: some View {
@@ -278,7 +278,7 @@ struct TaskDetailView: View {
                 )
                 .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(IntentiaPrimaryButtonStyle())
             .tint(task.isCompleted ? DS.Colors.warning : DS.Colors.success)
             
             Button(role: .destructive) {
@@ -287,12 +287,12 @@ struct TaskDetailView: View {
                 Label("Delete Task", systemImage: DS.Icon.trash)
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(IntentiaSecondaryButtonStyle())
         }
     }
-    
+
     // MARK: - Actions
-    
+
     private func handleComplete() {
         if task.isCompleted {
             Task {

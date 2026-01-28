@@ -37,10 +37,10 @@ struct ForgotPasswordView: View {
                 .foregroundStyle(DS.Colors.accent)
 
             Text("Forgot your password?")
-                .font(.title2.weight(.semibold))
+                .font(DS.Typography.title2)
 
             Text("Enter your email and we'll send you instructions to reset your password.")
-                .font(.body)
+                .font(DS.Typography.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
@@ -49,7 +49,11 @@ struct ForgotPasswordView: View {
                 .autocorrectionDisabled()
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
-                .textFieldStyle(.roundedBorder)
+                .font(DS.Typography.body)
+                .padding(DS.Spacing.md)
+                .background(DS.Colors.surfaceElevated)
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
 
             Button {
                 Task {
@@ -62,7 +66,7 @@ struct ForgotPasswordView: View {
                 Text(state.auth.isLoading ? "Sending..." : "Send Reset Link")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(IntentiaPrimaryButtonStyle())
             .disabled(state.auth.isLoading || email.isEmpty)
 
             if let error = state.auth.error {
@@ -90,10 +94,10 @@ struct ForgotPasswordView: View {
                 .foregroundStyle(DS.Colors.success)
 
             Text("Check your email")
-                .font(.title2.weight(.semibold))
+                .font(DS.Typography.title2)
 
             Text("We've sent password reset instructions to \(email)")
-                .font(.body)
+                .font(DS.Typography.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
@@ -103,7 +107,7 @@ struct ForgotPasswordView: View {
                 Text("Back to Sign In")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(IntentiaPrimaryButtonStyle())
 
             Spacer()
         }

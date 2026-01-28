@@ -93,6 +93,7 @@ struct AppBlockingSettingsView: View {
                 #endif
             }
         }
+        .surfaceFormBackground()
         .navigationTitle("App Blocking")
         .familyActivityPicker(isPresented: $showingAppPicker, selection: $selection)
         .onChange(of: selection) { oldValue, newValue in

@@ -16,10 +16,10 @@ struct OnboardingCreateListPage: View {
 
             VStack(spacing: DS.Spacing.sm) {
                 Text("Create Your First List")
-                    .font(.largeTitle.weight(.bold))
+                    .font(DS.Typography.largeTitle)
 
                 Text("Lists help you organize tasks by project or area.")
-                    .font(.subheadline)
+                    .font(DS.Typography.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -27,11 +27,11 @@ struct OnboardingCreateListPage: View {
             VStack(spacing: DS.Spacing.lg) {
                 TextField("List name", text: $listName)
                     .textFieldStyle(.roundedBorder)
-                    .font(.body)
+                    .font(DS.Typography.body)
 
                 VStack(alignment: .leading, spacing: DS.Spacing.sm) {
                     Text("Color")
-                        .font(.subheadline.weight(.medium))
+                        .font(DS.Typography.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
 
                     ListColorPicker(selected: $selectedColor)
@@ -41,7 +41,7 @@ struct OnboardingCreateListPage: View {
 
             if let errorMessage {
                 Text(errorMessage)
-                    .font(.caption)
+                    .font(DS.Typography.caption)
                     .foregroundStyle(DS.Colors.error)
             }
 
@@ -54,18 +54,16 @@ struct OnboardingCreateListPage: View {
                             .frame(maxWidth: .infinity)
                     } else {
                         Text("Create")
-                            .font(.body.weight(.semibold))
                             .frame(maxWidth: .infinity)
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(IntentiaPrimaryButtonStyle())
                 .disabled(listName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isCreating)
 
                 Button("Skip") {
                     onNext()
                 }
-                .font(.body)
+                .font(DS.Typography.body)
                 .foregroundStyle(.secondary)
             }
         }

@@ -12,7 +12,7 @@ struct SkeletonView: View {
     init(
         width: CGFloat? = nil,
         height: CGFloat = 16,
-        cornerRadius: CGFloat = DS.Radius.sm
+        cornerRadius: CGFloat = DS.Radius.xs
     ) {
         self.width = width
         self.height = height
@@ -20,11 +20,11 @@ struct SkeletonView: View {
     }
 
     var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             .fill(Color(.tertiarySystemBackground))
             .frame(width: width, height: height)
             .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -38,7 +38,7 @@ struct SkeletonView: View {
                     )
                     .offset(x: isAnimating ? 300 : -300)
             )
-            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .onAppear {
                 withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
                     isAnimating = true
@@ -60,7 +60,7 @@ struct TaskRowSkeleton: View {
 
                 HStack(spacing: DS.Spacing.xs) {
                     SkeletonView(width: 80, height: 10)
-                    SkeletonView(width: 60, height: 18, cornerRadius: 9)
+                    SkeletonView(width: 60, height: 18, cornerRadius: DS.Radius.xs)
                 }
             }
 
@@ -92,7 +92,7 @@ struct ListCardSkeleton: View {
         }
         .padding(DS.Spacing.md)
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(DS.Radius.md)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
     }
 }
 
@@ -122,16 +122,16 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: DS.Spacing.xl) {
             Image(systemName: icon)
-                .font(.system(size: DS.Size.iconJumbo))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 64))
+                .foregroundStyle(DS.Colors.accent)
 
             VStack(spacing: DS.Spacing.sm) {
                 Text(title)
-                    .font(.title3.weight(.semibold))
+                    .font(DS.Typography.title3)
                     .multilineTextAlignment(.center)
 
                 Text(message)
-                    .font(.body)
+                    .font(DS.Typography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -139,9 +139,9 @@ struct EmptyStateView: View {
             if let actionTitle = actionTitle, let action = action {
                 Button(action: action) {
                     Text(actionTitle)
-                        .font(.body.weight(.semibold))
+                        .font(DS.Typography.bodyMedium)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(IntentiaPrimaryButtonStyle())
             }
         }
         .padding(DS.Spacing.xl)
@@ -164,7 +164,7 @@ struct LoadingStateView: View {
                 .scaleEffect(1.2)
 
             Text(message)
-                .font(.subheadline)
+                .font(DS.Typography.subheadline)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

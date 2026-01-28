@@ -47,7 +47,7 @@ struct TagPickerView: View {
                                 .padding(.horizontal, DS.Spacing.md)
                                 .padding(.vertical, DS.Spacing.sm)
                                 .background(Color(.secondarySystemBackground))
-                                .cornerRadius(16)
+                                .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
                     }
@@ -79,10 +79,10 @@ struct TagChip: View {
             .padding(.vertical, DS.Spacing.sm)
             .background(isSelected ? tag.tagColor.opacity(0.2) : Color(.secondarySystemBackground))
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
+                Capsule()
                     .stroke(isSelected ? tag.tagColor : .clear, lineWidth: 1.5)
             )
-            .cornerRadius(16)
+            .clipShape(Capsule())
         }
         .buttonStyle(.plain)
     }

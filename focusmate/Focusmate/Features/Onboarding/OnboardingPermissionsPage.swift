@@ -34,10 +34,10 @@ struct OnboardingPermissionsPage: View {
 
             VStack(spacing: DS.Spacing.sm) {
                 Text("Get Set Up")
-                    .font(.largeTitle.weight(.bold))
+                    .font(DS.Typography.largeTitle)
 
                 Text("These permissions help Intentia work best.\nYou can change them later in Settings.")
-                    .font(.subheadline)
+                    .font(DS.Typography.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -64,11 +64,9 @@ struct OnboardingPermissionsPage: View {
 
             Button(action: onNext) {
                 Text("Continue")
-                    .font(.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(IntentiaPrimaryButtonStyle())
         }
         .padding(DS.Spacing.xl)
         .task {
@@ -86,16 +84,16 @@ struct OnboardingPermissionsPage: View {
     ) -> some View {
         HStack(spacing: DS.Spacing.lg) {
             Image(systemName: icon)
-                .font(.title2)
+                .font(DS.Typography.title2)
                 .foregroundStyle(DS.Colors.accent)
                 .frame(width: DS.Size.iconXL, height: DS.Size.iconXL)
 
             VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .font(DS.Typography.bodyMedium)
 
                 Text(description)
-                    .font(.caption)
+                    .font(DS.Typography.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -109,7 +107,7 @@ struct OnboardingPermissionsPage: View {
                 .controlSize(.small)
             } else {
                 Image(systemName: status.icon)
-                    .font(.title3)
+                    .font(DS.Typography.title3)
                     .foregroundStyle(status.color)
             }
         }

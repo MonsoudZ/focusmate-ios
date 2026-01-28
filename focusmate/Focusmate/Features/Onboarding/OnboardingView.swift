@@ -26,24 +26,25 @@ struct OnboardingView: View {
                     .tag(4)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .animation(.easeInOut(duration: 0.3), value: currentPage)
+            .animation(DS.Anim.smooth, value: currentPage)
+            .surfaceBackground()
 
             // Top bar: skip button + page dots
             HStack {
                 // Invisible spacer to balance the skip button
                 Text("Skip")
-                    .font(.body)
+                    .font(DS.Typography.body)
                     .hidden()
 
                 Spacer()
 
-                // Page dots
+                // Page dots — accent color
                 HStack(spacing: DS.Spacing.sm) {
                     ForEach(0..<totalPages, id: \.self) { index in
                         Circle()
                             .fill(index == currentPage ? DS.Colors.accent : Color(.systemGray4))
                             .frame(width: 8, height: 8)
-                            .animation(.easeInOut(duration: 0.2), value: currentPage)
+                            .animation(DS.Anim.quick, value: currentPage)
                     }
                 }
 
@@ -54,11 +55,11 @@ struct OnboardingView: View {
                     Button("Skip") {
                         onComplete()
                     }
-                    .font(.body)
+                    .font(DS.Typography.body)
                     .foregroundStyle(.secondary)
                 } else {
                     Text("Skip")
-                        .font(.body)
+                        .font(DS.Typography.body)
                         .hidden()
                 }
             }

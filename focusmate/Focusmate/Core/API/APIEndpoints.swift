@@ -88,6 +88,12 @@ enum API {
         static func subtasks(_ listId: String, _ taskId: String) -> String {
             "api/v1/lists/\(listId)/tasks/\(taskId)/subtasks"
         }
+        static func subtask(_ listId: String, _ taskId: String, _ subtaskId: String) -> String {
+            "api/v1/lists/\(listId)/tasks/\(taskId)/subtasks/\(subtaskId)"
+        }
+        static func subtaskAction(_ listId: String, _ taskId: String, _ subtaskId: String, _ action: String) -> String {
+            "api/v1/lists/\(listId)/tasks/\(taskId)/subtasks/\(subtaskId)/\(action)"
+        }
     }
 
     enum Tasks {
