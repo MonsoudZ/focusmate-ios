@@ -121,7 +121,7 @@ struct SettingsView: View {
                 }
             }
             .surfaceFormBackground()
-            .navigationTitle("Settings")
+            .navigationTitle("Profile")
             .sheet(isPresented: $showingEditProfile) {
                 if let user {
                     EditProfileView(user: user)

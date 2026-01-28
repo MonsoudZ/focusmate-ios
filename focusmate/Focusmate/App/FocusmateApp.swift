@@ -124,8 +124,8 @@ struct RootView: View {
 
                     SettingsView()
                         .tabItem {
-                            Image(systemName: "gearshape")
-                            Text("Settings")
+                            Image(systemName: "person.circle")
+                            Text("Profile")
                         }
                         .tag(2)
                 }

@@ -47,6 +47,16 @@ struct ListsView: View {
                                         }
                                     }
                                 }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    if list.role == "owner" || list.role == nil {
+                                        Button(role: .destructive) {
+                                            viewModel.listToDelete = list
+                                            viewModel.showingDeleteConfirmation = true
+                                        } label: {
+                                            Label("Delete", systemImage: DS.Icon.trash)
+                                        }
+                                    }
+                                }
                             }
                         }
                         .padding(DS.Spacing.md)
