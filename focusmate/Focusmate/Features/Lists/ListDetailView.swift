@@ -107,42 +107,40 @@ struct ListDetailView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
-            HStack(spacing: DS.Spacing.sm) {
+            Menu {
                 if viewModel.canEdit {
                     Button {
                         viewModel.showingCreateTask = true
                     } label: {
-                        Image(systemName: DS.Icon.plus)
+                        Label("Add Task", systemImage: DS.Icon.plus)
                     }
+
+                    Divider()
                 }
 
-                Menu {
-                    Button {
-                        viewModel.showingMembers = true
-                    } label: {
-                        Label("Members", systemImage: DS.Icon.share)
-                    }
-
-                    if viewModel.isOwner {
-                        Button {
-                            viewModel.showingEditList = true
-                        } label: {
-                            Label("Edit List", systemImage: DS.Icon.edit)
-                        }
-                    }
-
-                    if viewModel.isOwner {
-                        Divider()
-
-                        Button(role: .destructive) {
-                            viewModel.showingDeleteConfirmation = true
-                        } label: {
-                            Label("Delete List", systemImage: DS.Icon.trash)
-                        }
-                    }
+                Button {
+                    viewModel.showingMembers = true
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Label("Members", systemImage: "person.2")
                 }
+
+                if viewModel.isOwner {
+                    Button {
+                        viewModel.showingEditList = true
+                    } label: {
+                        Label("Edit List", systemImage: DS.Icon.edit)
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        viewModel.showingDeleteConfirmation = true
+                    } label: {
+                        Label("Delete List", systemImage: DS.Icon.trash)
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
             }
         }
     }
@@ -154,9 +152,9 @@ struct ListDetailView: View {
         if viewModel.canEdit {
             EmptyStateView(
                 title: "No tasks yet",
-                message: "Tap the + button to add your first task",
+                message: "Add your first task to get started",
                 icon: DS.Icon.circle,
-                actionTitle: "Create Task",
+                actionTitle: "Add Task",
                 action: { viewModel.showingCreateTask = true }
             )
         } else {

@@ -13,10 +13,19 @@ final class SearchViewModel {
 
     let taskService: TaskService
     let listService: ListService
+    private let initialQuery: String
 
-    init(taskService: TaskService, listService: ListService) {
+    init(taskService: TaskService, listService: ListService, initialQuery: String = "") {
         self.taskService = taskService
         self.listService = listService
+        self.initialQuery = initialQuery
+        self.query = initialQuery
+    }
+
+    func searchIfNeeded() async {
+        if !initialQuery.isEmpty && !hasSearched {
+            await search()
+        }
     }
 
     var groupedResults: [(listId: Int, tasks: [TaskDTO])] {
@@ -29,11 +38,14 @@ final class SearchViewModel {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        // API limit: max 255 characters
+        let searchQuery = String(trimmed.prefix(255))
+
         isSearching = true
         hasSearched = true
 
         do {
-            results = try await taskService.searchTasks(query: trimmed)
+            results = try await taskService.searchTasks(query: searchQuery)
             await loadListsForResults()
         } catch let err as FocusmateError {
             error = err

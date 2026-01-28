@@ -3,14 +3,16 @@ import SwiftUI
 struct SearchView: View {
     let tagService: TagService
     var onSelectList: ((ListDTO) -> Void)?
+    let initialQuery: String
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel: SearchViewModel
 
-    init(taskService: TaskService, listService: ListService, tagService: TagService, onSelectList: ((ListDTO) -> Void)? = nil) {
+    init(taskService: TaskService, listService: ListService, tagService: TagService, onSelectList: ((ListDTO) -> Void)? = nil, initialQuery: String = "") {
         self.tagService = tagService
         self.onSelectList = onSelectList
-        _viewModel = State(initialValue: SearchViewModel(taskService: taskService, listService: listService))
+        self.initialQuery = initialQuery
+        _viewModel = State(initialValue: SearchViewModel(taskService: taskService, listService: listService, initialQuery: initialQuery))
     }
 
     var body: some View {
@@ -30,6 +32,9 @@ struct SearchView: View {
             .searchable(text: $viewModel.query, prompt: "Search tasks...")
             .onSubmit(of: .search) {
                 Task { await viewModel.search() }
+            }
+            .task {
+                await viewModel.searchIfNeeded()
             }
             .onChange(of: viewModel.query) { oldValue, newValue in
                 if newValue.isEmpty {

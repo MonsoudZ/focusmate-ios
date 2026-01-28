@@ -9,6 +9,9 @@ struct ListDTO: Codable, Identifiable, Hashable {
     let color: String?
     let role: String?
     let tasks_count: Int?
+    let completed_tasks_count: Int?
+    let overdue_tasks_count: Int?
+    let members: [ListMemberDTO]?
     let created_at: String?
     let updated_at: String?
 
@@ -26,6 +29,23 @@ struct ListDTO: Codable, Identifiable, Hashable {
         default: return .blue
         }
     }
+
+    var progress: Double {
+        guard let total = tasks_count, total > 0 else { return 0 }
+        let completed = completed_tasks_count ?? 0
+        return Double(completed) / Double(total)
+    }
+
+    var hasOverdue: Bool {
+        (overdue_tasks_count ?? 0) > 0
+    }
+}
+
+struct ListMemberDTO: Codable, Identifiable, Hashable {
+    let id: Int
+    let name: String?
+    let email: String
+    let role: String?
 }
 
 struct ListsResponse: Codable {

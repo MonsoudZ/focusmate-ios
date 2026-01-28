@@ -7,26 +7,15 @@ struct ListRowView: View {
         list.role != nil && list.role != "owner"
     }
 
-    private var roleIcon: String {
-        switch list.role {
-        case "editor": return DS.Icon.edit
-        case "viewer": return "eye"
-        default: return DS.Icon.share
-        }
-    }
-
-    private var roleColor: Color {
-        switch list.role {
-        case "editor": return DS.Colors.accent
-        case "viewer": return .gray
-        default: return DS.Colors.accent
-        }
+    private var hasMembers: Bool {
+        guard let members = list.members else { return false }
+        return members.count > 1
     }
 
     var body: some View {
         HStack(spacing: DS.Spacing.md) {
-            // Color indicator — capsule variant
-            ColorBar(color: list.listColor)
+            // Progress ring with color
+            progressRing
 
             // List info
             VStack(alignment: .leading, spacing: DS.Spacing.xs) {
@@ -34,18 +23,22 @@ struct ListRowView: View {
                     Text(list.name)
                         .font(DS.Typography.bodyMedium)
 
-                    if isSharedList {
-                        Image(systemName: roleIcon)
-                            .font(DS.Typography.caption)
-                            .foregroundStyle(roleColor)
+                    if list.hasOverdue {
+                        overdueBadge
                     }
                 }
 
                 HStack(spacing: DS.Spacing.sm) {
                     if let count = list.tasks_count {
-                        Text(count == 1 ? "1 task" : "\(count) tasks")
-                            .font(DS.Typography.caption)
-                            .foregroundStyle(.secondary)
+                        if let completed = list.completed_tasks_count {
+                            Text("\(completed)/\(count) done")
+                                .font(DS.Typography.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text(count == 1 ? "1 task" : "\(count) tasks")
+                                .font(DS.Typography.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
                     if isSharedList {
@@ -55,26 +48,90 @@ struct ListRowView: View {
 
                         Text(list.role?.capitalized ?? "Shared")
                             .font(DS.Typography.caption)
-                            .foregroundStyle(roleColor)
-                    } else if let description = list.description, !description.isEmpty {
-                        Text("•")
-                            .font(DS.Typography.caption)
-                            .foregroundStyle(.secondary)
-
-                        Text(description)
-                            .font(DS.Typography.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                            .foregroundStyle(DS.Colors.accent)
                     }
                 }
             }
 
             Spacer()
 
+            // Member avatars for shared lists
+            if hasMembers {
+                memberAvatars
+            }
+
             Image(systemName: DS.Icon.chevronRight)
                 .font(DS.Typography.caption)
                 .foregroundStyle(.tertiary)
         }
         .card()
+    }
+
+    // MARK: - Color Indicator / Progress Ring
+
+    @ViewBuilder
+    private var progressRing: some View {
+        if list.completed_tasks_count != nil {
+            // Show progress ring when we have completion data
+            ZStack {
+                Circle()
+                    .stroke(list.listColor.opacity(0.2), lineWidth: 3)
+
+                Circle()
+                    .trim(from: 0, to: list.progress)
+                    .stroke(list.listColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+
+                if list.progress >= 1.0 {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(list.listColor)
+                }
+            }
+            .frame(width: 32, height: 32)
+        } else {
+            // Fall back to color bar when no completion data
+            ColorBar(color: list.listColor)
+        }
+    }
+
+    // MARK: - Overdue Badge
+
+    private var overdueBadge: some View {
+        HStack(spacing: 2) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 10))
+            Text("\(list.overdue_tasks_count ?? 0)")
+                .font(.system(size: 11, weight: .medium))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(DS.Colors.error)
+        .clipShape(Capsule())
+    }
+
+    // MARK: - Member Avatars
+
+    private var memberAvatars: some View {
+        HStack(spacing: -8) {
+            ForEach(Array((list.members ?? []).prefix(3).enumerated()), id: \.element.id) { index, member in
+                Avatar(member.name ?? member.email, size: 24)
+                    .overlay(
+                        Circle()
+                            .stroke(Color(.systemBackground), lineWidth: 2)
+                    )
+                    .zIndex(Double(3 - index))
+            }
+
+            if let members = list.members, members.count > 3 {
+                Text("+\(members.count - 3)")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 24, height: 24)
+                    .background(Color(.systemGray5))
+                    .clipShape(Circle())
+            }
+        }
     }
 }

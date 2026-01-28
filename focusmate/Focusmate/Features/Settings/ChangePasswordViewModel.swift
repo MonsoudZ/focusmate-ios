@@ -18,7 +18,7 @@ final class ChangePasswordViewModel {
 
     var isValid: Bool {
         !currentPassword.isEmpty &&
-        newPassword.count >= 6 &&
+        newPassword.count >= 8 &&
         newPassword == confirmPassword
     }
 

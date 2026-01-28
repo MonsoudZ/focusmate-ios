@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ListsView: View {
     @StateObject private var viewModel: ListsViewModel
+    @State private var searchText = ""
 
     init(listService: ListService, taskService: TaskService, tagService: TagService) {
         _viewModel = StateObject(wrappedValue: ListsViewModel(
@@ -65,20 +66,16 @@ struct ListsView: View {
                 }
             }
             .navigationTitle("Lists")
+            .searchable(text: $searchText, prompt: "Search tasks...")
+            .onSubmit(of: .search) {
+                viewModel.showingSearch = true
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: DS.Spacing.md) {
-                        Button {
-                            viewModel.showingSearch = true
-                        } label: {
-                            Image(systemName: DS.Icon.search)
-                        }
-
-                        Button {
-                            viewModel.showingCreateList = true
-                        } label: {
-                            Image(systemName: DS.Icon.plus)
-                        }
+                    Button {
+                        viewModel.showingCreateList = true
+                    } label: {
+                        Image(systemName: DS.Icon.plus)
                     }
                 }
             }
@@ -92,8 +89,14 @@ struct ListsView: View {
                     tagService: viewModel.tagService,
                     onSelectList: { list in
                         viewModel.selectedList = list
-                    }
+                    },
+                    initialQuery: searchText
                 )
+            }
+            .onChange(of: viewModel.showingSearch) { _, isShowing in
+                if !isShowing {
+                    searchText = ""
+                }
             }
             .navigationDestination(item: $viewModel.selectedList) { list in
                 ListDetailView(
