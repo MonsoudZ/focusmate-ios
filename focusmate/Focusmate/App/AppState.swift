@@ -20,11 +20,14 @@ final class AppState: ObservableObject {
     private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
     private(set) lazy var tagService = TagService(apiClient: auth.api)
 
-    // Push token coordination
-    private var lastKnownPushToken: String?
-    private var lastRegisteredPushToken: String?
-    private var hasRegisteredDevice = false
-    private var isRegisteringDevice = false
+    // Push token coordination (grouped for atomic consistency)
+    private struct PushTokenState {
+        var lastKnownToken: String?
+        var lastRegisteredToken: String?
+        var hasRegistered = false
+        var isRegistering = false
+    }
+    private var pushState = PushTokenState()
 
     init(auth: AuthStore) {
         self.auth = auth
@@ -47,14 +50,14 @@ final class AppState: ObservableObject {
             .sink { [weak self] notification in
                 guard let self else { return }
                 if let token = notification.userInfo?["token"] as? String {
-                    self.lastKnownPushToken = token
+                    self.pushState.lastKnownToken = token
                     Task { await self.tryRegisterDeviceIfPossible() }
                 }
             }
             .store(in: &cancellables)
 
         // If AppDelegate already has a token, stash it immediately.
-        lastKnownPushToken = AppDelegate.pushToken
+        pushState.lastKnownToken = AppDelegate.pushToken
 
         // NOTE: Do NOT flush pending notification routes here.
         // AppState.init() runs during StateObject creation, before RootView's
@@ -68,24 +71,24 @@ final class AppState: ObservableObject {
 
     private func tryRegisterDeviceIfPossible() async {
         guard auth.jwt != nil else { return }
-        guard !isRegisteringDevice else { return }
+        guard !pushState.isRegistering else { return }
 
-        let tokenToRegister = lastKnownPushToken
+        let tokenToRegister = pushState.lastKnownToken
 
         // Skip if we already registered with this exact token.
         // Use a separate flag to ensure we register at least once per session
         // even when push permission is denied (token is nil).
-        if hasRegisteredDevice && lastRegisteredPushToken == tokenToRegister {
+        if pushState.hasRegistered && pushState.lastRegisteredToken == tokenToRegister {
             return
         }
 
-        isRegisteringDevice = true
-        defer { isRegisteringDevice = false }
+        pushState.isRegistering = true
+        defer { pushState.isRegistering = false }
 
         do {
             _ = try await deviceService.registerDevice(pushToken: tokenToRegister)
-            lastRegisteredPushToken = tokenToRegister
-            hasRegisteredDevice = true
+            pushState.lastRegisteredToken = tokenToRegister
+            pushState.hasRegistered = true
             Logger.info("Device registered successfully (push: \(tokenToRegister != nil))", category: .api)
         } catch {
             Logger.warning("Device registration skipped: \(error)", category: .api)

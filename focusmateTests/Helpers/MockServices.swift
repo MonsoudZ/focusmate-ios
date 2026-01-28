@@ -1,0 +1,293 @@
+import Combine
+import Foundation
+@testable import focusmate
+
+// MARK: - MockTaskService
+
+@MainActor
+final class MockTaskService {
+    private let apiClient: APIClient
+    private let sideEffects: TaskSideEffectHandling
+
+    var fetchTasksResult: Result<[TaskDTO], Error> = .success([])
+    var fetchTaskResult: Result<TaskDTO, Error>?
+    var createTaskResult: Result<TaskDTO, Error>?
+    var updateTaskResult: Result<TaskDTO, Error>?
+    var deleteTaskResult: Result<Void, Error> = .success(())
+    var completeTaskResult: Result<TaskDTO, Error>?
+    var reopenTaskResult: Result<TaskDTO, Error>?
+
+    private(set) var fetchTasksCalled = false
+    private(set) var fetchTasksListId: Int?
+    private(set) var createTaskCalled = false
+    private(set) var createTaskTitle: String?
+    private(set) var updateTaskCalled = false
+    private(set) var deleteTaskCalled = false
+    private(set) var deleteTaskId: Int?
+    private(set) var completeTaskCalled = false
+    private(set) var reopenTaskCalled = false
+    private(set) var reopenTaskId: Int?
+
+    init(apiClient: APIClient, sideEffects: TaskSideEffectHandling) {
+        self.apiClient = apiClient
+        self.sideEffects = sideEffects
+    }
+
+    func fetchTasks(listId: Int) async throws -> [TaskDTO] {
+        fetchTasksCalled = true
+        fetchTasksListId = listId
+        return try fetchTasksResult.get()
+    }
+
+    func fetchTask(listId: Int, taskId: Int) async throws -> TaskDTO {
+        guard let result = fetchTaskResult else {
+            return TestFactories.makeSampleTask(id: taskId, listId: listId)
+        }
+        return try result.get()
+    }
+
+    func createTask(
+        listId: Int,
+        title: String,
+        note: String?,
+        dueAt: Date?,
+        color: String? = nil,
+        priority: TaskPriority = .none,
+        starred: Bool = false,
+        tagIds: [Int] = [],
+        isRecurring: Bool = false,
+        recurrencePattern: String? = nil,
+        recurrenceInterval: Int? = nil,
+        recurrenceDays: [Int]? = nil,
+        recurrenceEndDate: Date? = nil,
+        recurrenceCount: Int? = nil,
+        parentTaskId: Int? = nil
+    ) async throws -> TaskDTO {
+        createTaskCalled = true
+        createTaskTitle = title
+        if let result = createTaskResult {
+            return try result.get()
+        }
+        return TestFactories.makeSampleTask(id: Int.random(in: 100...999), listId: listId, title: title)
+    }
+
+    func updateTask(
+        listId: Int,
+        taskId: Int,
+        title: String?,
+        note: String?,
+        dueAt: String?,
+        color: String? = nil,
+        priority: TaskPriority? = nil,
+        starred: Bool? = nil,
+        tagIds: [Int]? = nil
+    ) async throws -> TaskDTO {
+        updateTaskCalled = true
+        if let result = updateTaskResult {
+            return try result.get()
+        }
+        return TestFactories.makeSampleTask(id: taskId, listId: listId, title: title ?? "Updated")
+    }
+
+    func deleteTask(listId: Int, taskId: Int) async throws {
+        deleteTaskCalled = true
+        deleteTaskId = taskId
+        try deleteTaskResult.get()
+    }
+
+    func completeTask(listId: Int, taskId: Int, reason: String? = nil) async throws -> TaskDTO {
+        completeTaskCalled = true
+        if let result = completeTaskResult {
+            return try result.get()
+        }
+        return TestFactories.makeSampleTask(id: taskId, listId: listId, completedAt: Date().ISO8601Format())
+    }
+
+    func reopenTask(listId: Int, taskId: Int) async throws -> TaskDTO {
+        reopenTaskCalled = true
+        reopenTaskId = taskId
+        if let result = reopenTaskResult {
+            return try result.get()
+        }
+        return TestFactories.makeSampleTask(id: taskId, listId: listId)
+    }
+
+    func createSubtask(listId: Int, parentTaskId: Int, title: String) async throws -> SubtaskDTO {
+        return TestFactories.makeSampleSubtask(taskId: parentTaskId, title: title)
+    }
+
+    func updateSubtask(listId: Int, parentTaskId: Int, subtaskId: Int, title: String) async throws -> SubtaskDTO {
+        return TestFactories.makeSampleSubtask(id: subtaskId, taskId: parentTaskId, title: title)
+    }
+}
+
+// MARK: - MockListService
+
+@MainActor
+final class MockListService {
+    var fetchListsResult: Result<[ListDTO], Error> = .success([])
+    var deleteListResult: Result<Void, Error> = .success(())
+
+    private(set) var fetchListsCalled = false
+    private(set) var deleteListCalled = false
+    private(set) var deletedListId: Int?
+
+    func fetchLists() async throws -> [ListDTO] {
+        fetchListsCalled = true
+        return try fetchListsResult.get()
+    }
+
+    func fetchList(id: Int) async throws -> ListDTO {
+        return TestFactories.makeSampleList(id: id)
+    }
+
+    func createList(name: String, description: String?, color: String = "blue") async throws -> ListDTO {
+        return TestFactories.makeSampleList(name: name, description: description, color: color)
+    }
+
+    func updateList(id: Int, name: String?, description: String?, color: String? = nil) async throws -> ListDTO {
+        return TestFactories.makeSampleList(id: id, name: name ?? "Updated", description: description, color: color)
+    }
+
+    func deleteList(id: Int) async throws {
+        deleteListCalled = true
+        deletedListId = id
+        try deleteListResult.get()
+    }
+}
+
+// MARK: - MockTagService
+
+@MainActor
+final class MockTagService {
+    var fetchTagsResult: Result<[TagDTO], Error> = .success([])
+
+    private(set) var fetchTagsCalled = false
+
+    func fetchTags() async throws -> [TagDTO] {
+        fetchTagsCalled = true
+        return try fetchTagsResult.get()
+    }
+
+    func createTag(name: String, color: String?) async throws -> TagDTO {
+        return TagDTO(id: Int.random(in: 100...999), name: name, color: color, tasks_count: 0, created_at: nil)
+    }
+}
+
+// MARK: - MockEscalationService
+
+@MainActor
+final class MockEscalationService: ObservableObject {
+    @Published var isInGracePeriod: Bool = false
+    @Published var gracePeriodEndTime: Date?
+    @Published var overdueTaskIds: Set<Int> = []
+
+    private(set) var taskBecameOverdueCalled = false
+    private(set) var taskCompletedCalled = false
+    private(set) var resetAllCalled = false
+
+    func taskBecameOverdue(_ task: TaskDTO) {
+        taskBecameOverdueCalled = true
+        overdueTaskIds.insert(task.id)
+    }
+
+    func taskCompleted(_ taskId: Int) {
+        taskCompletedCalled = true
+        overdueTaskIds.remove(taskId)
+    }
+
+    func resetAll() {
+        resetAllCalled = true
+        isInGracePeriod = false
+        gracePeriodEndTime = nil
+        overdueTaskIds.removeAll()
+    }
+
+    var gracePeriodRemaining: TimeInterval? {
+        guard let endTime = gracePeriodEndTime else { return nil }
+        let remaining = endTime.timeIntervalSinceNow
+        return remaining > 0 ? remaining : nil
+    }
+
+    var gracePeriodRemainingFormatted: String? {
+        guard let remaining = gracePeriodRemaining else { return nil }
+        let minutes = Int(remaining / 60)
+        let hours = minutes / 60
+        let mins = minutes % 60
+
+        if hours > 0 {
+            return "\(hours)h \(mins)m"
+        } else {
+            return "\(mins)m"
+        }
+    }
+}
+
+// MARK: - MockScreenTimeService
+
+@MainActor
+final class MockScreenTimeService {
+    var isBlocking = false
+    var isAuthorized = true
+    var hasSelections = true
+
+    private(set) var startBlockingCalled = false
+    private(set) var stopBlockingCalled = false
+
+    func startBlocking() {
+        startBlockingCalled = true
+        isBlocking = true
+    }
+
+    func stopBlocking() {
+        stopBlockingCalled = true
+        isBlocking = false
+    }
+}
+
+// MARK: - MockNotificationService
+
+@MainActor
+final class MockNotificationService {
+    private(set) var scheduleMorningBriefingCalled = false
+    private(set) var morningBriefingTaskCount: Int?
+    private(set) var cancelledTaskIds: [Int] = []
+
+    func scheduleMorningBriefing(taskCount: Int) {
+        scheduleMorningBriefingCalled = true
+        morningBriefingTaskCount = taskCount
+    }
+
+    func cancelTaskNotifications(for taskId: Int) {
+        cancelledTaskIds.append(taskId)
+    }
+
+    func scheduleEscalationNotification(id: String, title: String, body: String, date: Date) {
+        // No-op for tests
+    }
+}
+
+// MARK: - MockTodayService
+
+@MainActor
+final class MockTodayService {
+    var fetchTodayResult: Result<TodayResponse, Error>?
+
+    private(set) var fetchTodayCalled = false
+
+    func fetchToday(ignoreCache: Bool = false) async throws -> TodayResponse {
+        fetchTodayCalled = true
+        if let result = fetchTodayResult {
+            return try result.get()
+        }
+        return TodayResponse(
+            overdue: [],
+            due_today: [],
+            completed_today: [],
+            stats: TodayStats(overdue_count: 0, due_today_count: 0, completed_today_count: 0),
+            streak: nil
+        )
+    }
+
+    func invalidateCache() async {}
+}

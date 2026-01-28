@@ -54,7 +54,9 @@ final class AuthStore: ObservableObject {
     private let escalationService: EscalationService
 
     private var cancellables = Set<AnyCancellable>()
-    private var unauthorizedTask: Task<Void, Never>?
+    private var unauthorizedTask: Task<Void, Never>? {
+        willSet { unauthorizedTask?.cancel() }
+    }
 
     // MARK: - Production init (unchanged call site behavior)
     init() {
@@ -255,19 +257,13 @@ final class AuthStore: ObservableObject {
     }
 
     private func handleUnauthorizedEvent() {
-        // Cancel any in-flight handling and ignore if already signed out.
         guard jwt != nil else { return }
-        unauthorizedTask?.cancel()
 
         unauthorizedTask = Task {
             Logger.warning("Global unauthorized received. Clearing local session.", category: .auth)
-
-            // Stop app blocking before clearing auth to prevent stuck blocks
             escalationService.resetAll()
-
             _ = await errorHandler.handleUnauthorized()
             await clearLocalSession()
-
             eventBus.send(.signedOut)
         }
     }

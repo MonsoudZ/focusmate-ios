@@ -177,7 +177,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
                 }
             }
             Logger.warning("401 Unauthorized for \(method) \(path)", category: .api)
-            Task { @MainActor in AuthEventBus.shared.send(.unauthorized) }
+            await AuthEventBus.shared.send(.unauthorized)
             throw APIError.unauthorized
 
         case 422:
@@ -263,7 +263,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
                     Logger.warning("Token refresh failed for GET \(endpoint): \(error)", category: .api)
                 }
             }
-            Task { @MainActor in AuthEventBus.shared.send(.unauthorized) }
+            await AuthEventBus.shared.send(.unauthorized)
             throw APIError.unauthorized
         default:
             throw APIError.badStatus(http.statusCode, nil, nil)

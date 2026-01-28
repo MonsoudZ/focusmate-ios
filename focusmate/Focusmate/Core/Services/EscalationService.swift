@@ -78,19 +78,24 @@ final class EscalationService: ObservableObject {
         UserDefaults.standard.set(Date(), forKey: gracePeriodStartKey)
         saveState()
 
-        // Schedule timer for when grace period ends
+        scheduleGracePeriodTimer(interval: TimeInterval(gracePeriodMinutes * 60))
+
+        Logger.info("Grace period started. Ends at \(endTime)", category: .general)
+    }
+
+    private func scheduleGracePeriodTimer(interval: TimeInterval) {
         gracePeriodTimer?.invalidate()
         gracePeriodTimer = Timer.scheduledTimer(
-            withTimeInterval: TimeInterval(gracePeriodMinutes * 60),
+            withTimeInterval: interval,
             repeats: false
         ) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
+                // Guard against timer firing after reset
+                guard self.gracePeriodTimer != nil else { return }
                 self.gracePeriodEnded()
             }
         }
-
-        Logger.info("Grace period started. Ends at \(endTime)", category: .general)
     }
 
     private func gracePeriodEnded() {
@@ -215,16 +220,7 @@ final class EscalationService: ObservableObject {
                 isInGracePeriod = true
 
                 let remaining = endTime.timeIntervalSinceNow
-                gracePeriodTimer?.invalidate()
-                gracePeriodTimer = Timer.scheduledTimer(
-                    withTimeInterval: remaining,
-                    repeats: false
-                ) { [weak self] _ in
-                    guard let self else { return }
-                    Task { @MainActor in
-                        self.gracePeriodEnded()
-                    }
-                }
+                scheduleGracePeriodTimer(interval: remaining)
             }
         }
     }

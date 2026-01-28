@@ -30,6 +30,12 @@ final class MockNetworking: NetworkingProtocol {
         stubbedData = (try? JSONEncoder().encode(value)) ?? Data()
     }
 
+    func reset() {
+        calls = []
+        stubbedData = Data()
+        stubbedError = nil
+    }
+
     // MARK: - NetworkingProtocol
 
     func request<T: Decodable>(
