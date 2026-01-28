@@ -24,11 +24,12 @@ final class TaskService {
 
     func fetchTask(listId: Int, taskId: Int) async throws -> TaskDTO {
         do {
-            return try await apiClient.request(
+            let response: SingleTaskResponse = try await apiClient.request(
                 "GET",
                 API.Lists.task(String(listId), String(taskId)),
                 body: nil as String?
             )
+            return response.task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Fetching task")
         }
@@ -68,15 +69,15 @@ final class TaskService {
                 recurrence_count: recurrenceCount,
                 parent_task_id: parentTaskId
             ))
-            let task: TaskDTO = try await apiClient.request(
+            let response: SingleTaskResponse = try await apiClient.request(
                 "POST",
                 API.Lists.tasks(String(listId)),
                 body: request
             )
-            
-            await MainActor.run { sideEffects.taskCreated(task, isSubtask: parentTaskId != nil) }
 
-            return task
+            await MainActor.run { sideEffects.taskCreated(response.task, isSubtask: parentTaskId != nil) }
+
+            return response.task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Creating task")
         }
@@ -93,15 +94,15 @@ final class TaskService {
                 starred: starred,
                 tag_ids: tagIds
             ))
-            let task: TaskDTO = try await apiClient.request(
+            let response: SingleTaskResponse = try await apiClient.request(
                 "PUT",
                 API.Lists.task(String(listId), String(taskId)),
                 body: request
             )
-            
-            await MainActor.run { sideEffects.taskUpdated(task) }
 
-            return task
+            await MainActor.run { sideEffects.taskUpdated(response.task) }
+
+            return response.task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Updating task")
         }
@@ -124,15 +125,15 @@ final class TaskService {
     func completeTask(listId: Int, taskId: Int, reason: String? = nil) async throws -> TaskDTO {
         do {
             let body: CompleteTaskRequest? = reason.map { CompleteTaskRequest(missed_reason: $0) }
-            let task: TaskDTO = try await apiClient.request(
+            let response: SingleTaskResponse = try await apiClient.request(
                 "PATCH",
                 API.Lists.taskAction(String(listId), String(taskId), "complete"),
                 body: body
             )
-            
+
             await MainActor.run { sideEffects.taskCompleted(taskId: taskId) }
 
-            return task
+            return response.task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Completing task")
         }
@@ -140,15 +141,15 @@ final class TaskService {
 
     func reopenTask(listId: Int, taskId: Int) async throws -> TaskDTO {
         do {
-            let task: TaskDTO = try await apiClient.request(
+            let response: SingleTaskResponse = try await apiClient.request(
                 "PATCH",
                 API.Lists.taskAction(String(listId), String(taskId), "reopen"),
                 body: nil as String?
             )
-            
-            await MainActor.run { sideEffects.taskReopened(task) }
 
-            return task
+            await MainActor.run { sideEffects.taskReopened(response.task) }
+
+            return response.task
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Reopening task")
         }

@@ -191,3 +191,7 @@ struct TasksResponse: Codable {
     let tasks: [TaskDTO]
     let tombstones: [String]?
 }
+
+struct SingleTaskResponse: Codable {
+    let task: TaskDTO
+}
