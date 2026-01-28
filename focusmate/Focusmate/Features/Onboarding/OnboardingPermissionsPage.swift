@@ -7,6 +7,7 @@ struct OnboardingPermissionsPage: View {
 
     @State private var notificationStatus: PermissionStatus = .notRequested
     @State private var screenTimeStatus: PermissionStatus = .notRequested
+    @State private var calendarStatus: PermissionStatus = .notRequested
 
     enum PermissionStatus {
         case notRequested, granted, denied
@@ -57,6 +58,14 @@ struct OnboardingPermissionsPage: View {
                     description: "Required to block distracting apps.",
                     status: screenTimeStatus,
                     action: requestScreenTime
+                )
+
+                permissionRow(
+                    icon: "calendar",
+                    title: "Calendar",
+                    description: "Sync tasks to your calendar for better planning.",
+                    status: calendarStatus,
+                    action: requestCalendar
                 )
             }
 
@@ -128,6 +137,10 @@ struct OnboardingPermissionsPage: View {
         if ScreenTimeService.shared.isAuthorized {
             screenTimeStatus = .granted
         }
+
+        if CalendarService.shared.checkPermission() {
+            calendarStatus = .granted
+        }
     }
 
     private func requestNotifications() {
@@ -162,6 +175,18 @@ struct OnboardingPermissionsPage: View {
             } catch {
                 await MainActor.run {
                     screenTimeStatus = .denied
+                }
+            }
+        }
+    }
+
+    private func requestCalendar() {
+        Task {
+            let granted = await CalendarService.shared.requestPermission()
+            await MainActor.run {
+                calendarStatus = granted ? .granted : .denied
+                if granted {
+                    AppSettings.shared.didRequestCalendarPermission = true
                 }
             }
         }

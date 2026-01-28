@@ -22,6 +22,12 @@ struct OnboardingFeaturesPage: View {
             title: "Daily Focus",
             description: "Start each day with a clear view of what needs your attention."
         ),
+        (
+            icon: "person.2.fill",
+            color: DS.Colors.accent,
+            title: "Collaborate",
+            description: "Share lists with friends or partners to stay accountable together."
+        ),
     ]
 
     var body: some View {
@@ -32,7 +38,7 @@ struct OnboardingFeaturesPage: View {
                 Text("How It Works")
                     .font(DS.Typography.largeTitle)
 
-                Text("Three pillars to keep you on track.")
+                Text("Four pillars to keep you on track.")
                     .font(DS.Typography.subheadline)
                     .foregroundStyle(.secondary)
             }
