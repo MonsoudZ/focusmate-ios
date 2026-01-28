@@ -11,6 +11,13 @@ private let _iso8601FormatterNoFrac: ISO8601DateFormatter = {
     ISO8601DateFormatter()
 }()
 
+struct TaskCreatorDTO: Codable, Identifiable {
+    let id: Int
+    let email: String
+    let name: String?
+    let role: String?
+}
+
 struct TaskDTO: Codable, Identifiable {
     let id: Int
     let list_id: Int
@@ -31,6 +38,7 @@ struct TaskDTO: Codable, Identifiable {
     let tags: [TagDTO]?
     let parent_task_id: Int?
     var subtasks: [SubtaskDTO]?
+    let creator: TaskCreatorDTO?
 
     // Recurring fields
     let is_recurring: Bool?

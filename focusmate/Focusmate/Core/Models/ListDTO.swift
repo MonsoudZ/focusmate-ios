@@ -9,6 +9,7 @@ struct ListDTO: Codable, Identifiable, Hashable {
     let color: String?
     let role: String?
     let tasks_count: Int?
+    let parent_tasks_count: Int?
     let completed_tasks_count: Int?
     let overdue_tasks_count: Int?
     let members: [ListMemberDTO]?
@@ -31,7 +32,8 @@ struct ListDTO: Codable, Identifiable, Hashable {
     }
 
     var progress: Double {
-        guard let total = tasks_count, total > 0 else { return 0 }
+        let total = parent_tasks_count ?? tasks_count ?? 0
+        guard total > 0 else { return 0 }
         let completed = completed_tasks_count ?? 0
         return Double(completed) / Double(total)
     }

@@ -29,7 +29,8 @@ struct ListRowView: View {
                 }
 
                 HStack(spacing: DS.Spacing.sm) {
-                    if let count = list.tasks_count {
+                    let count = list.parent_tasks_count ?? list.tasks_count
+                    if let count {
                         if let completed = list.completed_tasks_count {
                             Text("\(completed)/\(count) done")
                                 .font(DS.Typography.caption)
