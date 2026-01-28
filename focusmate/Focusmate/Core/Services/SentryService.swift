@@ -83,6 +83,10 @@ final class SentryService: @unchecked Sendable {
   private func getSentryDSN() -> String? {
     // Try to get from Info.plist first
     if let dsn = Bundle.main.infoDictionary?["SENTRY_DSN"] as? String, !dsn.isEmpty {
+      if dsn.contains("your-sentry-dsn@sentry.io") {
+        Logger.warning("SentryService: Placeholder Sentry DSN detected — set a real DSN in your xcconfig file", category: .general)
+        return nil
+      }
       return dsn
     }
 
