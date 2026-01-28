@@ -194,6 +194,25 @@ extension Color {
                 : UIColor(hex: light)
         })
     }
+
+    /// Create a color from a hex string (e.g., "#FF5733" or "FF5733")
+    init?(hex: String) {
+        var hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if hexString.hasPrefix("#") {
+            hexString.removeFirst()
+        }
+
+        guard hexString.count == 6,
+              let hexValue = UInt(hexString, radix: 16) else {
+            return nil
+        }
+
+        self.init(
+            red: Double((hexValue >> 16) & 0xFF) / 255,
+            green: Double((hexValue >> 8) & 0xFF) / 255,
+            blue: Double(hexValue & 0xFF) / 255
+        )
+    }
 }
 
 private extension UIColor {

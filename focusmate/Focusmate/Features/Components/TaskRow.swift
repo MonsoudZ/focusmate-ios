@@ -211,9 +211,11 @@ struct TaskRow: View {
                 .foregroundStyle(isOverdue ? DS.Colors.error : .secondary)
             }
 
-            // Subtasks
+            // Subtasks - show badge if has subtasks, or add button if can edit
             if task.hasSubtasks {
                 subtaskBadge
+            } else if canEdit {
+                addSubtaskIndicator
             }
 
             // Recurring
@@ -223,9 +225,9 @@ struct TaskRow: View {
                     .foregroundStyle(.secondary)
             }
 
-            // Tags (compact)
+            // Tags
             if let tags = task.tags, !tags.isEmpty {
-                tagsDots(tags)
+                tagsView(tags)
             }
         }
     }
@@ -250,17 +252,52 @@ struct TaskRow: View {
         .buttonStyle(.plain)
     }
 
-    private func tagsDots(_ tags: [TagDTO]) -> some View {
-        HStack(spacing: 3) {
-            ForEach(tags.prefix(3)) { tag in
-                Circle()
-                    .fill(tag.tagColor)
-                    .frame(width: 8, height: 8)
+    private var addSubtaskIndicator: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isExpanded = true
             }
-            if tags.count > 3 {
-                Text("+\(tags.count - 3)")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+            HapticManager.selection()
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "plus.circle")
+                    .font(.system(size: 11))
+                Text("Subtask")
+                    .font(.system(size: 12))
+            }
+            .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func tagsView(_ tags: [TagDTO]) -> some View {
+        HStack(spacing: 4) {
+            // Show first tag with name
+            if let firstTag = tags.first {
+                HStack(spacing: 3) {
+                    Circle()
+                        .fill(firstTag.tagColor)
+                        .frame(width: 6, height: 6)
+                    Text(firstTag.name)
+                        .font(.system(size: 11))
+                }
+                .foregroundStyle(.secondary)
+            }
+
+            // Show additional tags as dots with count
+            if tags.count > 1 {
+                HStack(spacing: 2) {
+                    ForEach(tags.dropFirst().prefix(2)) { tag in
+                        Circle()
+                            .fill(tag.tagColor)
+                            .frame(width: 6, height: 6)
+                    }
+                    if tags.count > 3 {
+                        Text("+\(tags.count - 3)")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
         }
     }

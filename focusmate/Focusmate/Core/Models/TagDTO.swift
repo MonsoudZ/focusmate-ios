@@ -9,7 +9,10 @@ struct TagDTO: Codable, Identifiable, Hashable {
     let created_at: String?
 
     var tagColor: Color {
-        switch color {
+        guard let color else { return .blue }
+
+        // Check predefined colors first
+        switch color.lowercased() {
         case "blue": return .blue
         case "green": return .green
         case "orange": return .orange
@@ -18,9 +21,16 @@ struct TagDTO: Codable, Identifiable, Hashable {
         case "pink": return .pink
         case "teal": return .teal
         case "yellow": return .yellow
-        case "gray": return .gray
-        default: return .blue
+        case "gray", "grey": return .gray
+        default: break
         }
+
+        // Try to parse as hex color
+        if color.hasPrefix("#") {
+            return Color(hex: color) ?? .blue
+        }
+
+        return .blue
     }
 }
 
