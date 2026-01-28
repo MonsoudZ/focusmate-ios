@@ -6,8 +6,6 @@ struct TaskRow: View {
     let onStar: () async -> Void
     let onTap: () -> Void
     let onNudge: () async -> Void
-    let onSubtaskComplete: (SubtaskDTO) async -> Void
-    let onSubtaskDelete: (SubtaskDTO) async -> Void
     let onSubtaskEdit: (SubtaskDTO) -> Void
     let onAddSubtask: () -> Void
     let showStar: Bool
@@ -47,8 +45,6 @@ struct TaskRow: View {
         onStar: @escaping () async -> Void = {},
         onTap: @escaping () -> Void = {},
         onNudge: @escaping () async -> Void = {},
-        onSubtaskComplete: @escaping (SubtaskDTO) async -> Void = { _ in },
-        onSubtaskDelete: @escaping (SubtaskDTO) async -> Void = { _ in },
         onSubtaskEdit: @escaping (SubtaskDTO) -> Void = { _ in },
         onAddSubtask: @escaping () -> Void = {},
         showStar: Bool = true,
@@ -59,8 +55,6 @@ struct TaskRow: View {
         self.onStar = onStar
         self.onTap = onTap
         self.onNudge = onNudge
-        self.onSubtaskComplete = onSubtaskComplete
-        self.onSubtaskDelete = onSubtaskDelete
         self.onSubtaskEdit = onSubtaskEdit
         self.onAddSubtask = onAddSubtask
         self.showStar = showStar
@@ -325,9 +319,45 @@ struct TaskRow: View {
                         SubtaskRow(
                             subtask: subtask,
                             canEdit: canEdit,
-                            onComplete: { await onSubtaskComplete(subtask) },
-                            onDelete: { await onSubtaskDelete(subtask) },
-                            onTap: { onSubtaskEdit(subtask) }
+                            onComplete: {
+                                do {
+                                    if subtask.isCompleted {
+                                        _ = try await state.taskService.reopenSubtask(
+                                            listId: task.list_id,
+                                            parentTaskId: task.id,
+                                            subtaskId: subtask.id
+                                        )
+                                    } else {
+                                        _ = try await state.taskService.completeSubtask(
+                                            listId: task.list_id,
+                                            parentTaskId: task.id,
+                                            subtaskId: subtask.id
+                                        )
+                                    }
+                                    HapticManager.light()
+                                } catch {
+                                    Logger.error("Failed to toggle subtask: \(error)", category: .api)
+                                    HapticManager.error()
+                                }
+                                await onComplete()
+                            },
+                            onDelete: {
+                                do {
+                                    try await state.taskService.deleteSubtask(
+                                        listId: task.list_id,
+                                        parentTaskId: task.id,
+                                        subtaskId: subtask.id
+                                    )
+                                    HapticManager.medium()
+                                } catch {
+                                    Logger.error("Failed to delete subtask: \(error)", category: .api)
+                                    HapticManager.error()
+                                }
+                                await onComplete()
+                            },
+                            onTap: {
+                                onSubtaskEdit(subtask)
+                            }
                         )
 
                         if subtask.id != subtasks.last?.id {
@@ -467,6 +497,7 @@ private struct TagPill: View {
 }
 
 // MARK: - Subtask Row
+// Uses onTapGesture instead of Button to avoid List edit mode intercepting taps
 
 struct SubtaskRow: View {
     let subtask: SubtaskDTO
@@ -476,6 +507,7 @@ struct SubtaskRow: View {
     let onTap: () -> Void
 
     @State private var isCompleting = false
+    @State private var isDeleting = false
 
     init(
         subtask: SubtaskDTO,
@@ -493,16 +525,8 @@ struct SubtaskRow: View {
 
     var body: some View {
         HStack(spacing: DS.Spacing.sm) {
-            // Checkbox
-            Button {
-                guard canEdit else { return }
-                HapticManager.selection()
-                Task {
-                    isCompleting = true
-                    await onComplete()
-                    isCompleting = false
-                }
-            } label: {
+            // Checkbox — onTapGesture to bypass List edit mode button interception
+            Group {
                 if isCompleting {
                     ProgressView()
                         .scaleEffect(0.6)
@@ -513,37 +537,55 @@ struct SubtaskRow: View {
                         .foregroundStyle(subtask.isCompleted ? DS.Colors.success : .secondary)
                 }
             }
-            .buttonStyle(.borderless)
-            .disabled(!canEdit || isCompleting)
-
-            // Title — Button instead of onTapGesture so it receives taps in List edit mode
-            Button {
+            .frame(width: DS.Size.checkboxSmall, height: DS.Size.checkboxSmall)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                guard canEdit, !isCompleting else { return }
                 HapticManager.selection()
-                onTap()
-            } label: {
-                Text(subtask.title)
-                    .font(DS.Typography.caption)
-                    .strikethrough(subtask.isCompleted)
-                    .foregroundStyle(subtask.isCompleted ? .secondary : .primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+                Task {
+                    isCompleting = true
+                    await onComplete()
+                    isCompleting = false
+                }
             }
-            .buttonStyle(.borderless)
-            .disabled(!canEdit)
+
+            // Title
+            Text(subtask.title)
+                .font(DS.Typography.caption)
+                .strikethrough(subtask.isCompleted)
+                .foregroundStyle(subtask.isCompleted ? .secondary : .primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    guard canEdit else { return }
+                    HapticManager.selection()
+                    onTap()
+                }
 
             // Delete
             if canEdit {
-                Button {
-                    HapticManager.warning()
-                    Task { await onDelete() }
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: DS.Size.iconSmall))
-                        .foregroundStyle(Color(.tertiaryLabel))
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
+                Group {
+                    if isDeleting {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                            .frame(width: 28, height: 28)
+                    } else {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: DS.Size.iconSmall))
+                            .foregroundStyle(Color(.tertiaryLabel))
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                    }
                 }
-                .buttonStyle(.borderless)
+                .onTapGesture {
+                    guard !isDeleting else { return }
+                    HapticManager.warning()
+                    Task {
+                        isDeleting = true
+                        await onDelete()
+                        isDeleting = false
+                    }
+                }
             }
         }
         .padding(.horizontal, DS.Spacing.md)

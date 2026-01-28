@@ -323,12 +323,6 @@ struct TodayView: View {
                     task: task,
                     onComplete: { await viewModel.loadToday() },
                     onTap: { viewModel.selectedTask = task },
-                    onSubtaskComplete: { subtask in
-                        await viewModel.toggleSubtaskComplete(subtask: subtask, parentTask: task)
-                    },
-                    onSubtaskDelete: { subtask in
-                        await viewModel.deleteSubtask(subtask: subtask, parentTask: task)
-                    },
                     onSubtaskEdit: { subtask in
                         viewModel.startEditSubtask(subtask, parentTask: task)
                     },

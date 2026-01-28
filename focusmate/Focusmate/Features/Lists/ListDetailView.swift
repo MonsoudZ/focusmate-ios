@@ -253,12 +253,6 @@ struct ListDetailView: View {
             onTap: { viewModel.selectedTask = task },
             onNudge: { await viewModel.nudgeAboutTask(task) },
             onDelete: { await viewModel.deleteTask(task) },
-            onSubtaskComplete: { subtask in
-                await viewModel.toggleSubtaskComplete(subtask: subtask, parentTask: task)
-            },
-            onSubtaskDelete: { subtask in
-                await viewModel.deleteSubtask(subtask: subtask, parentTask: task)
-            },
             onSubtaskEdit: { subtask in
                 viewModel.startEditSubtask(subtask, parentTask: task)
             },
@@ -281,8 +275,6 @@ struct TaskRowContainer: View {
     let onTap: () -> Void
     let onNudge: () async -> Void
     let onDelete: () async -> Void
-    let onSubtaskComplete: (SubtaskDTO) async -> Void
-    let onSubtaskDelete: (SubtaskDTO) async -> Void
     let onSubtaskEdit: (SubtaskDTO) -> Void
     let onAddSubtask: () -> Void
 
@@ -293,8 +285,6 @@ struct TaskRowContainer: View {
             onStar: onStar,
             onTap: onTap,
             onNudge: onNudge,
-            onSubtaskComplete: onSubtaskComplete,
-            onSubtaskDelete: onSubtaskDelete,
             onSubtaskEdit: onSubtaskEdit,
             onAddSubtask: onAddSubtask,
             showStar: canEdit,

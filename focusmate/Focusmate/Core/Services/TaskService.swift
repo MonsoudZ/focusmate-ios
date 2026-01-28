@@ -16,7 +16,6 @@ final class TaskService {
                 API.Lists.tasks(String(listId)),
                 body: nil as String?
             )
-            Logger.debug("TaskService: Fetched \(response.tasks.count) tasks", category: .api)
             return response.tasks
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Fetching tasks")

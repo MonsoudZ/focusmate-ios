@@ -154,30 +154,6 @@ final class TodayViewModel: ObservableObject {
         }
     }
 
-    func toggleSubtaskComplete(subtask: SubtaskDTO, parentTask: TaskDTO) async {
-        do {
-            if subtask.isCompleted {
-                _ = try await taskService.reopenSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
-            } else {
-                _ = try await taskService.completeSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
-            }
-            HapticManager.light()
-            await loadToday()
-        } catch {
-            Logger.error("Failed to toggle subtask", error: error, category: .api)
-        }
-    }
-
-    func deleteSubtask(subtask: SubtaskDTO, parentTask: TaskDTO) async {
-        do {
-            try await taskService.deleteSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
-            HapticManager.medium()
-            await loadToday()
-        } catch {
-            Logger.error("Failed to delete subtask", error: error, category: .api)
-        }
-    }
-
     func updateSubtask(info: SubtaskEditInfo, title: String) async {
         do {
             _ = try await taskService.updateSubtask(

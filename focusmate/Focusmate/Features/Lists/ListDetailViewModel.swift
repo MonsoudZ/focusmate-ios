@@ -227,34 +227,6 @@ final class ListDetailViewModel: ObservableObject {
         }
     }
 
-    func toggleSubtaskComplete(subtask: SubtaskDTO, parentTask: TaskDTO) async {
-        do {
-            if subtask.isCompleted {
-                _ = try await taskService.reopenSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
-            } else {
-                _ = try await taskService.completeSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
-            }
-            HapticManager.light()
-            await loadTasks()
-        } catch {
-            Logger.error("Failed to toggle subtask: \(error)", category: .api)
-            self.error = ErrorHandler.shared.handle(error)
-            HapticManager.error()
-        }
-    }
-
-    func deleteSubtask(subtask: SubtaskDTO, parentTask: TaskDTO) async {
-        do {
-            try await taskService.deleteSubtask(listId: parentTask.list_id, parentTaskId: parentTask.id, subtaskId: subtask.id)
-            HapticManager.medium()
-            await loadTasks()
-        } catch {
-            Logger.error("Failed to delete subtask: \(error)", category: .api)
-            self.error = ErrorHandler.shared.handle(error)
-            HapticManager.error()
-        }
-    }
-
     func updateSubtask(info: SubtaskEditInfo, title: String) async {
         do {
             _ = try await taskService.updateSubtask(
