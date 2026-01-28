@@ -12,19 +12,21 @@ final class AuthService {
         self.session = session
     }
 
-    func signIn(email: String, password: String) async throws -> (token: String, user: UserDTO) {
+    func signIn(email: String, password: String) async throws -> (token: String, refreshToken: String?, user: UserDTO) {
         let user = try await authAPI.signIn(email: email, password: password)
         let token = try await session.access()
-        return (token, user)
+        let refreshToken = await session.accessRefreshToken()
+        return (token, refreshToken, user)
     }
 
-    func register(name: String, email: String, password: String) async throws -> (token: String, user: UserDTO) {
+    func register(name: String, email: String, password: String) async throws -> (token: String, refreshToken: String?, user: UserDTO) {
         let user = try await authAPI.signUp(name: name, email: email, password: password)
         let token = try await session.access()
-        return (token, user)
+        let refreshToken = await session.accessRefreshToken()
+        return (token, refreshToken, user)
     }
 
-    func signInWithApple(identityToken: Data, name: String?) async throws -> (token: String, user: UserDTO) {
+    func signInWithApple(identityToken: Data, name: String?) async throws -> (token: String, refreshToken: String?, user: UserDTO) {
         guard let tokenString = String(data: identityToken, encoding: .utf8) else {
             throw FocusmateError.custom("Sign In Failed", "Invalid Apple credentials")
         }
@@ -35,7 +37,7 @@ final class AuthService {
             body: AppleAuthRequest(idToken: tokenString, name: name)
         )
 
-        return (response.token, response.user)
+        return (response.token, response.refreshToken, response.user)
     }
 
     func forgotPassword(email: String) async throws {

@@ -7,6 +7,7 @@ final class KeychainManager: @unchecked Sendable {
 
   private let service = "com.intentia.app"
   private let tokenKey = "jwt_token"
+  private let refreshTokenKey = "refresh_token"
 
   func save(token: String) {
     guard let data = token.data(using: .utf8) else {
@@ -73,6 +74,70 @@ final class KeychainManager: @unchecked Sendable {
       Logger.debug("Token cleared from keychain successfully", category: .auth)
     } else {
       Logger.warning("Failed to clear token from keychain (status: \(status))", category: .auth)
+    }
+  }
+
+  // MARK: - Refresh Token
+
+  func save(refreshToken: String) {
+    guard let data = refreshToken.data(using: .utf8) else {
+      Logger.error("Failed to encode refresh token to Data", category: .auth)
+      return
+    }
+
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: self.service,
+      kSecAttrAccount as String: self.refreshTokenKey,
+      kSecValueData as String: data,
+      kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+    ]
+
+    SecItemDelete(query as CFDictionary)
+
+    let status = SecItemAdd(query as CFDictionary, nil)
+    if status != errSecSuccess {
+      Logger.error("Failed to save refresh token to keychain (status: \(status))", category: .auth)
+    } else {
+      Logger.debug("Refresh token saved to keychain successfully", category: .auth)
+    }
+  }
+
+  func loadRefreshToken() -> String? {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: self.service,
+      kSecAttrAccount as String: self.refreshTokenKey,
+      kSecReturnData as String: true,
+      kSecMatchLimit as String: kSecMatchLimitOne,
+    ]
+
+    var result: AnyObject?
+    let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+    if status == errSecSuccess,
+       let data = result as? Data,
+       let token = String(data: data, encoding: .utf8)
+    {
+      return token
+    } else {
+      if status != errSecItemNotFound {
+        Logger.warning("Failed to load refresh token from keychain (status: \(status))", category: .auth)
+      }
+      return nil
+    }
+  }
+
+  func clearRefreshToken() {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: self.service,
+      kSecAttrAccount as String: self.refreshTokenKey,
+    ]
+
+    let status = SecItemDelete(query as CFDictionary)
+    if status != errSecSuccess && status != errSecItemNotFound {
+      Logger.warning("Failed to clear refresh token from keychain (status: \(status))", category: .auth)
     }
   }
 }

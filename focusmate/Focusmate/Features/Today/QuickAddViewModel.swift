@@ -44,6 +44,7 @@ final class QuickAddViewModel: ObservableObject {
         guard !trimmedTitle.isEmpty else { return false }
 
         isLoading = true
+        defer { isLoading = false }
 
         do {
             let dueDate = Calendar.current.date(bySettingHour: 23, minute: 59, second: 0, of: Date()) ?? Date()
@@ -61,7 +62,6 @@ final class QuickAddViewModel: ObservableObject {
         } catch {
             self.error = ErrorHandler.shared.handle(error, context: "Creating task")
             HapticManager.error()
-            isLoading = false
             return false
         }
     }

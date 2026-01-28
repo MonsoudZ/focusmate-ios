@@ -10,7 +10,16 @@ final class TaskServiceTests: XCTestCase {
         super.setUp()
         mock = MockNetworking()
         let apiClient = APIClient(tokenProvider: { nil }, networking: mock)
-        service = TaskService(apiClient: apiClient)
+        service = TaskService(apiClient: apiClient, sideEffects: NoOpSideEffects())
+    }
+
+    private struct NoOpSideEffects: TaskSideEffectHandling {
+        nonisolated init() {}
+        func taskCreated(_ task: TaskDTO, isSubtask: Bool) {}
+        func taskUpdated(_ task: TaskDTO) {}
+        func taskDeleted(taskId: Int) {}
+        func taskCompleted(taskId: Int) {}
+        func taskReopened(_ task: TaskDTO) {}
     }
 
     // MARK: - Helpers
@@ -235,41 +244,41 @@ final class TaskServiceTests: XCTestCase {
     // MARK: - Subtask Methods
 
     func testCreateSubtaskSendsCorrectBody() async throws {
-        stubSingleTask()
+        let subtask = TestFactories.makeSampleSubtask(id: 100, title: "Sub item")
+        mock.stubJSON(subtask)
 
         _ = try await service.createSubtask(listId: 1, parentTaskId: 10, title: "Sub item")
 
         XCTAssertEqual(mock.lastCall?.method, "POST")
-        XCTAssertEqual(mock.lastCall?.path, API.Lists.tasks("1"))
+        XCTAssertEqual(mock.lastCall?.path, API.Lists.subtasks("1", "10"))
 
         let body = mock.lastBodyJSON
-        let taskBody = body?["task"] as? [String: Any]
-        XCTAssertEqual(taskBody?["title"] as? String, "Sub item")
-        XCTAssertEqual(taskBody?["parent_task_id"] as? Int, 10)
+        let subtaskBody = body?["subtask"] as? [String: Any]
+        XCTAssertEqual(subtaskBody?["title"] as? String, "Sub item")
     }
 
     func testCompleteSubtaskSendsCorrectRequest() async throws {
         stubSingleTask()
 
-        _ = try await service.completeSubtask(listId: 1, subtaskId: 50)
+        _ = try await service.completeSubtask(listId: 1, parentTaskId: 10, subtaskId: 50)
 
         XCTAssertEqual(mock.lastCall?.method, "PATCH")
-        XCTAssertEqual(mock.lastCall?.path, API.Lists.taskAction("1", "50", "complete"))
+        XCTAssertEqual(mock.lastCall?.path, API.Lists.subtaskAction("1", "10", "50", "complete"))
     }
 
     func testReopenSubtaskSendsCorrectRequest() async throws {
         stubSingleTask()
 
-        _ = try await service.reopenSubtask(listId: 1, subtaskId: 50)
+        _ = try await service.reopenSubtask(listId: 1, parentTaskId: 10, subtaskId: 50)
 
         XCTAssertEqual(mock.lastCall?.method, "PATCH")
-        XCTAssertEqual(mock.lastCall?.path, API.Lists.taskAction("1", "50", "reopen"))
+        XCTAssertEqual(mock.lastCall?.path, API.Lists.subtaskAction("1", "10", "50", "reopen"))
     }
 
     func testDeleteSubtaskCallsCorrectEndpoint() async throws {
-        try await service.deleteSubtask(listId: 1, subtaskId: 50)
+        try await service.deleteSubtask(listId: 1, parentTaskId: 10, subtaskId: 50)
 
         XCTAssertEqual(mock.lastCall?.method, "DELETE")
-        XCTAssertEqual(mock.lastCall?.path, API.Lists.task("1", "50"))
+        XCTAssertEqual(mock.lastCall?.path, API.Lists.subtask("1", "10", "50"))
     }
 }

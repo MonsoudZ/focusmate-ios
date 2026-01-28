@@ -12,10 +12,39 @@ protocol NetworkingProtocol {
     func getRawResponse(endpoint: String, params: [String: String]) async throws -> Data
 }
 
+// MARK: - Token Refresh Coordinator
+
+/// Ensures only one token refresh runs at a time. Concurrent 401 handlers
+/// wait for the in-progress refresh rather than starting duplicate requests.
+private actor TokenRefreshCoordinator {
+    private var refreshTask: Task<Void, Error>?
+
+    func refreshIfNeeded(using refresher: @escaping () async throws -> Void) async throws {
+        if let existing = refreshTask {
+            try await existing.value
+            return
+        }
+
+        let task = Task { try await refresher() }
+        refreshTask = task
+
+        do {
+            try await task.value
+            refreshTask = nil
+        } catch {
+            refreshTask = nil
+            throw error
+        }
+    }
+}
+
 final class InternalNetworking: NSObject, NetworkingProtocol {
     private let tokenProvider: () -> String?
+    private let refreshTokenProvider: (() -> String?)?
+    private let onTokenRefreshed: ((String, String?) async -> Void)?
     private let sentryService = SentryService.shared
     private let certificatePinning: CertificatePinning
+    private let refreshCoordinator = TokenRefreshCoordinator()
 
     // Optional injected session for tests/previews/custom configs.
     // If you inject a session and still want pinning, that session must use this instance as its delegate.
@@ -35,8 +64,14 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
     // MARK: - Initializers
 
     /// Production initializer (pinning always active)
-    init(tokenProvider: @escaping () -> String?) {
+    init(
+        tokenProvider: @escaping () -> String?,
+        refreshTokenProvider: (() -> String?)? = nil,
+        onTokenRefreshed: ((String, String?) async -> Void)? = nil
+    ) {
         self.tokenProvider = tokenProvider
+        self.refreshTokenProvider = refreshTokenProvider
+        self.onTokenRefreshed = onTokenRefreshed
         self.certificatePinning = CertificatePinningConfig.createPinning()
         self.injectedSession = nil
         super.init()
@@ -49,12 +84,14 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         certificatePinning: CertificatePinning = CertificatePinningConfig.createPinning()
     ) {
         self.tokenProvider = tokenProvider
+        self.refreshTokenProvider = nil
+        self.onTokenRefreshed = nil
         self.injectedSession = session
         self.certificatePinning = certificatePinning
         super.init()
     }
 
-    // MARK: - Requests
+    // MARK: - Requests (public)
 
     func request<T: Decodable>(
         _ method: String,
@@ -62,6 +99,23 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         body: (some Encodable)? = nil,
         queryParameters: [String: String] = [:],
         idempotencyKey: String? = nil
+    ) async throws -> T {
+        try await performRequest(method, path, body: body, queryParameters: queryParameters, idempotencyKey: idempotencyKey, attemptRefresh: true)
+    }
+
+    func getRawResponse(endpoint: String, params: [String: String] = [:]) async throws -> Data {
+        try await performGetRawResponse(endpoint: endpoint, params: params, attemptRefresh: true)
+    }
+
+    // MARK: - Requests (private, with retry)
+
+    private func performRequest<Body: Encodable, T: Decodable>(
+        _ method: String,
+        _ path: String,
+        body: Body?,
+        queryParameters: [String: String],
+        idempotencyKey: String?,
+        attemptRefresh: Bool
     ) async throws -> T {
         var url = API.path(path)
 
@@ -113,6 +167,15 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
             break
 
         case 401:
+            if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
+                do {
+                    try await attemptTokenRefresh()
+                    Logger.info("Token refreshed, retrying \(method) \(path)", category: .api)
+                    return try await performRequest(method, path, body: body, queryParameters: queryParameters, idempotencyKey: idempotencyKey, attemptRefresh: false)
+                } catch {
+                    Logger.warning("Token refresh failed for \(method) \(path): \(error)", category: .api)
+                }
+            }
             Logger.warning("401 Unauthorized for \(method) \(path)", category: .api)
             Task { @MainActor in AuthEventBus.shared.send(.unauthorized) }
             throw APIError.unauthorized
@@ -159,7 +222,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         }
     }
 
-    func getRawResponse(endpoint: String, params: [String: String] = [:]) async throws -> Data {
+    private func performGetRawResponse(endpoint: String, params: [String: String], attemptRefresh: Bool) async throws -> Data {
         var url = API.path(endpoint)
 
         if !params.isEmpty {
@@ -191,10 +254,56 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         case 200...299:
             return data
         case 401:
+            if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
+                do {
+                    try await attemptTokenRefresh()
+                    Logger.info("Token refreshed, retrying GET \(endpoint)", category: .api)
+                    return try await performGetRawResponse(endpoint: endpoint, params: params, attemptRefresh: false)
+                } catch {
+                    Logger.warning("Token refresh failed for GET \(endpoint): \(error)", category: .api)
+                }
+            }
             Task { @MainActor in AuthEventBus.shared.send(.unauthorized) }
             throw APIError.unauthorized
         default:
             throw APIError.badStatus(http.statusCode, nil, nil)
+        }
+    }
+
+    // MARK: - Token Refresh
+
+    /// Attempts to refresh the access token using the stored refresh token.
+    /// Uses the coordinator to ensure only one refresh runs at a time.
+    /// Makes the refresh call directly on this instance's pinned URLSession
+    /// to maintain certificate pinning without going through the full request chain.
+    private func attemptTokenRefresh() async throws {
+        try await refreshCoordinator.refreshIfNeeded { [self] in
+            guard let refreshTokenProvider, let onTokenRefreshed else {
+                throw APIError.unauthorized
+            }
+
+            guard let refreshToken = refreshTokenProvider() else {
+                Logger.warning("No refresh token available", category: .auth)
+                throw APIError.unauthorized
+            }
+
+            let url = API.path(API.Auth.refresh)
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue("application/json", forHTTPHeaderField: "Accept")
+            req.httpBody = try APIClient.encoder.encode(RefreshTokenRequest(refreshToken: refreshToken))
+
+            let (data, resp) = try await session.data(for: req)
+
+            guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                Logger.warning("Refresh endpoint returned non-2xx", category: .auth)
+                throw APIError.unauthorized
+            }
+
+            let result = try APIClient.decoder.decode(AuthSignInResponse.self, from: data)
+            await onTokenRefreshed(result.token, result.refreshToken)
+            Logger.info("Token refresh successful", category: .auth)
         }
     }
 

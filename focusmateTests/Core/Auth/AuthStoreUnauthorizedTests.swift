@@ -8,9 +8,13 @@ final class AuthStoreUnauthorizedTests: XCTestCase {
 
     private final class FakeKeychain: KeychainManaging {
         var token: String?
+        var refreshToken: String?
         func save(token: String) { self.token = token }
         func load() -> String? { token }
         func clear() { token = nil }
+        func save(refreshToken: String) { self.refreshToken = refreshToken }
+        func loadRefreshToken() -> String? { refreshToken }
+        func clearRefreshToken() { refreshToken = nil }
     }
 
     override func setUp() {

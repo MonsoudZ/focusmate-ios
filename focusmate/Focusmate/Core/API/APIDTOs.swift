@@ -38,6 +38,20 @@ struct AppleAuthRequest: Encodable {
 struct AuthSignInResponse: Decodable {
     let user: UserDTO
     let token: String
+    let refreshToken: String?
+
+    enum CodingKeys: String, CodingKey {
+        case user, token
+        case refreshToken = "refresh_token"
+    }
+}
+
+struct RefreshTokenRequest: Encodable {
+    let refreshToken: String
+
+    enum CodingKeys: String, CodingKey {
+        case refreshToken = "refresh_token"
+    }
 }
 
 

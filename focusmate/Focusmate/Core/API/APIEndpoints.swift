@@ -66,6 +66,7 @@ enum API {
         static let signOut  = "api/v1/auth/sign_out"
         static let apple    = "api/v1/auth/apple"
         static let password = "api/v1/auth/password"
+        static let refresh  = "api/v1/auth/refresh"
     }
 
     enum Users {

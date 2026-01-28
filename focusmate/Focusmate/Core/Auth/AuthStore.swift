@@ -21,10 +21,26 @@ final class AuthStore: ObservableObject {
     @Published var isValidatingSession = false
     @Published var error: FocusmateError?
 
-    private(set) lazy var api: APIClient = APIClient(
-        tokenProvider: { [weak self] in self?.jwt },
-        networking: injectedNetworking ?? InternalNetworking(tokenProvider: { [weak self] in self?.jwt })
-    )
+    private(set) lazy var api: APIClient = {
+        if let injectedNetworking {
+            return APIClient(
+                tokenProvider: { [weak self] in self?.jwt },
+                networking: injectedNetworking
+            )
+        }
+
+        let kc = self.keychain
+        return APIClient(
+            tokenProvider: { [weak self] in self?.jwt },
+            networking: InternalNetworking(
+                tokenProvider: { [weak self] in self?.jwt },
+                refreshTokenProvider: { kc.loadRefreshToken() },
+                onTokenRefreshed: { [weak self] newToken, newRefreshToken in
+                    await self?.handleTokenRefresh(newToken: newToken, newRefreshToken: newRefreshToken)
+                }
+            )
+        )
+    }()
 
     private let authSession = AuthSession()
     private lazy var authAPI: AuthAPI = AuthAPI(api: api, session: authSession)
@@ -129,7 +145,7 @@ final class AuthStore: ObservableObject {
         do {
             let result = try await authService.signIn(email: email, password: password)
             Logger.info("Sign in successful", category: .auth)
-            await setAuthenticatedSession(token: result.token, user: result.user)
+            await setAuthenticatedSession(token: result.token, user: result.user, refreshToken: result.refreshToken)
             eventBus.send(.signedIn)
         } catch {
             Logger.error("Sign in failed", error: error, category: .auth)
@@ -146,7 +162,7 @@ final class AuthStore: ObservableObject {
         do {
             let result = try await authService.register(name: name, email: email, password: password)
             Logger.info("Registration successful", category: .auth)
-            await setAuthenticatedSession(token: result.token, user: result.user)
+            await setAuthenticatedSession(token: result.token, user: result.user, refreshToken: result.refreshToken)
             eventBus.send(.signedIn)
         } catch {
             Logger.error("Registration failed", error: error, category: .auth)
@@ -214,7 +230,7 @@ final class AuthStore: ObservableObject {
         do {
             let result = try await authService.signInWithApple(identityToken: identityToken, name: name)
             Logger.info("Apple Sign In successful", category: .auth)
-            await setAuthenticatedSession(token: result.token, user: result.user)
+            await setAuthenticatedSession(token: result.token, user: result.user, refreshToken: result.refreshToken)
             eventBus.send(.signedIn)
         } catch {
             Logger.error("Apple Sign In failed", error: error, category: .auth)
@@ -256,11 +272,28 @@ final class AuthStore: ObservableObject {
         }
     }
 
-    private func setAuthenticatedSession(token: String, user: UserDTO) async {
+    private func setAuthenticatedSession(token: String, user: UserDTO, refreshToken: String? = nil) async {
         await authSession.set(token: token)
         jwt = token
         keychain.save(token: token)
         currentUser = user
+
+        if let refreshToken {
+            await authSession.setRefreshToken(refreshToken)
+            keychain.save(refreshToken: refreshToken)
+        }
+    }
+
+    /// Called by InternalNetworking after a successful token refresh.
+    func handleTokenRefresh(newToken: String, newRefreshToken: String?) async {
+        await authSession.set(token: newToken)
+        jwt = newToken
+        keychain.save(token: newToken)
+
+        if let newRefreshToken {
+            await authSession.setRefreshToken(newRefreshToken)
+            keychain.save(refreshToken: newRefreshToken)
+        }
     }
 
     private func clearLocalSession() async {
@@ -268,5 +301,6 @@ final class AuthStore: ObservableObject {
         jwt = nil
         currentUser = nil
         keychain.clear()
+        keychain.clearRefreshToken()
     }
 }

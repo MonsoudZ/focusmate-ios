@@ -107,6 +107,7 @@ enum TestFactories {
 
     static func makeSampleSubtask(
         id: Int = 100,
+        taskId: Int? = 1,
         title: String = "Test Subtask",
         note: String? = nil,
         status: String? = nil,
@@ -116,6 +117,7 @@ enum TestFactories {
     ) -> SubtaskDTO {
         SubtaskDTO(
             id: id,
+            task_id: taskId,
             title: title,
             note: note,
             status: status,

@@ -15,6 +15,7 @@ final class AuthAPI {
             body: AuthSignInBody(user: .init(email: email, password: password))
         )
         await session.set(token: res.token)
+        if let rt = res.refreshToken { await session.setRefreshToken(rt) }
         return res.user
     }
 
@@ -32,6 +33,7 @@ final class AuthAPI {
             ))
         )
         await session.set(token: res.token)
+        if let rt = res.refreshToken { await session.setRefreshToken(rt) }
         return res.user
     }
 

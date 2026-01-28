@@ -30,8 +30,10 @@ final class InternalNetworkingTests: XCTestCase {
         let networking = makeNetworking(token: "jwt-123")
 
         let exp = expectation(description: "unauthorized event")
-        let cancellable = AuthEventBus.shared.publisher.sink { event in
-            if event == .unauthorized { exp.fulfill() }
+        let cancellable = await MainActor.run {
+            AuthEventBus.shared.publisher.sink { event in
+                if event == .unauthorized { exp.fulfill() }
+            }
         }
         defer { cancellable.cancel() }
 
