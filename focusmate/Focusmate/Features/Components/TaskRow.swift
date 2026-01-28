@@ -66,11 +66,19 @@ struct TaskRow: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            mainTaskRow
+        HStack(spacing: 0) {
+            // List color indicator
+            RoundedRectangle(cornerRadius: 2)
+                .fill(task.taskColor)
+                .frame(width: 4)
+                .padding(.vertical, DS.Spacing.sm)
 
-            if isExpanded {
-                subtasksList
+            VStack(spacing: 0) {
+                mainTaskRow
+
+                if isExpanded {
+                    subtasksList
+                }
             }
         }
         .background(Color(.secondarySystemGroupedBackground))
@@ -211,11 +219,9 @@ struct TaskRow: View {
                 .foregroundStyle(isOverdue ? DS.Colors.error : .secondary)
             }
 
-            // Subtasks - show badge if has subtasks, or add button if can edit
-            if task.hasSubtasks {
+            // Subtasks - expandable badge (shows count if has subtasks, or add option if can edit)
+            if task.hasSubtasks || canEdit {
                 subtaskBadge
-            } else if canEdit {
-                addSubtaskIndicator
             }
 
             // Recurring
@@ -240,32 +246,21 @@ struct TaskRow: View {
             HapticManager.selection()
         } label: {
             HStack(spacing: 3) {
-                Image(systemName: "checklist")
-                    .font(.system(size: 11))
-                Text(task.subtaskProgress)
-                    .font(.system(size: 12, weight: .medium))
+                if task.hasSubtasks {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 11))
+                    Text(task.subtaskProgress)
+                        .font(.system(size: 12, weight: .medium))
+                } else {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .medium))
+                    Text("Subtask")
+                        .font(.system(size: 11))
+                }
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
             }
-            .foregroundStyle(DS.Colors.accent)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var addSubtaskIndicator: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isExpanded = true
-            }
-            HapticManager.selection()
-        } label: {
-            HStack(spacing: 3) {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 11))
-                Text("Subtask")
-                    .font(.system(size: 12))
-            }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(task.hasSubtasks ? DS.Colors.accent : .secondary)
         }
         .buttonStyle(.plain)
     }
@@ -364,7 +359,7 @@ struct TaskRow: View {
                 .padding(.horizontal, DS.Spacing.md)
 
             VStack(spacing: 0) {
-                if let subtasks = task.subtasks {
+                if let subtasks = task.subtasks, !subtasks.isEmpty {
                     ForEach(subtasks) { subtask in
                         SubtaskRow(
                             subtask: subtask,
@@ -415,12 +410,14 @@ struct TaskRow: View {
                                 .padding(.leading, 52)
                         }
                     }
+
+                    if canEdit {
+                        Divider()
+                            .padding(.leading, 52)
+                    }
                 }
 
                 if canEdit {
-                    Divider()
-                        .padding(.leading, 52)
-
                     addSubtaskButton
                 }
             }
