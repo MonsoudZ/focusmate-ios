@@ -4,11 +4,12 @@ struct ListsView: View {
     @StateObject private var viewModel: ListsViewModel
     @State private var searchText = ""
 
-    init(listService: ListService, taskService: TaskService, tagService: TagService) {
+    init(listService: ListService, taskService: TaskService, tagService: TagService, inviteService: InviteService) {
         _viewModel = StateObject(wrappedValue: ListsViewModel(
             listService: listService,
             taskService: taskService,
-            tagService: tagService
+            tagService: tagService,
+            inviteService: inviteService
         ))
     }
 
@@ -33,7 +34,8 @@ struct ListsView: View {
                                     list: list,
                                     taskService: viewModel.taskService,
                                     listService: viewModel.listService,
-                                    tagService: viewModel.tagService
+                                    tagService: viewModel.tagService,
+                                    inviteService: viewModel.inviteService
                                 )) {
                                     ListRowView(list: list)
                                 }
@@ -103,7 +105,8 @@ struct ListsView: View {
                     list: list,
                     taskService: viewModel.taskService,
                     listService: viewModel.listService,
-                    tagService: viewModel.tagService
+                    tagService: viewModel.tagService,
+                    inviteService: viewModel.inviteService
                 )
             }
             .errorBanner($viewModel.error) {

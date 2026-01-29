@@ -95,6 +95,13 @@ enum API {
         static func subtaskAction(_ listId: String, _ taskId: String, _ subtaskId: String, _ action: String) -> String {
             "api/v1/lists/\(listId)/tasks/\(taskId)/subtasks/\(subtaskId)/\(action)"
         }
+        static func invites(_ listId: String) -> String { "api/v1/lists/\(listId)/invites" }
+        static func invite(_ listId: String, _ inviteId: String) -> String { "api/v1/lists/\(listId)/invites/\(inviteId)" }
+    }
+
+    enum Invites {
+        static func preview(_ code: String) -> String { "api/v1/invites/\(code)" }
+        static func accept(_ code: String) -> String { "api/v1/invites/\(code)/accept" }
     }
 
     enum Tasks {

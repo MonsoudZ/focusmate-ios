@@ -1,6 +1,10 @@
 import SwiftUI
 import UIKit
 
+extension String: @retroactive Identifiable {
+    public var id: String { self }
+}
+
 @MainActor
 struct FocusmateApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -54,6 +58,9 @@ struct FocusmateApp: App {
                 .environmentObject(state)
                 .environmentObject(state.auth)
                 .environmentObject(bootstrapper)
+                .onOpenURL { url in
+                    _ = AppDelegate.handleIncomingURL(url)
+                }
         }
     }
 }
@@ -67,6 +74,7 @@ struct RootView: View {
     @State private var overdueCount: Int = 0
     @State private var selectedTab: Int = 0
     @State private var showOnboarding: Bool = !AppSettings.shared.hasCompletedOnboarding
+    @State private var inviteCode: String?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -114,7 +122,8 @@ struct RootView: View {
                     ListsView(
                         listService: state.listService,
                         taskService: state.taskService,
-                        tagService: state.tagService
+                        tagService: state.tagService,
+                        inviteService: state.inviteService
                     )
                         .tabItem {
                             Image(systemName: "list.bullet")
@@ -144,6 +153,22 @@ struct RootView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .openTask)) { _ in
                     selectedTab = 0
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .openInvite)) { notification in
+                    if let code = notification.userInfo?["code"] as? String {
+                        inviteCode = code
+                    }
+                }
+                .sheet(item: $inviteCode) { code in
+                    AcceptInviteView(
+                        code: code,
+                        inviteService: state.inviteService,
+                        onAccepted: { _ in
+                            inviteCode = nil
+                            selectedTab = 1 // Go to Lists tab
+                        }
+                    )
+                    .environmentObject(state.auth)
                 }
                 .onAppear {
                     // Flush any notification route buffered during cold start.

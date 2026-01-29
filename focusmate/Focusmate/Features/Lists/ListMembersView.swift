@@ -4,8 +4,8 @@ struct ListMembersView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: ListMembersViewModel
 
-    init(list: ListDTO, apiClient: APIClient) {
-        _viewModel = State(initialValue: ListMembersViewModel(list: list, apiClient: apiClient))
+    init(list: ListDTO, apiClient: APIClient, inviteService: InviteService) {
+        _viewModel = State(initialValue: ListMembersViewModel(list: list, apiClient: apiClient, inviteService: inviteService))
     }
 
     var body: some View {
@@ -24,6 +24,17 @@ struct ListMembersView: View {
                     }
                 } else {
                     List {
+                        // Invite link section
+                        Section {
+                            NavigationLink {
+                                ListInvitesView(list: viewModel.list, inviteService: viewModel.inviteService)
+                            } label: {
+                                Label("Invite Links", systemImage: "link")
+                            }
+                        } footer: {
+                            Text("Create shareable links to invite people to this list")
+                        }
+
                         Section {
                             ForEach(viewModel.memberships) { membership in
                                 MemberRowView(membership: membership)

@@ -8,6 +8,7 @@ final class ListDetailViewModel: ObservableObject {
     let taskService: TaskService
     let listService: ListService
     let tagService: TagService
+    let inviteService: InviteService
 
     // MARK: - Data
 
@@ -38,11 +39,12 @@ final class ListDetailViewModel: ObservableObject {
 
     // MARK: - Init
 
-    init(list: ListDTO, taskService: TaskService, listService: ListService, tagService: TagService) {
+    init(list: ListDTO, taskService: TaskService, listService: ListService, tagService: TagService, inviteService: InviteService) {
         self.list = list
         self.taskService = taskService
         self.listService = listService
         self.tagService = tagService
+        self.inviteService = inviteService
     }
 
     // MARK: - Computed: Permissions

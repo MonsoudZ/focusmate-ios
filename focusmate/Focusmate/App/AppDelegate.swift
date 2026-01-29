@@ -18,6 +18,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             NotificationCenter.default.post(name: .openTask, object: nil, userInfo: ["taskId": taskId])
         case .openToday:
             NotificationCenter.default.post(name: .openToday, object: nil)
+        case .openInvite(let code):
+            NotificationCenter.default.post(name: .openInvite, object: nil, userInfo: ["code": code])
         }
     }
 
@@ -69,6 +71,29 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         completionHandler()
     }
 
+    // MARK: - Universal Links
+
+    /// Pending invite code for cold-start URL handling
+    static var pendingInviteCode: String?
+
+    /// Handle universal links (focusmate.app/invite/:code)
+    static func handleIncomingURL(_ url: URL) -> Bool {
+        // Check for invite URL pattern
+        // Supports: https://focusmate.app/invite/ABC123
+        let pathComponents = url.pathComponents
+        if pathComponents.count >= 3,
+           pathComponents[1] == "invite",
+           !pathComponents[2].isEmpty {
+            let code = pathComponents[2]
+            pendingInviteCode = code
+            pendingRoute = .openInvite(code)
+            flushPendingRouteIfAny()
+            return true
+        }
+
+        return false
+    }
+
     // MARK: - Routing
 
     private func routeNotification(_ response: UNNotificationResponse) {
@@ -96,6 +121,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 private enum NotificationAction {
     case openTask(Int)
     case openToday
+    case openInvite(String)
 
     init?(userInfo: [AnyHashable: Any]) {
         guard let type = userInfo["type"] as? String else { return nil }
@@ -137,5 +163,6 @@ private enum NotificationAction {
 extension Notification.Name {
     static let openTask = Notification.Name("openTask")
     static let openToday = Notification.Name("openToday")
+    static let openInvite = Notification.Name("openInvite")
     static let didReceivePushToken = Notification.Name("didReceivePushToken")
 }

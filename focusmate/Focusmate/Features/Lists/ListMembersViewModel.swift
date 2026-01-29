@@ -11,10 +11,12 @@ final class ListMembersViewModel {
 
     let list: ListDTO
     let apiClient: APIClient
+    let inviteService: InviteService
 
-    init(list: ListDTO, apiClient: APIClient) {
+    init(list: ListDTO, apiClient: APIClient, inviteService: InviteService) {
         self.list = list
         self.apiClient = apiClient
+        self.inviteService = inviteService
     }
 
     func loadMembers() async {
