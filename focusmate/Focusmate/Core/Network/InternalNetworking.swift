@@ -135,7 +135,9 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
 
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        if let jwt = tokenProvider() {
+        // Don't send Authorization header for auth endpoints
+        let isAuthEndpoint = path.contains("/auth/")
+        if !isAuthEndpoint, let jwt = tokenProvider() {
             req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
         }
 
@@ -167,7 +169,9 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
             break
 
         case 401:
-            if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
+            // Don't attempt token refresh for auth endpoints - they don't need auth
+            let isAuthEndpoint = path.contains("/auth/")
+            if !isAuthEndpoint, attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
                 do {
                     try await attemptTokenRefresh()
                     Logger.info("Token refreshed, retrying \(method) \(path)", category: .api)
@@ -177,7 +181,10 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
                 }
             }
             Logger.warning("401 Unauthorized for \(method) \(path)", category: .api)
-            await AuthEventBus.shared.send(.unauthorized)
+            // Don't broadcast unauthorized for auth endpoints - they handle their own errors
+            if !isAuthEndpoint {
+                await AuthEventBus.shared.send(.unauthorized)
+            }
             throw APIError.unauthorized
 
         case 422:
