@@ -8,10 +8,31 @@ struct SignInView: View {
     @State private var showingRegister = false
     @State private var showingForgotPassword = false
     @State private var showingInviteCode = false
+    @State private var inviteCode = ""
 
     var body: some View {
         VStack(spacing: DS.Spacing.xl) {
             Spacer()
+
+            // Pending invite banner
+            if let pendingCode = state.pendingInviteCode {
+                HStack(spacing: DS.Spacing.sm) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text("Invite code saved: \(pendingCode)")
+                        .font(DS.Typography.subheadline)
+                    Spacer()
+                    Button {
+                        state.pendingInviteCode = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(DS.Spacing.md)
+                .background(Color.green.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+            }
 
             // Brand
             VStack(spacing: DS.Spacing.sm) {
@@ -130,9 +151,12 @@ struct SignInView: View {
             ForgotPasswordView()
         }
         .sheet(isPresented: $showingInviteCode) {
-            EnterInviteCodeView(
-                inviteService: state.inviteService,
-                onAccepted: { _ in }
+            PreAuthInviteCodeView(
+                code: $inviteCode,
+                onCodeEntered: { code in
+                    state.pendingInviteCode = code
+                    showingInviteCode = false
+                }
             )
         }
     }

@@ -9,6 +9,11 @@ final class AppState: ObservableObject {
     @Published var isLoading = false
     @Published var error: FocusmateError?
 
+    /// Invite code entered before sign-in, to be auto-accepted after authentication
+    @Published var pendingInviteCode: String?
+    /// List the user just joined via invite (for navigation after accept)
+    @Published var joinedList: ListDTO?
+
     private var cancellables = Set<AnyCancellable>()
 
     // Services
@@ -42,7 +47,10 @@ final class AppState: ObservableObject {
             .sink { [weak self] _ in
                 guard let self else { return }
                 self.objectWillChange.send()
-                Task { await self.tryRegisterDeviceIfPossible() }
+                Task {
+                    await self.tryRegisterDeviceIfPossible()
+                    await self.tryAcceptPendingInvite()
+                }
             }
             .store(in: &cancellables)
 
@@ -99,5 +107,22 @@ final class AppState: ObservableObject {
 
     func clearError() {
         error = nil
+    }
+
+    /// Accepts a pending invite code after the user signs in
+    private func tryAcceptPendingInvite() async {
+        guard auth.jwt != nil else { return }
+        guard let code = pendingInviteCode else { return }
+
+        pendingInviteCode = nil // Clear immediately to prevent duplicate attempts
+
+        do {
+            let response = try await inviteService.acceptInvite(code: code)
+            joinedList = response.list
+            Logger.info("Auto-accepted pending invite for list: \(response.list.name)", category: .api)
+        } catch {
+            Logger.warning("Failed to auto-accept pending invite: \(error)", category: .api)
+            self.error = ErrorHandler.shared.handle(error, context: "Accept Invite")
+        }
     }
 }
