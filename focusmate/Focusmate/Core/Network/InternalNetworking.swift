@@ -135,9 +135,11 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
 
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        // Don't send Authorization header for auth endpoints
-        let isAuthEndpoint = path.contains("/auth/")
-        if !isAuthEndpoint, let jwt = tokenProvider() {
+        // Public endpoints that don't need auth - skip Authorization header entirely
+        let publicEndpoints = ["auth/apple", "auth/sign_in", "auth/sign_up", "auth/refresh", "auth/password"]
+        let isPublicEndpoint = publicEndpoints.contains { path.contains($0) }
+
+        if !isPublicEndpoint, let jwt = tokenProvider() {
             req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
         }
 
@@ -169,9 +171,8 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
             break
 
         case 401:
-            // Don't attempt token refresh for auth endpoints - they don't need auth
-            let isAuthEndpoint = path.contains("/auth/")
-            if !isAuthEndpoint, attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
+            // Don't attempt token refresh for public endpoints - they don't need auth
+            if !isPublicEndpoint, attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
                 do {
                     try await attemptTokenRefresh()
                     Logger.info("Token refreshed, retrying \(method) \(path)", category: .api)
@@ -181,8 +182,8 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
                 }
             }
             Logger.warning("401 Unauthorized for \(method) \(path)", category: .api)
-            // Don't broadcast unauthorized for auth endpoints - they handle their own errors
-            if !isAuthEndpoint {
+            // Don't broadcast unauthorized for public endpoints - they handle their own errors
+            if !isPublicEndpoint {
                 await AuthEventBus.shared.send(.unauthorized)
             }
             throw APIError.unauthorized
