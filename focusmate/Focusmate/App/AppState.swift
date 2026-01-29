@@ -20,6 +20,7 @@ final class AppState: ObservableObject {
     private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
     private(set) lazy var tagService = TagService(apiClient: auth.api)
     private(set) lazy var inviteService = InviteService(apiClient: auth.api)
+    private(set) lazy var friendService = FriendService(apiClient: auth.api)
 
     // Push token coordination (grouped for atomic consistency)
     private struct PushTokenState {

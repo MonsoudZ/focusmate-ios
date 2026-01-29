@@ -5,12 +5,13 @@ struct ListsView: View {
     @State private var searchText = ""
     @State private var showingEnterInviteCode = false
 
-    init(listService: ListService, taskService: TaskService, tagService: TagService, inviteService: InviteService) {
+    init(listService: ListService, taskService: TaskService, tagService: TagService, inviteService: InviteService, friendService: FriendService) {
         _viewModel = StateObject(wrappedValue: ListsViewModel(
             listService: listService,
             taskService: taskService,
             tagService: tagService,
-            inviteService: inviteService
+            inviteService: inviteService,
+            friendService: friendService
         ))
     }
 
@@ -36,7 +37,8 @@ struct ListsView: View {
                                     taskService: viewModel.taskService,
                                     listService: viewModel.listService,
                                     tagService: viewModel.tagService,
-                                    inviteService: viewModel.inviteService
+                                    inviteService: viewModel.inviteService,
+                                    friendService: viewModel.friendService
                                 )) {
                                     ListRowView(list: list)
                                 }
@@ -126,7 +128,8 @@ struct ListsView: View {
                     taskService: viewModel.taskService,
                     listService: viewModel.listService,
                     tagService: viewModel.tagService,
-                    inviteService: viewModel.inviteService
+                    inviteService: viewModel.inviteService,
+                    friendService: viewModel.friendService
                 )
             }
             .errorBanner($viewModel.error) {

@@ -123,7 +123,8 @@ struct RootView: View {
                         listService: state.listService,
                         taskService: state.taskService,
                         tagService: state.tagService,
-                        inviteService: state.inviteService
+                        inviteService: state.inviteService,
+                        friendService: state.friendService
                     )
                         .tabItem {
                             Image(systemName: "list.bullet")

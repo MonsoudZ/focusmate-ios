@@ -4,8 +4,8 @@ struct ListMembersView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: ListMembersViewModel
 
-    init(list: ListDTO, apiClient: APIClient, inviteService: InviteService) {
-        _viewModel = State(initialValue: ListMembersViewModel(list: list, apiClient: apiClient, inviteService: inviteService))
+    init(list: ListDTO, apiClient: APIClient, inviteService: InviteService, friendService: FriendService) {
+        _viewModel = State(initialValue: ListMembersViewModel(list: list, apiClient: apiClient, inviteService: inviteService, friendService: friendService))
     }
 
     var body: some View {
@@ -24,30 +24,52 @@ struct ListMembersView: View {
                     }
                 } else {
                     List {
+                        // Friends section
+                        if !viewModel.availableFriends.isEmpty {
+                            Section {
+                                ForEach(viewModel.availableFriends) { friend in
+                                    FriendRowView(
+                                        friend: friend,
+                                        isAdding: viewModel.addingFriendId == friend.id,
+                                        onAdd: {
+                                            Task { await viewModel.addFriendToList(friend) }
+                                        }
+                                    )
+                                }
+                            } header: {
+                                Text("Friends")
+                            } footer: {
+                                Text("Quickly add friends to this list")
+                            }
+                        }
+
                         // Invite link section
                         Section {
                             NavigationLink {
                                 ListInvitesView(list: viewModel.list, inviteService: viewModel.inviteService)
                             } label: {
-                                Label("Invite Links", systemImage: "link")
+                                Label("Create Invite Link", systemImage: "link.badge.plus")
                             }
                         } footer: {
-                            Text("Create shareable links to invite people to this list")
+                            Text("Share a link with anyone to invite them")
                         }
 
-                        Section {
-                            ForEach(viewModel.memberships) { membership in
-                                MemberRowView(membership: membership)
-                                    .swipeActions(edge: .trailing) {
-                                        Button("Remove", role: .destructive) {
-                                            viewModel.memberToRemove = membership
+                        // Existing members section
+                        if !viewModel.memberships.isEmpty {
+                            Section {
+                                ForEach(viewModel.memberships) { membership in
+                                    MemberRowView(membership: membership)
+                                        .swipeActions(edge: .trailing) {
+                                            Button("Remove", role: .destructive) {
+                                                viewModel.memberToRemove = membership
+                                            }
                                         }
-                                    }
+                                }
+                            } header: {
+                                Text("Members")
+                            } footer: {
+                                Text("Editors can add and complete tasks. Viewers can only view.")
                             }
-                        } header: {
-                            Text("Members")
-                        } footer: {
-                            Text("Editors can add and complete tasks. Viewers can only view.")
                         }
                     }
                 }
@@ -89,6 +111,7 @@ struct ListMembersView: View {
             }
             .task {
                 await viewModel.loadMembers()
+                await viewModel.loadFriends()
             }
         }
     }
@@ -112,6 +135,49 @@ struct MemberRowView: View {
             Spacer()
 
             RoleBadge(role: membership.role, isEditor: membership.isEditor)
+        }
+        .padding(.vertical, DS.Spacing.xs)
+    }
+}
+
+// MARK: - Friend Row View
+
+struct FriendRowView: View {
+    let friend: FriendDTO
+    let isAdding: Bool
+    let onAdd: () -> Void
+
+    var body: some View {
+        HStack(spacing: DS.Spacing.md) {
+            Avatar(friend.displayName, size: 40)
+
+            VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
+                Text(friend.displayName)
+                    .font(.body)
+                if let email = friend.email, friend.name != nil {
+                    Text(email)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            Button {
+                onAdd()
+            } label: {
+                if isAdding {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else {
+                    Text("Add")
+                        .font(.subheadline.weight(.medium))
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.small)
+            .disabled(isAdding)
         }
         .padding(.vertical, DS.Spacing.xs)
     }

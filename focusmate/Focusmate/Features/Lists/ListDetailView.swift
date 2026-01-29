@@ -5,13 +5,14 @@ struct ListDetailView: View {
 
     @StateObject private var viewModel: ListDetailViewModel
 
-    init(list: ListDTO, taskService: TaskService, listService: ListService, tagService: TagService, inviteService: InviteService) {
+    init(list: ListDTO, taskService: TaskService, listService: ListService, tagService: TagService, inviteService: InviteService, friendService: FriendService) {
         _viewModel = StateObject(wrappedValue: ListDetailViewModel(
             list: list,
             taskService: taskService,
             listService: listService,
             tagService: tagService,
-            inviteService: inviteService
+            inviteService: inviteService,
+            friendService: friendService
         ))
     }
 
@@ -35,7 +36,7 @@ struct ListDetailView: View {
             EditListView(list: viewModel.list, listService: viewModel.listService)
         }
         .sheet(isPresented: $viewModel.showingMembers) {
-            ListMembersView(list: viewModel.list, apiClient: viewModel.taskService.apiClient, inviteService: viewModel.inviteService)
+            ListMembersView(list: viewModel.list, apiClient: viewModel.taskService.apiClient, inviteService: viewModel.inviteService, friendService: viewModel.friendService)
         }
         .sheet(item: $viewModel.selectedTask) { task in
             TaskDetailView(

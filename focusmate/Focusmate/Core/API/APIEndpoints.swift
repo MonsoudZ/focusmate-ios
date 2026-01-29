@@ -121,4 +121,9 @@ enum API {
         static let appOpened = "api/v1/analytics/app_opened"
     }
 
+    enum Friends {
+        static let list = "api/v1/friends"
+        static func friend(_ id: String) -> String { "api/v1/friends/\(id)" }
+    }
+
 }

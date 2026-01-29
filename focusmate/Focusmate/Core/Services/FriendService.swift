@@ -1,0 +1,49 @@
+import Foundation
+
+final class FriendService: Sendable {
+    let apiClient: APIClient
+
+    init(apiClient: APIClient) {
+        self.apiClient = apiClient
+    }
+
+    func fetchFriends() async throws -> [FriendDTO] {
+        let response: FriendsResponse = try await apiClient.request(
+            "GET",
+            API.Friends.list,
+            body: nil as String?
+        )
+        return response.friends
+    }
+
+    func removeFriend(id: Int) async throws {
+        let _: EmptyResponse = try await apiClient.request(
+            "DELETE",
+            API.Friends.friend(String(id)),
+            body: nil as String?
+        )
+    }
+
+    func addFriendToList(listId: Int, friendId: Int, role: String) async throws -> MembershipDTO {
+        struct AddFriendRequest: Encodable {
+            let membership: MembershipData
+
+            struct MembershipData: Encodable {
+                let friend_id: Int
+                let role: String
+            }
+        }
+
+        let request = AddFriendRequest(
+            membership: .init(friend_id: friendId, role: role)
+        )
+
+        let response: MembershipResponse = try await apiClient.request(
+            "POST",
+            API.Lists.memberships(String(listId)),
+            body: request
+        )
+        return response.membership
+    }
+}
+

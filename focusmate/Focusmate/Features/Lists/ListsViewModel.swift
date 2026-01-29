@@ -7,6 +7,7 @@ final class ListsViewModel: ObservableObject {
     let taskService: TaskService
     let tagService: TagService
     let inviteService: InviteService
+    let friendService: FriendService
 
     @Published var lists: [ListDTO] = []
     @Published var isLoading = false
@@ -17,11 +18,12 @@ final class ListsViewModel: ObservableObject {
     @Published var listToDelete: ListDTO?
     @Published var selectedList: ListDTO?
 
-    init(listService: ListService, taskService: TaskService, tagService: TagService, inviteService: InviteService) {
+    init(listService: ListService, taskService: TaskService, tagService: TagService, inviteService: InviteService, friendService: FriendService) {
         self.listService = listService
         self.taskService = taskService
         self.tagService = tagService
         self.inviteService = inviteService
+        self.friendService = friendService
     }
 
     func loadLists() async {
