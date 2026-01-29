@@ -202,21 +202,30 @@ final class AuthStore: ObservableObject {
     func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
         switch result {
         case .success(let authorization):
-            if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
-               let identityToken = appleIDCredential.identityToken {
-
-                let name = [
-                    appleIDCredential.fullName?.givenName,
-                    appleIDCredential.fullName?.familyName
-                ].compactMap { $0 }.joined(separator: " ")
-
-                Task {
-                    await signInWithApple(
-                        identityToken: identityToken,
-                        name: name.isEmpty ? nil : name
-                    )
-                }
+            guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+                Logger.error("Apple Sign In failed: Invalid credential type", category: .auth)
+                self.error = FocusmateError.custom("Apple Sign In Failed", "Invalid credential type")
+                return
             }
+
+            guard let identityToken = appleIDCredential.identityToken else {
+                Logger.error("Apple Sign In failed: No identity token", category: .auth)
+                self.error = FocusmateError.custom("Apple Sign In Failed", "No identity token received from Apple")
+                return
+            }
+
+            let name = [
+                appleIDCredential.fullName?.givenName,
+                appleIDCredential.fullName?.familyName
+            ].compactMap { $0 }.joined(separator: " ")
+
+            Task {
+                await signInWithApple(
+                    identityToken: identityToken,
+                    name: name.isEmpty ? nil : name
+                )
+            }
+
         case .failure(let error):
             Logger.error("Apple Sign In failed", error: error, category: .auth)
             self.error = FocusmateError.custom("Apple Sign In Failed", error.localizedDescription)
