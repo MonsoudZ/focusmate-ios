@@ -24,21 +24,22 @@ final class ListService {
     }
 
     func fetchList(id: Int) async throws -> ListDTO {
-        return try await apiClient.request("GET", API.Lists.id(String(id)), body: nil as String?)
+        let response: ListResponse = try await apiClient.request("GET", API.Lists.id(String(id)), body: nil as String?)
+        return response.list
     }
 
     func createList(name: String, description: String?, color: String = "blue") async throws -> ListDTO {
         let request = CreateListRequest(list: .init(name: name, description: description, color: color))
-        let list: ListDTO = try await apiClient.request("POST", API.Lists.root, body: request)
+        let response: ListResponse = try await apiClient.request("POST", API.Lists.root, body: request)
         await cache.invalidate(Self.cacheKey)
-        return list
+        return response.list
     }
 
     func updateList(id: Int, name: String?, description: String?, color: String? = nil) async throws -> ListDTO {
         let request = UpdateListRequest(list: .init(name: name, description: description, visibility: nil, color: color))
-        let list: ListDTO = try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
+        let response: ListResponse = try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
         await cache.invalidate(Self.cacheKey)
-        return list
+        return response.list
     }
 
     func deleteList(id: Int) async throws {

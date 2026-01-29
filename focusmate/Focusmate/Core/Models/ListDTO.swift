@@ -50,6 +50,10 @@ struct ListMemberDTO: Codable, Identifiable, Hashable {
     let role: String?
 }
 
+struct ListResponse: Codable {
+    let list: ListDTO
+}
+
 struct ListsResponse: Codable {
     let lists: [ListDTO]
     let tombstones: [String]?
