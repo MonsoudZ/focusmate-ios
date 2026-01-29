@@ -7,6 +7,7 @@ struct SignInView: View {
     @State private var password = ""
     @State private var showingRegister = false
     @State private var showingForgotPassword = false
+    @State private var showingInviteCode = false
 
     var body: some View {
         VStack(spacing: DS.Spacing.xl) {
@@ -96,6 +97,16 @@ struct SignInView: View {
                 .disabled(state.auth.isLoading)
             }
 
+            DSDivider("or")
+
+            Button {
+                showingInviteCode = true
+            } label: {
+                Label("I have an invite code", systemImage: "link.badge.plus")
+            }
+            .font(DS.Typography.body)
+            .foregroundStyle(DS.Colors.accent)
+
             if let error = state.auth.error {
                 ErrorBanner(
                     error: error,
@@ -117,6 +128,12 @@ struct SignInView: View {
         }
         .sheet(isPresented: $showingForgotPassword) {
             ForgotPasswordView()
+        }
+        .sheet(isPresented: $showingInviteCode) {
+            EnterInviteCodeView(
+                inviteService: state.inviteService,
+                onAccepted: { _ in }
+            )
         }
     }
 }
