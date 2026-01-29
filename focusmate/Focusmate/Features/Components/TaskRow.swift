@@ -76,8 +76,13 @@ struct TaskRow: View {
             VStack(spacing: 0) {
                 mainTaskRow
 
-                if isExpanded {
+                // Subtasks section
+                if task.hasSubtasks && isExpanded {
                     subtasksList
+                } else if !task.hasSubtasks && canEdit {
+                    Divider()
+                        .padding(.horizontal, DS.Spacing.md)
+                    addSubtaskButton
                 }
             }
         }
@@ -219,8 +224,8 @@ struct TaskRow: View {
                 .foregroundStyle(isOverdue ? DS.Colors.error : .secondary)
             }
 
-            // Subtasks - expandable badge (shows count if has subtasks, or add option if can edit)
-            if task.hasSubtasks || canEdit {
+            // Subtasks count (if any) - tappable to expand
+            if task.hasSubtasks {
                 subtaskBadge
             }
 
@@ -246,21 +251,14 @@ struct TaskRow: View {
             HapticManager.selection()
         } label: {
             HStack(spacing: 3) {
-                if task.hasSubtasks {
-                    Image(systemName: "checklist")
-                        .font(.system(size: 11))
-                    Text(task.subtaskProgress)
-                        .font(.system(size: 12, weight: .medium))
-                } else {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .medium))
-                    Text("Subtask")
-                        .font(.system(size: 11))
-                }
+                Image(systemName: "checklist")
+                    .font(.system(size: 11))
+                Text(task.subtaskProgress)
+                    .font(.system(size: 12, weight: .medium))
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
             }
-            .foregroundStyle(task.hasSubtasks ? DS.Colors.accent : .secondary)
+            .foregroundStyle(DS.Colors.accent)
         }
         .buttonStyle(.plain)
     }
@@ -359,7 +357,7 @@ struct TaskRow: View {
                 .padding(.horizontal, DS.Spacing.md)
 
             VStack(spacing: 0) {
-                if let subtasks = task.subtasks, !subtasks.isEmpty {
+                if let subtasks = task.subtasks {
                     ForEach(subtasks) { subtask in
                         SubtaskRow(
                             subtask: subtask,
@@ -410,14 +408,11 @@ struct TaskRow: View {
                                 .padding(.leading, 52)
                         }
                     }
-
-                    if canEdit {
-                        Divider()
-                            .padding(.leading, 52)
-                    }
                 }
 
                 if canEdit {
+                    Divider()
+                        .padding(.leading, 52)
                     addSubtaskButton
                 }
             }
