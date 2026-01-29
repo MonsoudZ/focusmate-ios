@@ -3,6 +3,7 @@ import SwiftUI
 struct ListsView: View {
     @StateObject private var viewModel: ListsViewModel
     @State private var searchText = ""
+    @State private var showingEnterInviteCode = false
 
     init(listService: ListService, taskService: TaskService, tagService: TagService, inviteService: InviteService) {
         _viewModel = StateObject(wrappedValue: ListsViewModel(
@@ -74,8 +75,18 @@ struct ListsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        viewModel.showingCreateList = true
+                    Menu {
+                        Button {
+                            viewModel.showingCreateList = true
+                        } label: {
+                            Label("Create List", systemImage: DS.Icon.plus)
+                        }
+
+                        Button {
+                            showingEnterInviteCode = true
+                        } label: {
+                            Label("Join List", systemImage: "link.badge.plus")
+                        }
                     } label: {
                         Image(systemName: DS.Icon.plus)
                     }
@@ -83,6 +94,15 @@ struct ListsView: View {
             }
             .sheet(isPresented: $viewModel.showingCreateList) {
                 CreateListView(listService: viewModel.listService)
+            }
+            .sheet(isPresented: $showingEnterInviteCode) {
+                EnterInviteCodeView(
+                    inviteService: viewModel.inviteService,
+                    onAccepted: { list in
+                        viewModel.selectedList = list
+                        Task { await viewModel.loadLists() }
+                    }
+                )
             }
             .sheet(isPresented: $viewModel.showingSearch) {
                 SearchView(
