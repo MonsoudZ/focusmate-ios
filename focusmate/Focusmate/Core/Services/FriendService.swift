@@ -29,13 +29,13 @@ final class FriendService: Sendable {
             let membership: MembershipData
 
             struct MembershipData: Encodable {
-                let friend_id: Int
+                let user_id: Int
                 let role: String
             }
         }
 
         let request = AddFriendRequest(
-            membership: .init(friend_id: friendId, role: role)
+            membership: .init(user_id: friendId, role: role)
         )
 
         let response: MembershipResponse = try await apiClient.request(
