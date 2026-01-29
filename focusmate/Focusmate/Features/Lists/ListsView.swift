@@ -90,7 +90,7 @@ struct ListsView: View {
                             Label("Join List", systemImage: "link.badge.plus")
                         }
                     } label: {
-                        Image(systemName: DS.Icon.plus)
+                        Image(systemName: "ellipsis.circle")
                     }
                 }
             }
