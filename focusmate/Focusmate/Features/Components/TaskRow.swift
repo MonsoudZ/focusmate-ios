@@ -265,32 +265,24 @@ struct TaskRow: View {
 
     private func tagsView(_ tags: [TagDTO]) -> some View {
         HStack(spacing: 4) {
-            // Show first tag with name
-            if let firstTag = tags.first {
-                HStack(spacing: 3) {
-                    Circle()
-                        .fill(firstTag.tagColor)
-                        .frame(width: 6, height: 6)
-                    Text(firstTag.name)
-                        .font(.system(size: 11))
-                }
-                .foregroundStyle(.secondary)
+            ForEach(tags.prefix(2)) { tag in
+                Text(tag.name)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(tag.tagColor)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(tag.tagColor.opacity(0.15))
+                    .clipShape(Capsule())
             }
 
-            // Show additional tags as dots with count
-            if tags.count > 1 {
-                HStack(spacing: 2) {
-                    ForEach(tags.dropFirst().prefix(2)) { tag in
-                        Circle()
-                            .fill(tag.tagColor)
-                            .frame(width: 6, height: 6)
-                    }
-                    if tags.count > 3 {
-                        Text("+\(tags.count - 3)")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
-                }
+            if tags.count > 2 {
+                Text("+\(tags.count - 2)")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color(.tertiarySystemFill))
+                    .clipShape(Capsule())
             }
         }
     }
