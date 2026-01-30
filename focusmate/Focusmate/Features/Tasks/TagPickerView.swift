@@ -42,12 +42,17 @@ struct TagPickerView: View {
                         Button {
                             onCreateTag()
                         } label: {
-                            Label("New", systemImage: "plus")
-                                .font(.caption)
-                                .padding(.horizontal, DS.Spacing.md)
-                                .padding(.vertical, DS.Spacing.sm)
-                                .background(Color(.secondarySystemBackground))
-                                .clipShape(Capsule())
+                            HStack(spacing: DS.Spacing.xs) {
+                                Image(systemName: "plus")
+                                    .font(.caption.weight(.semibold))
+                                Text("New Tag")
+                                    .font(.caption)
+                            }
+                            .foregroundStyle(DS.Colors.accent)
+                            .padding(.horizontal, DS.Spacing.md)
+                            .padding(.vertical, DS.Spacing.sm)
+                            .background(DS.Colors.accent.opacity(0.12))
+                            .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
                     }

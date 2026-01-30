@@ -4,27 +4,41 @@ import SwiftUI
 
 // MARK: - Toolbar Button Styles
 
-/// Toolbar cancel/dismiss button — clean accent text
+/// Toolbar cancel/dismiss button — uniform pill shape
 struct IntentiaToolbarCancelStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(DS.Typography.body)
+            .font(DS.Typography.subheadline.weight(.medium))
             .foregroundStyle(DS.Colors.accent)
-            .fixedSize()
-            .opacity(configuration.isPressed ? 0.5 : 1.0)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, DS.Spacing.md)
+            .padding(.vertical, DS.Spacing.sm)
+            .background(
+                Capsule()
+                    .fill(DS.Colors.accent.opacity(0.1))
+            )
+            .opacity(configuration.isPressed ? 0.6 : 1.0)
     }
 }
 
-/// Toolbar primary action button — bold accent text
+/// Toolbar primary action button — uniform pill shape, bolder
 struct IntentiaToolbarPrimaryStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(DS.Typography.bodyMedium)
-            .foregroundStyle(isEnabled ? DS.Colors.accent : DS.Colors.accent.opacity(0.4))
-            .fixedSize()
-            .opacity(configuration.isPressed ? 0.5 : 1.0)
+            .font(DS.Typography.subheadline.weight(.semibold))
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, DS.Spacing.md)
+            .padding(.vertical, DS.Spacing.sm)
+            .background(
+                Capsule()
+                    .fill(isEnabled ? DS.Colors.accent : DS.Colors.accent.opacity(0.4))
+            )
+            .opacity(configuration.isPressed ? 0.6 : 1.0)
     }
 }
 
