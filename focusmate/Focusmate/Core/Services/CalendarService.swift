@@ -13,7 +13,7 @@ final class CalendarService {
     private var cachedCalendar: EKCalendar?
     private var cachedEvents: [EKEvent] = []
     private var eventsCacheTimestamp: Date = .distantPast
-    private let eventsCacheTTL: TimeInterval = 2.0
+    private var eventsCacheTTL: TimeInterval { AppConfiguration.Cache.calendarEventsTTLSeconds }
 
     private init() {}
 

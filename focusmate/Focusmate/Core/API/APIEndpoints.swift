@@ -22,6 +22,57 @@ enum API {
             case .production:  return "wss://focusmate-api-production.up.railway.app/cable"
             }
         }
+
+        /// Pre-validated base URL. Parsed once at first access, thread-safe.
+        var baseURL: URL {
+            switch self {
+            case .development: return Self.validated.development.base
+            case .staging:     return Self.validated.staging.base
+            case .production:  return Self.validated.production.base
+            }
+        }
+
+        /// Pre-validated WebSocket URL. Parsed once at first access, thread-safe.
+        var webSocketURL: URL {
+            switch self {
+            case .development: return Self.validated.development.webSocket
+            case .staging:     return Self.validated.staging.webSocket
+            case .production:  return Self.validated.production.webSocket
+            }
+        }
+
+        // MARK: - URL Validation Cache
+
+        private struct URLs {
+            let base: URL
+            let webSocket: URL
+        }
+
+        private struct ValidatedURLs {
+            let development: URLs
+            let staging: URLs
+            let production: URLs
+        }
+
+        /// All environment URLs validated once at first access.
+        /// Uses static let for thread-safe lazy initialization.
+        /// Fails fast with preconditionFailure if any hardcoded URL is invalid.
+        private static let validated: ValidatedURLs = {
+            func validate(_ env: Environment) -> URLs {
+                guard let base = URL(string: env.baseURLString) else {
+                    preconditionFailure("Invalid base URL for \(env): \(env.baseURLString)")
+                }
+                guard let webSocket = URL(string: env.webSocketURLString) else {
+                    preconditionFailure("Invalid WebSocket URL for \(env): \(env.webSocketURLString)")
+                }
+                return URLs(base: base, webSocket: webSocket)
+            }
+            return ValidatedURLs(
+                development: validate(.development),
+                staging: validate(.staging),
+                production: validate(.production)
+            )
+        }()
     }
 
     static var current: Environment {
@@ -41,29 +92,13 @@ enum API {
         #endif
     }
 
-    static var base: URL {
-        guard let url = URL(string: current.baseURLString) else {
-            // This should never happen - URL strings are hardcoded valid URLs
-            Logger.error("Failed to create base URL from: \(current.baseURLString)", category: .api)
-            // Fall back to production URL as last resort
-            return URL(string: Environment.production.baseURLString)!
-        }
-        return url
-    }
+    static var base: URL { current.baseURL }
+
+    static var webSocketURL: URL { current.webSocketURL }
 
     static func path(_ p: String) -> URL {
         let normalized = p.hasPrefix("/") ? String(p.dropFirst()) : p
         return base.appendingPathComponent(normalized)
-    }
-
-    static var webSocketURL: URL {
-        guard let url = URL(string: current.webSocketURLString) else {
-            // This should never happen - URL strings are hardcoded valid URLs
-            Logger.error("Failed to create WebSocket URL from: \(current.webSocketURLString)", category: .api)
-            // Fall back to production WebSocket URL as last resort
-            return URL(string: Environment.production.webSocketURLString)!
-        }
-        return url
     }
 
     enum Auth {

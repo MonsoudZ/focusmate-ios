@@ -231,8 +231,7 @@ final class TaskService {
 
     /// Create a subtask under a parent task
     func createSubtask(listId: Int, parentTaskId: Int, title: String) async throws -> SubtaskDTO {
-        try validateListId(listId)
-        try validateTaskId(parentTaskId)
+        try validateSubtaskContext(listId: listId, parentTaskId: parentTaskId)
         try validateTitle(title)
         do {
             let request = CreateSubtaskRequest(subtask: .init(title: title))
@@ -250,45 +249,17 @@ final class TaskService {
 
     /// Complete a subtask
     func completeSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> SubtaskDTO {
-        try validateListId(listId)
-        try validateTaskId(parentTaskId)
-        try validateSubtaskId(subtaskId)
-        do {
-            let subtask: SubtaskDTO = try await apiClient.request(
-                "PATCH",
-                API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), "complete"),
-                body: nil as String?
-            )
-            Logger.debug("TaskService: Completed subtask \(subtaskId)", category: .api)
-            return subtask
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Completing subtask")
-        }
+        try await performSubtaskAction(listId: listId, parentTaskId: parentTaskId, subtaskId: subtaskId, action: "complete")
     }
 
     /// Reopen a subtask
     func reopenSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> SubtaskDTO {
-        try validateListId(listId)
-        try validateTaskId(parentTaskId)
-        try validateSubtaskId(subtaskId)
-        do {
-            let subtask: SubtaskDTO = try await apiClient.request(
-                "PATCH",
-                API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), "reopen"),
-                body: nil as String?
-            )
-            Logger.debug("TaskService: Reopened subtask \(subtaskId)", category: .api)
-            return subtask
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Reopening subtask")
-        }
+        try await performSubtaskAction(listId: listId, parentTaskId: parentTaskId, subtaskId: subtaskId, action: "reopen")
     }
 
     /// Update a subtask
     func updateSubtask(listId: Int, parentTaskId: Int, subtaskId: Int, title: String) async throws -> SubtaskDTO {
-        try validateListId(listId)
-        try validateTaskId(parentTaskId)
-        try validateSubtaskId(subtaskId)
+        try validateSubtaskContext(listId: listId, parentTaskId: parentTaskId, subtaskId: subtaskId)
         try validateTitle(title)
         do {
             let request = UpdateSubtaskRequest(subtask: .init(title: title))
@@ -306,9 +277,7 @@ final class TaskService {
 
     /// Delete a subtask
     func deleteSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws {
-        try validateListId(listId)
-        try validateTaskId(parentTaskId)
-        try validateSubtaskId(subtaskId)
+        try validateSubtaskContext(listId: listId, parentTaskId: parentTaskId, subtaskId: subtaskId)
         do {
             _ = try await apiClient.request(
                 "DELETE",
@@ -318,6 +287,37 @@ final class TaskService {
             Logger.debug("TaskService: Deleted subtask \(subtaskId)", category: .api)
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Deleting subtask")
+        }
+    }
+
+    // MARK: - Subtask Helpers
+
+    private func validateSubtaskContext(listId: Int, parentTaskId: Int, subtaskId: Int? = nil) throws {
+        try validateListId(listId)
+        try validateTaskId(parentTaskId)
+        if let subtaskId {
+            try validateSubtaskId(subtaskId)
+        }
+    }
+
+    /// Performs a PATCH action (complete/reopen) on a subtask
+    private func performSubtaskAction(
+        listId: Int,
+        parentTaskId: Int,
+        subtaskId: Int,
+        action: String
+    ) async throws -> SubtaskDTO {
+        try validateSubtaskContext(listId: listId, parentTaskId: parentTaskId, subtaskId: subtaskId)
+        do {
+            let subtask: SubtaskDTO = try await apiClient.request(
+                "PATCH",
+                API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), action),
+                body: nil as String?
+            )
+            Logger.debug("TaskService: \(action.capitalized) subtask \(subtaskId)", category: .api)
+            return subtask
+        } catch {
+            throw ErrorHandler.shared.handle(error, context: "\(action.capitalized) subtask")
         }
     }
 }

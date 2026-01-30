@@ -54,8 +54,8 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         if let injectedSession { return injectedSession }
 
         let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 60
+        configuration.timeoutIntervalForRequest = AppConfiguration.Network.requestTimeoutSeconds
+        configuration.timeoutIntervalForResource = AppConfiguration.Network.resourceTimeoutSeconds
 
         // Delegate must be self so certificate pinning runs.
         return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
@@ -184,7 +184,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
             Logger.warning("401 Unauthorized for \(method) \(path)", category: .api)
             // Don't broadcast unauthorized for public endpoints - they handle their own errors
             if !isPublicEndpoint {
-                await AuthEventBus.shared.send(.unauthorized)
+                AuthEventBus.shared.send(.unauthorized)
             }
             throw APIError.unauthorized
 
@@ -271,7 +271,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
                     Logger.warning("Token refresh failed for GET \(endpoint): \(error)", category: .api)
                 }
             }
-            await AuthEventBus.shared.send(.unauthorized)
+            AuthEventBus.shared.send(.unauthorized)
             throw APIError.unauthorized
         default:
             throw APIError.badStatus(http.statusCode, nil, nil)

@@ -6,7 +6,7 @@ final class TodayService {
     private let cache = ResponseCache.shared
 
     private static let cacheKey = "today"
-    private static let cacheTTL: TimeInterval = 10 // short TTL — data changes frequently
+    private static var cacheTTL: TimeInterval { AppConfiguration.Cache.todayTTLSeconds }
 
     init(api: APIClient) {
         self.api = api

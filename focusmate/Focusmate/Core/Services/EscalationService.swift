@@ -12,8 +12,8 @@ final class EscalationService: ObservableObject {
     private var gracePeriodTimer: Timer?
     private var checkTimer: Timer?
 
-    private let gracePeriodMinutes: Int = 120 // 2 hours default
-    private let warningMinutes: Int = 30
+    private var gracePeriodMinutes: Int { AppConfiguration.Escalation.gracePeriodMinutes }
+    private var warningMinutes: Int { AppConfiguration.Escalation.warningMinutes }
 
     private let gracePeriodStartKey = "Escalation_GracePeriodStart"
     private let overdueTaskIdsKey = "Escalation_OverdueTaskIds"
@@ -196,7 +196,7 @@ final class EscalationService: ObservableObject {
     // MARK: - Periodic Check
 
     private func startPeriodicCheck() {
-        checkTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+        checkTimer = Timer.scheduledTimer(withTimeInterval: AppConfiguration.Escalation.statusCheckIntervalSeconds, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
                 self.checkGracePeriodStatus()

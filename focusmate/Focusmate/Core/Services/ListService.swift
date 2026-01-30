@@ -5,7 +5,7 @@ final class ListService {
     private let cache = ResponseCache.shared
 
     private static let cacheKey = "lists"
-    private static let cacheTTL: TimeInterval = 60 // 1 minute
+    private static var cacheTTL: TimeInterval { AppConfiguration.Cache.listsTTLSeconds }
 
     init(apiClient: APIClient) {
         self.apiClient = apiClient
