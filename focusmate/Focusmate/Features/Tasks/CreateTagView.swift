@@ -44,12 +44,14 @@ struct CreateTagView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
-                
+
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
+                    Button("Create Tag") {
                         Task { await createTag() }
                     }
+                    .buttonStyle(IntentiaToolbarPrimaryStyle())
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
                 }
             }

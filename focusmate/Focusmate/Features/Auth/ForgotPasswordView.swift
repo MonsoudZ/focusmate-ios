@@ -25,6 +25,7 @@ struct ForgotPasswordView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
             }
         }

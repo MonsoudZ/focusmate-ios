@@ -135,12 +135,14 @@ struct CreateTaskView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
+                    Button("Create Task") {
                         Task { await viewModel.submit() }
                     }
+                    .buttonStyle(IntentiaToolbarPrimaryStyle())
                     .disabled(!viewModel.canSubmit)
                 }
             }

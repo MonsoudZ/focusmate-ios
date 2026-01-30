@@ -31,6 +31,7 @@ struct EditListView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -41,6 +42,7 @@ struct EditListView: View {
                             }
                         }
                     }
+                    .buttonStyle(IntentiaToolbarPrimaryStyle())
                     .disabled(viewModel.name.isEmpty || viewModel.isLoading)
                 }
             }

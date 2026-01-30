@@ -63,19 +63,21 @@ struct QuickAddTaskView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
                     if viewModel.isLoading {
                         ProgressView()
                     } else {
-                        Button("Add") {
+                        Button("Add Task") {
                             Task {
                                 if await viewModel.createTask() {
                                     dismiss()
                                 }
                             }
                         }
+                        .buttonStyle(IntentiaToolbarPrimaryStyle())
                         .disabled(!viewModel.canSubmit)
                     }
                 }

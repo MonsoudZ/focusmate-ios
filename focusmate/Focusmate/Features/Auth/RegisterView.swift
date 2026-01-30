@@ -108,6 +108,7 @@ struct RegisterView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
             }
         }

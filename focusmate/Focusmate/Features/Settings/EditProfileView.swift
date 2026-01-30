@@ -36,6 +36,7 @@ struct EditProfileView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -48,6 +49,7 @@ struct EditProfileView: View {
                             }
                         }
                     }
+                    .buttonStyle(IntentiaToolbarPrimaryStyle())
                     .disabled(viewModel.isLoading || viewModel.name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }

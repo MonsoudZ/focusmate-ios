@@ -31,16 +31,18 @@ struct CreateListView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
+                    Button("Create List") {
                         Task {
                             if await viewModel.createList() {
                                 dismiss()
                             }
                         }
                     }
+                    .buttonStyle(IntentiaToolbarPrimaryStyle())
                     .disabled(viewModel.name.isEmpty || viewModel.isLoading)
                 }
             }

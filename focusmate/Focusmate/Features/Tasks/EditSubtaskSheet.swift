@@ -46,12 +46,14 @@ struct EditSubtaskSheet: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
-                
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         saveSubtask()
                     }
+                    .buttonStyle(IntentiaToolbarPrimaryStyle())
                     .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
                 }
             }

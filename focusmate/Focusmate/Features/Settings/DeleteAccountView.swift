@@ -62,6 +62,7 @@ struct DeleteAccountView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
             }
             .errorBanner($viewModel.error)

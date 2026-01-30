@@ -52,6 +52,7 @@ struct EnterInviteCodeView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
             }
         }

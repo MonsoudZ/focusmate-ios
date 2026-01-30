@@ -52,12 +52,14 @@ struct ChangePasswordView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         Task { await viewModel.changePassword() }
                     }
+                    .buttonStyle(IntentiaToolbarPrimaryStyle())
                     .disabled(!viewModel.isValid || viewModel.isLoading)
                 }
             }

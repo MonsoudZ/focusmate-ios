@@ -98,12 +98,14 @@ struct EditTaskView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(IntentiaToolbarCancelStyle())
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         Task { await viewModel.submit() }
                     }
+                    .buttonStyle(IntentiaToolbarPrimaryStyle())
                     .disabled(!viewModel.canSubmit)
                 }
             }
