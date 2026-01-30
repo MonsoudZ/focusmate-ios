@@ -43,7 +43,10 @@ enum API {
 
     static var base: URL {
         guard let url = URL(string: current.baseURLString) else {
-            fatalError("Critical: Failed to create base URL")
+            // This should never happen - URL strings are hardcoded valid URLs
+            Logger.error("Failed to create base URL from: \(current.baseURLString)", category: .api)
+            // Fall back to production URL as last resort
+            return URL(string: Environment.production.baseURLString)!
         }
         return url
     }
@@ -55,7 +58,10 @@ enum API {
 
     static var webSocketURL: URL {
         guard let url = URL(string: current.webSocketURLString) else {
-            fatalError("Critical: Failed to create WebSocket URL")
+            // This should never happen - URL strings are hardcoded valid URLs
+            Logger.error("Failed to create WebSocket URL from: \(current.webSocketURLString)", category: .api)
+            // Fall back to production WebSocket URL as last resort
+            return URL(string: Environment.production.webSocketURLString)!
         }
         return url
     }
