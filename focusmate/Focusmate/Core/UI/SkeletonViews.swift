@@ -96,59 +96,6 @@ struct ListCardSkeleton: View {
     }
 }
 
-// MARK: - Empty State View
-
-struct EmptyStateView: View {
-    let title: String
-    let message: String
-    let icon: String
-    let actionTitle: String?
-    let action: (() -> Void)?
-
-    init(
-        title: String,
-        message: String,
-        icon: String = DS.Icon.emptyTray,
-        actionTitle: String? = nil,
-        action: (() -> Void)? = nil
-    ) {
-        self.title = title
-        self.message = message
-        self.icon = icon
-        self.actionTitle = actionTitle
-        self.action = action
-    }
-
-    var body: some View {
-        VStack(spacing: DS.Spacing.xl) {
-            Image(systemName: icon)
-                .font(.system(size: 64))
-                .foregroundStyle(DS.Colors.accent)
-
-            VStack(spacing: DS.Spacing.sm) {
-                Text(title)
-                    .font(DS.Typography.title3)
-                    .multilineTextAlignment(.center)
-
-                Text(message)
-                    .font(DS.Typography.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            if let actionTitle = actionTitle, let action = action {
-                Button(action: action) {
-                    Text(actionTitle)
-                        .font(DS.Typography.bodyMedium)
-                }
-                .buttonStyle(IntentiaPrimaryButtonStyle())
-            }
-        }
-        .padding(DS.Spacing.xl)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
 // MARK: - Loading State View
 
 struct LoadingStateView: View {

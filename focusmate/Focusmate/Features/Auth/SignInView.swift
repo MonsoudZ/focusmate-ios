@@ -65,25 +65,12 @@ struct SignInView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .textContentType(.emailAddress)
-                    .font(DS.Typography.body)
-                    .padding(DS.Spacing.md)
-                    .background(DS.Colors.surfaceElevated)
-                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
-                            .stroke(Color(.separator), lineWidth: 0.5)
-                    )
+                    .keyboardType(.emailAddress)
+                    .formFieldStyle()
 
                 SecureField("Password", text: $password)
                     .textContentType(.password)
-                    .font(DS.Typography.body)
-                    .padding(DS.Spacing.md)
-                    .background(DS.Colors.surfaceElevated)
-                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
-                            .stroke(Color(.separator), lineWidth: 0.5)
-                    )
+                    .formFieldStyle()
 
                 HStack {
                     Spacer()

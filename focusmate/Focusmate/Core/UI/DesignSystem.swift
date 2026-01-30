@@ -269,6 +269,19 @@ extension View {
             .scrollContentBackground(.hidden)
             .background(DS.Colors.surface)
     }
+
+    /// Styled form field for use outside SwiftUI Form context
+    func formFieldStyle() -> some View {
+        self
+            .font(DS.Typography.body)
+            .padding(DS.Spacing.md)
+            .background(DS.Colors.surfaceElevated)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
+                    .stroke(Color(.separator), lineWidth: 0.5)
+            )
+    }
 }
 
 

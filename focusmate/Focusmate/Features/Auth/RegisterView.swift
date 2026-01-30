@@ -25,21 +25,14 @@ struct RegisterView: View {
                 VStack(spacing: DS.Spacing.md) {
                     TextField("Name", text: $name)
                         .textInputAutocapitalization(.words)
-                        .font(DS.Typography.body)
-                        .padding(DS.Spacing.md)
-                        .background(DS.Colors.surfaceElevated)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
+                        .formFieldStyle()
 
                     TextField("Email", text: $email)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .textContentType(.emailAddress)
-                        .font(DS.Typography.body)
-                        .padding(DS.Spacing.md)
-                        .background(DS.Colors.surfaceElevated)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
+                        .keyboardType(.emailAddress)
+                        .formFieldStyle()
 
                     if !email.isEmpty && !InputValidation.isValidEmail(email) {
                         Text("Enter a valid email address")
@@ -50,11 +43,7 @@ struct RegisterView: View {
 
                     SecureField("Password", text: $password)
                         .textContentType(.newPassword)
-                        .font(DS.Typography.body)
-                        .padding(DS.Spacing.md)
-                        .background(DS.Colors.surfaceElevated)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
+                        .formFieldStyle()
 
                     if let pwError = InputValidation.passwordError(password) {
                         Text(pwError)
@@ -65,11 +54,7 @@ struct RegisterView: View {
 
                     SecureField("Confirm Password", text: $confirmPassword)
                         .textContentType(.newPassword)
-                        .font(DS.Typography.body)
-                        .padding(DS.Spacing.md)
-                        .background(DS.Colors.surfaceElevated)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
+                        .formFieldStyle()
 
                     if passwordMismatch {
                         Text("Passwords do not match")

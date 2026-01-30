@@ -49,11 +49,7 @@ struct ForgotPasswordView: View {
                 .autocorrectionDisabled()
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
-                .font(DS.Typography.body)
-                .padding(DS.Spacing.md)
-                .background(DS.Colors.surfaceElevated)
-                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous).stroke(Color(.separator), lineWidth: 0.5))
+                .formFieldStyle()
 
             Button {
                 Task {

@@ -164,20 +164,18 @@ struct ListDetailView: View {
     @ViewBuilder
     private var emptyStateView: some View {
         if viewModel.canEdit {
-            EmptyStateView(
-                title: "No tasks yet",
+            EmptyState(
+                "No tasks yet",
                 message: "Add your first task to get started",
                 icon: DS.Icon.circle,
                 actionTitle: "Add Task",
                 action: { presentCreateTask() }
             )
         } else {
-            EmptyStateView(
-                title: "No tasks yet",
+            EmptyState(
+                "No tasks yet",
                 message: "The owner hasn't added any tasks to this list",
-                icon: DS.Icon.circle,
-                actionTitle: nil,
-                action: nil
+                icon: DS.Icon.circle
             )
         }
     }

@@ -20,8 +20,8 @@ struct ListsView: View {
             if viewModel.isLoading && viewModel.lists.isEmpty {
                 ListsLoadingView()
             } else if viewModel.lists.isEmpty {
-                EmptyStateView(
-                    title: "No lists yet",
+                EmptyState(
+                    "No lists yet",
                     message: "Create a list to organize your tasks",
                     icon: DS.Icon.emptyList,
                     actionTitle: "Create List",
