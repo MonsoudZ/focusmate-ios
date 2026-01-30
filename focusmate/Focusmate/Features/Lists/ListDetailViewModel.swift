@@ -1,9 +1,9 @@
-import Combine
 import Foundation
 import SwiftUI
 
 @MainActor
-final class ListDetailViewModel: ObservableObject {
+@Observable
+final class ListDetailViewModel {
     let list: ListDTO
     let taskService: TaskService
     let listService: ListService
@@ -13,26 +13,26 @@ final class ListDetailViewModel: ObservableObject {
 
     // MARK: - Data
 
-    @Published var tasks: [TaskDTO] = []
-    @Published var isLoading = false
-    @Published var error: FocusmateError?
+    var tasks: [TaskDTO] = []
+    var isLoading = false
+    var error: FocusmateError?
 
     // MARK: - Sheets
 
-    @Published var showingCreateTask = false
-    @Published var showingEditList = false
-    @Published var showingDeleteConfirmation = false
-    @Published var showingMembers = false
-    @Published var selectedTask: TaskDTO?
+    var showingCreateTask = false
+    var showingEditList = false
+    var showingDeleteConfirmation = false
+    var showingMembers = false
+    var selectedTask: TaskDTO?
 
     // MARK: - Subtask
 
-    @Published var taskForSubtask: TaskDTO?
-    @Published var subtaskEditInfo: SubtaskEditInfo?
+    var taskForSubtask: TaskDTO?
+    var subtaskEditInfo: SubtaskEditInfo?
 
     // MARK: - UI
 
-    @Published var nudgeMessage: String?
+    var nudgeMessage: String?
 
     // MARK: - Callback
 

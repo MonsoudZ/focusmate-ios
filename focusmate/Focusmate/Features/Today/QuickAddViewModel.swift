@@ -1,17 +1,17 @@
-import Combine
 import Foundation
 
 @MainActor
-final class QuickAddViewModel: ObservableObject {
+@Observable
+final class QuickAddViewModel {
     private let listService: ListService
     private let taskService: TaskService
 
-    @Published var title = ""
-    @Published var selectedList: ListDTO?
-    @Published var lists: [ListDTO] = []
-    @Published var isLoading = false
-    @Published var isLoadingLists = true
-    @Published var error: FocusmateError?
+    var title = ""
+    var selectedList: ListDTO?
+    var lists: [ListDTO] = []
+    var isLoading = false
+    var isLoadingLists = true
+    var error: FocusmateError?
 
     var onTaskCreated: (() async -> Void)?
 

@@ -1,22 +1,22 @@
-import Combine
 import Foundation
 
 @MainActor
-final class ListsViewModel: ObservableObject {
+@Observable
+final class ListsViewModel {
     let listService: ListService
     let taskService: TaskService
     let tagService: TagService
     let inviteService: InviteService
     let friendService: FriendService
 
-    @Published var lists: [ListDTO] = []
-    @Published var isLoading = false
-    @Published var error: FocusmateError?
-    @Published var showingCreateList = false
-    @Published var showingSearch = false
-    @Published var showingDeleteConfirmation = false
-    @Published var listToDelete: ListDTO?
-    @Published var selectedList: ListDTO?
+    var lists: [ListDTO] = []
+    var isLoading = false
+    var error: FocusmateError?
+    var showingCreateList = false
+    var showingSearch = false
+    var showingDeleteConfirmation = false
+    var listToDelete: ListDTO?
+    var selectedList: ListDTO?
 
     init(listService: ListService, taskService: TaskService, tagService: TagService, inviteService: InviteService, friendService: FriendService) {
         self.listService = listService

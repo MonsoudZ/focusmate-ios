@@ -3,13 +3,13 @@ import SwiftUI
 struct EditTaskView: View {
     @Environment(\.dismiss) var dismiss
 
-    @StateObject private var viewModel: TaskFormViewModel
+    @State private var viewModel: TaskFormViewModel
 
     private let externalOnSave: (() -> Void)?
 
     init(listId: Int, task: TaskDTO, taskService: TaskService, tagService: TagService, onSave: (() -> Void)? = nil) {
         self.externalOnSave = onSave
-        _viewModel = StateObject(wrappedValue: TaskFormViewModel(
+        _viewModel = State(initialValue: TaskFormViewModel(
             mode: .edit(listId: listId, task: task),
             taskService: taskService,
             tagService: tagService

@@ -1,4 +1,3 @@
-import Combine
 import Foundation
 import SwiftUI
 
@@ -8,38 +7,39 @@ enum TaskFormMode {
 }
 
 @MainActor
-final class TaskFormViewModel: ObservableObject {
+@Observable
+final class TaskFormViewModel {
     let mode: TaskFormMode
     private let taskService: TaskService
     let tagService: TagService
 
-    // MARK: - Shared @Published
+    // MARK: - Shared Properties
 
-    @Published var title = ""
-    @Published var note = ""
-    @Published var dueDate = Date()
-    @Published var dueTime = Date()
-    @Published var hasSpecificTime = false
-    @Published var selectedColor: String?
-    @Published var selectedPriority: TaskPriority = .none
-    @Published var isStarred = false
-    @Published var selectedTagIds: Set<Int> = []
-    @Published var availableTags: [TagDTO] = []
-    @Published var showingCreateTag = false
-    @Published var isLoading = false
-    @Published var error: FocusmateError?
+    var title = ""
+    var note = ""
+    var dueDate = Date()
+    var dueTime = Date()
+    var hasSpecificTime = false
+    var selectedColor: String?
+    var selectedPriority: TaskPriority = .none
+    var isStarred = false
+    var selectedTagIds: Set<Int> = []
+    var availableTags: [TagDTO] = []
+    var showingCreateTag = false
+    var isLoading = false
+    var error: FocusmateError?
 
-    // MARK: - Create-only @Published
+    // MARK: - Create-only Properties
 
-    @Published var recurrencePattern: RecurrencePattern = .none
-    @Published var recurrenceInterval = 1
-    @Published var selectedRecurrenceDays: Set<Int> = [1]
-    @Published var hasRecurrenceEndDate = false
-    @Published var recurrenceEndDate: Date?
+    var recurrencePattern: RecurrencePattern = .none
+    var recurrenceInterval = 1
+    var selectedRecurrenceDays: Set<Int> = [1]
+    var hasRecurrenceEndDate = false
+    var recurrenceEndDate: Date?
 
-    // MARK: - Edit-only @Published
+    // MARK: - Edit-only Properties
 
-    @Published var hasDueDate = true
+    var hasDueDate = true
 
     // MARK: - Callbacks
 

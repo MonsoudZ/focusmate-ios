@@ -3,10 +3,10 @@ import SwiftUI
 struct CreateTaskView: View {
     @Environment(\.dismiss) var dismiss
 
-    @StateObject private var viewModel: TaskFormViewModel
+    @State private var viewModel: TaskFormViewModel
 
     init(listId: Int, taskService: TaskService, tagService: TagService) {
-        _viewModel = StateObject(wrappedValue: TaskFormViewModel(
+        _viewModel = State(initialValue: TaskFormViewModel(
             mode: .create(listId: listId),
             taskService: taskService,
             tagService: tagService

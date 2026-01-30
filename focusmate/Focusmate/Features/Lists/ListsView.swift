@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct ListsView: View {
-    @StateObject private var viewModel: ListsViewModel
+    @State private var viewModel: ListsViewModel
     @State private var searchText = ""
     @State private var showingEnterInviteCode = false
 
     init(listService: ListService, taskService: TaskService, tagService: TagService, inviteService: InviteService, friendService: FriendService) {
-        _viewModel = StateObject(wrappedValue: ListsViewModel(
+        _viewModel = State(initialValue: ListsViewModel(
             listService: listService,
             taskService: taskService,
             tagService: tagService,

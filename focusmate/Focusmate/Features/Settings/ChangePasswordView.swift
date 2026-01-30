@@ -35,8 +35,8 @@ struct ChangePasswordView: View {
                     SecureField("Confirm New Password", text: $viewModel.confirmPassword)
                         .textContentType(.newPassword)
                 } footer: {
-                    if viewModel.newPassword.count > 0 && viewModel.newPassword.count < 6 {
-                        Text("Password must be at least 6 characters.")
+                    if viewModel.newPassword.count > 0 && viewModel.newPassword.count < 8 {
+                        Text("Password must be at least 8 characters.")
                             .foregroundColor(.red)
                     } else if !viewModel.confirmPassword.isEmpty && viewModel.newPassword != viewModel.confirmPassword {
                         Text("Passwords don't match.")

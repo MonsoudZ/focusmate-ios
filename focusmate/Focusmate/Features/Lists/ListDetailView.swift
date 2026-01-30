@@ -3,10 +3,10 @@ import SwiftUI
 struct ListDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @StateObject private var viewModel: ListDetailViewModel
+    @State private var viewModel: ListDetailViewModel
 
     init(list: ListDTO, taskService: TaskService, listService: ListService, tagService: TagService, inviteService: InviteService, friendService: FriendService) {
-        _viewModel = StateObject(wrappedValue: ListDetailViewModel(
+        _viewModel = State(initialValue: ListDetailViewModel(
             list: list,
             taskService: taskService,
             listService: listService,

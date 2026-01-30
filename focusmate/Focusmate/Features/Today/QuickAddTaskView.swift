@@ -1,14 +1,14 @@
 import SwiftUI
 
 struct QuickAddTaskView: View {
-    @StateObject private var viewModel: QuickAddViewModel
+    @State private var viewModel: QuickAddViewModel
     @Environment(\.dismiss) var dismiss
     @FocusState private var isTitleFocused: Bool
 
     init(listService: ListService, taskService: TaskService, onTaskCreated: (() async -> Void)? = nil) {
         let vm = QuickAddViewModel(listService: listService, taskService: taskService)
         vm.onTaskCreated = onTaskCreated
-        _viewModel = StateObject(wrappedValue: vm)
+        _viewModel = State(initialValue: vm)
     }
 
     var body: some View {

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TodayView: View {
-    @StateObject private var viewModel: TodayViewModel
+    @State private var viewModel: TodayViewModel
 
     init(
         taskService: TaskService,
@@ -21,7 +21,7 @@ struct TodayView: View {
             screenTimeService: screenTimeService
         )
         vm.onOverdueCountChange = onOverdueCountChange
-        _viewModel = StateObject(wrappedValue: vm)
+        _viewModel = State(initialValue: vm)
     }
 
     var body: some View {

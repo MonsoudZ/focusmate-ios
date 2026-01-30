@@ -1,8 +1,8 @@
-import Combine
 import Foundation
 
 @MainActor
-final class TodayViewModel: ObservableObject {
+@Observable
+final class TodayViewModel {
     let taskService: TaskService
     let listService: ListService
     let tagService: TagService
@@ -12,15 +12,15 @@ final class TodayViewModel: ObservableObject {
     private var todayService: TodayService?
     private let apiClient: APIClient
 
-    @Published var todayData: TodayResponse?
-    @Published var isLoading = true
-    @Published var error: FocusmateError?
-    @Published var showingQuickAdd = false
-    @Published var selectedTask: TaskDTO?
+    var todayData: TodayResponse?
+    var isLoading = true
+    var error: FocusmateError?
+    var showingQuickAdd = false
+    var selectedTask: TaskDTO?
 
     // Subtask sheets
-    @Published var taskForSubtask: TaskDTO?
-    @Published var subtaskEditInfo: SubtaskEditInfo?
+    var taskForSubtask: TaskDTO?
+    var subtaskEditInfo: SubtaskEditInfo?
 
     var onOverdueCountChange: ((Int) -> Void)?
 
