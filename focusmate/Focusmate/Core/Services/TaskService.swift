@@ -9,7 +9,36 @@ final class TaskService {
         self.sideEffects = sideEffects
     }
 
+    // MARK: - Input Validation
+
+    private func validateListId(_ listId: Int) throws {
+        guard listId > 0 else {
+            throw FocusmateError.validation(["list_id": ["must be a positive number"]], nil)
+        }
+    }
+
+    private func validateTaskId(_ taskId: Int) throws {
+        guard taskId > 0 else {
+            throw FocusmateError.validation(["task_id": ["must be a positive number"]], nil)
+        }
+    }
+
+    private func validateTitle(_ title: String) throws {
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw FocusmateError.validation(["title": ["cannot be empty"]], nil)
+        }
+    }
+
+    private func validateSubtaskId(_ subtaskId: Int) throws {
+        guard subtaskId > 0 else {
+            throw FocusmateError.validation(["subtask_id": ["must be a positive number"]], nil)
+        }
+    }
+
+    // MARK: - Task Operations
+
     func fetchTasks(listId: Int) async throws -> [TaskDTO] {
+        try validateListId(listId)
         do {
             let response: TasksResponse = try await apiClient.request(
                 "GET",
@@ -23,6 +52,8 @@ final class TaskService {
     }
 
     func fetchTask(listId: Int, taskId: Int) async throws -> TaskDTO {
+        try validateListId(listId)
+        try validateTaskId(taskId)
         do {
             let response: SingleTaskResponse = try await apiClient.request(
                 "GET",
@@ -52,6 +83,8 @@ final class TaskService {
         recurrenceCount: Int? = nil,
         parentTaskId: Int? = nil
     ) async throws -> TaskDTO {
+        try validateListId(listId)
+        try validateTitle(title)
         do {
             let request = CreateTaskRequest(task: .init(
                 title: title,
@@ -84,6 +117,11 @@ final class TaskService {
     }
 
     func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil, priority: TaskPriority? = nil, starred: Bool? = nil, tagIds: [Int]? = nil) async throws -> TaskDTO {
+        try validateListId(listId)
+        try validateTaskId(taskId)
+        if let title, title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw FocusmateError.validation(["title": ["cannot be empty"]], nil)
+        }
         do {
             let request = UpdateTaskRequest(task: .init(
                 title: title,
@@ -109,6 +147,8 @@ final class TaskService {
     }
 
     func deleteTask(listId: Int, taskId: Int) async throws {
+        try validateListId(listId)
+        try validateTaskId(taskId)
         do {
             await MainActor.run { sideEffects.taskDeleted(taskId: taskId) }
 
@@ -123,6 +163,8 @@ final class TaskService {
     }
 
     func completeTask(listId: Int, taskId: Int, reason: String? = nil) async throws -> TaskDTO {
+        try validateListId(listId)
+        try validateTaskId(taskId)
         do {
             let body: CompleteTaskRequest? = reason.map { CompleteTaskRequest(missed_reason: $0) }
             let response: SingleTaskResponse = try await apiClient.request(
@@ -140,6 +182,8 @@ final class TaskService {
     }
 
     func reopenTask(listId: Int, taskId: Int) async throws -> TaskDTO {
+        try validateListId(listId)
+        try validateTaskId(taskId)
         do {
             let response: SingleTaskResponse = try await apiClient.request(
                 "PATCH",
@@ -156,6 +200,7 @@ final class TaskService {
     }
 
     func reorderTasks(listId: Int, tasks: [(id: Int, position: Int)]) async throws {
+        try validateListId(listId)
         do {
             let request = ReorderTasksRequest(tasks: tasks.map { ReorderTask(id: $0.id, position: $0.position) })
             _ = try await apiClient.request(
@@ -183,9 +228,12 @@ final class TaskService {
     }
     
     // MARK: - Subtask Methods
-    
+
     /// Create a subtask under a parent task
     func createSubtask(listId: Int, parentTaskId: Int, title: String) async throws -> SubtaskDTO {
+        try validateListId(listId)
+        try validateTaskId(parentTaskId)
+        try validateTitle(title)
         do {
             let request = CreateSubtaskRequest(subtask: .init(title: title))
             let subtask: SubtaskDTO = try await apiClient.request(
@@ -202,6 +250,9 @@ final class TaskService {
 
     /// Complete a subtask
     func completeSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> SubtaskDTO {
+        try validateListId(listId)
+        try validateTaskId(parentTaskId)
+        try validateSubtaskId(subtaskId)
         do {
             let subtask: SubtaskDTO = try await apiClient.request(
                 "PATCH",
@@ -217,6 +268,9 @@ final class TaskService {
 
     /// Reopen a subtask
     func reopenSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws -> SubtaskDTO {
+        try validateListId(listId)
+        try validateTaskId(parentTaskId)
+        try validateSubtaskId(subtaskId)
         do {
             let subtask: SubtaskDTO = try await apiClient.request(
                 "PATCH",
@@ -232,6 +286,10 @@ final class TaskService {
 
     /// Update a subtask
     func updateSubtask(listId: Int, parentTaskId: Int, subtaskId: Int, title: String) async throws -> SubtaskDTO {
+        try validateListId(listId)
+        try validateTaskId(parentTaskId)
+        try validateSubtaskId(subtaskId)
+        try validateTitle(title)
         do {
             let request = UpdateSubtaskRequest(subtask: .init(title: title))
             let subtask: SubtaskDTO = try await apiClient.request(
@@ -248,6 +306,9 @@ final class TaskService {
 
     /// Delete a subtask
     func deleteSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws {
+        try validateListId(listId)
+        try validateTaskId(parentTaskId)
+        try validateSubtaskId(subtaskId)
         do {
             _ = try await apiClient.request(
                 "DELETE",

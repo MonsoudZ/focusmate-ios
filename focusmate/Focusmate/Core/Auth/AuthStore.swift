@@ -54,6 +54,7 @@ final class AuthStore: ObservableObject {
     private let escalationService: EscalationService
 
     private var cancellables = Set<AnyCancellable>()
+    private var isHandlingUnauthorized = false
     private var unauthorizedTask: Task<Void, Never>? {
         willSet { unauthorizedTask?.cancel() }
     }
@@ -266,9 +267,12 @@ final class AuthStore: ObservableObject {
     }
 
     private func handleUnauthorizedEvent() {
-        guard jwt != nil else { return }
+        // Prevent race condition: only handle one unauthorized event at a time
+        guard jwt != nil, !isHandlingUnauthorized else { return }
+        isHandlingUnauthorized = true
 
         unauthorizedTask = Task {
+            defer { isHandlingUnauthorized = false }
             Logger.warning("Global unauthorized received. Clearing local session.", category: .auth)
             escalationService.resetAll()
             _ = await errorHandler.handleUnauthorized()
