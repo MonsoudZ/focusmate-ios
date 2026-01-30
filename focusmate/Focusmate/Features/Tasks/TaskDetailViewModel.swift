@@ -3,9 +3,7 @@ import Foundation
 @MainActor
 @Observable
 final class TaskDetailViewModel {
-    var showingEditTask = false
     var showingDeleteConfirmation = false
-    var showingReasonSheet = false
     var error: FocusmateError?
 
     let task: TaskDTO

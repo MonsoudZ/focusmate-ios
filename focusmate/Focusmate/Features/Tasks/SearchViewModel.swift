@@ -7,7 +7,6 @@ final class SearchViewModel {
     var results: [TaskDTO] = []
     var isSearching = false
     var hasSearched = false
-    var taskToEdit: TaskDTO?
     var error: FocusmateError?
     var lists: [Int: ListDTO] = [:]
 

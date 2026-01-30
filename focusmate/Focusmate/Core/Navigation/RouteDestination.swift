@@ -29,6 +29,12 @@ struct RouteDestination: View {
                 listId: task.list_id
             )
 
+        case .listInvites(let list):
+            ListInvitesView(
+                list: list,
+                inviteService: appState.inviteService
+            )
+
         case .notificationSettings:
             NotificationSettingsView()
 

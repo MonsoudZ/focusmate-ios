@@ -5,6 +5,7 @@ struct SearchView: View {
     var onSelectList: ((ListDTO) -> Void)?
     let initialQuery: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.router) private var router
 
     @State private var viewModel: SearchViewModel
 
@@ -41,19 +42,17 @@ struct SearchView: View {
                     viewModel.clearSearch()
                 }
             }
-            .sheet(item: $viewModel.taskToEdit) { task in
-                EditTaskView(
-                    listId: task.list_id,
-                    task: task,
-                    taskService: viewModel.taskService,
-                    tagService: tagService,
-                    onSave: {
-                        Task { await viewModel.search() }
-                    }
-                )
-            }
             .errorBanner($viewModel.error)
         }
+    }
+
+    // MARK: - Sheet Presentation
+
+    private func presentEditTask(_ task: TaskDTO) {
+        router.sheetCallbacks.onTaskSaved = {
+            Task { await viewModel.search() }
+        }
+        router.present(.editTask(task, listId: task.list_id))
     }
 
     @ViewBuilder
@@ -82,7 +81,7 @@ struct SearchView: View {
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     HapticManager.selection()
-                                    viewModel.taskToEdit = task
+                                    presentEditTask(task)
                                 }
                         }
                     } header: {

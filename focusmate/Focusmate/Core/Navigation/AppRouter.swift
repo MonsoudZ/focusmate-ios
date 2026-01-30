@@ -176,10 +176,19 @@ struct SheetCallbacks {
     var onSubtaskCreated: ((TaskDTO, String) async -> Void)?
     var onSubtaskUpdated: ((SubtaskEditInfo, String) async -> Void)?
 
+    // Task edit callbacks
+    var onTaskSaved: (() -> Void)?
+    var onOverdueReasonSubmitted: ((String) -> Void)?
+    var onTagCreated: (() async -> Void)?
+
     // Lists tab callbacks
     var onListCreated: (() async -> Void)?
     var onListUpdated: (() async -> Void)?
     var onListJoined: ((ListDTO) -> Void)?
+
+    // Invite callbacks
+    var onMemberInvited: (() -> Void)?
+    var onInviteCreated: ((InviteDTO) -> Void)?
 
     init() {}
 }

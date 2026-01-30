@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EditTaskView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.router) private var router
 
     @State private var viewModel: TaskFormViewModel
 
@@ -80,7 +81,7 @@ struct EditTaskView: View {
                     TagPickerView(
                         selectedTagIds: $viewModel.selectedTagIds,
                         availableTags: viewModel.availableTags,
-                        onCreateTag: { viewModel.showingCreateTag = true }
+                        onCreateTag: { presentCreateTag() }
                     )
                 }
 
@@ -120,11 +121,15 @@ struct EditTaskView: View {
             .onChange(of: viewModel.hasSpecificTime) { _, _ in
                 viewModel.hasSpecificTimeChanged()
             }
-            .sheet(isPresented: $viewModel.showingCreateTag) {
-                CreateTagView(tagService: viewModel.tagService) {
-                    Task { await viewModel.loadTags() }
-                }
-            }
         }
+    }
+
+    // MARK: - Sheet Presentation
+
+    private func presentCreateTag() {
+        router.sheetCallbacks.onTagCreated = {
+            await viewModel.loadTags()
+        }
+        router.present(.createTag)
     }
 }

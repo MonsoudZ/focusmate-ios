@@ -5,6 +5,7 @@ enum Route: Hashable {
     // Lists tab routes
     case listDetail(ListDTO)
     case taskDetail(TaskDTO, listName: String)
+    case listInvites(ListDTO)
 
     // Settings tab routes
     case notificationSettings

@@ -17,6 +17,16 @@ enum Sheet: Identifiable {
     case listMembers(ListDTO)
     case createTask(listId: Int)
 
+    // MARK: - Task Sheets
+    case editTask(TaskDTO, listId: Int)
+    case createTag
+    case overdueReason(TaskDTO)
+
+    // MARK: - Invite Sheets
+    case inviteMember(ListDTO)
+    case createInviteLink(ListDTO)
+    case shareInvite(InviteDTO)
+
     // MARK: - Settings Tab Sheets
     case editProfile(UserDTO)
     case changePassword
@@ -47,6 +57,18 @@ enum Sheet: Identifiable {
             return "listMembers-\(list.id)"
         case .createTask(let listId):
             return "createTask-\(listId)"
+        case .editTask(let task, _):
+            return "editTask-\(task.id)"
+        case .createTag:
+            return "createTag"
+        case .overdueReason(let task):
+            return "overdueReason-\(task.id)"
+        case .inviteMember(let list):
+            return "inviteMember-\(list.id)"
+        case .createInviteLink(let list):
+            return "createInviteLink-\(list.id)"
+        case .shareInvite(let invite):
+            return "shareInvite-\(invite.id)"
         case .editProfile(let user):
             return "editProfile-\(user.id)"
         case .changePassword:

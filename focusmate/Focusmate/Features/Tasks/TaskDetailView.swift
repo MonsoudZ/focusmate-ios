@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TaskDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.router) private var router
     @State private var vm: TaskDetailViewModel
 
     init(
@@ -55,7 +56,7 @@ struct TaskDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Edit") {
-                        vm.showingEditTask = true
+                        presentEditTask()
                     }
                 }
 
@@ -64,29 +65,6 @@ struct TaskDetailView: View {
                         dismiss()
                     } label: {
                         Image(systemName: DS.Icon.close)
-                    }
-                }
-            }
-            .sheet(isPresented: $vm.showingEditTask) {
-                EditTaskView(
-                    listId: vm.listId,
-                    task: vm.task,
-                    taskService: vm.taskService,
-                    tagService: vm.tagService,
-                    onSave: {
-                        Task {
-                            await vm.onUpdate()
-                            dismiss()
-                        }
-                    }
-                )
-            }
-            .sheet(isPresented: $vm.showingReasonSheet) {
-                OverdueReasonSheet(task: vm.task) { reason in
-                    Task {
-                        await vm.onComplete()
-                        vm.showingReasonSheet = false
-                        dismiss()
                     }
                 }
             }
@@ -298,6 +276,29 @@ struct TaskDetailView: View {
         }
     }
 
+    // MARK: - Sheet Presentation
+
+    private func presentEditTask() {
+        router.sheetCallbacks.onTaskSaved = {
+            Task {
+                await vm.onUpdate()
+                dismiss()
+            }
+        }
+        router.present(.editTask(vm.task, listId: vm.listId))
+    }
+
+    private func presentOverdueReason() {
+        router.sheetCallbacks.onOverdueReasonSubmitted = { _ in
+            Task {
+                await vm.onComplete()
+                router.dismissSheet()
+                dismiss()
+            }
+        }
+        router.present(.overdueReason(vm.task))
+    }
+
     // MARK: - Actions
 
     private func handleComplete() {
@@ -307,7 +308,7 @@ struct TaskDetailView: View {
                 dismiss()
             }
         } else if vm.isOverdue {
-            vm.showingReasonSheet = true
+            presentOverdueReason()
         } else {
             Task {
                 await vm.onComplete()

@@ -8,7 +8,6 @@ final class ListMembersViewModel {
     var isLoading = true
     var isLoadingFriends = false
     var error: FocusmateError?
-    var showingInvite = false
     var memberToRemove: MembershipDTO?
     var addingFriendId: Int?
     var selectedRole: String = "editor"

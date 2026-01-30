@@ -1,9 +1,8 @@
 import SwiftUI
 
 struct ListInvitesView: View {
+    @Environment(\.router) private var router
     @State private var viewModel: ListInvitesViewModel
-    @State private var showCreateInvite = false
-    @State private var createdInvite: InviteDTO?
 
     init(list: ListDTO, inviteService: InviteService) {
         _viewModel = State(initialValue: ListInvitesViewModel(list: list, inviteService: inviteService))
@@ -14,7 +13,7 @@ struct ListInvitesView: View {
             // Create invite section
             Section {
                 Button {
-                    showCreateInvite = true
+                    presentCreateInvite()
                 } label: {
                     Label("Create Invite Link", systemImage: "link.badge.plus")
                 }
@@ -50,15 +49,17 @@ struct ListInvitesView: View {
         .refreshable {
             await viewModel.loadInvites()
         }
-        .sheet(isPresented: $showCreateInvite) {
-            CreateInviteView(viewModel: viewModel) { invite in
-                createdInvite = invite
-            }
-        }
-        .sheet(item: $createdInvite) { invite in
-            ShareInviteSheet(invite: invite)
-        }
         .errorBanner($viewModel.error)
+    }
+
+    // MARK: - Sheet Presentation
+
+    private func presentCreateInvite() {
+        router.sheetCallbacks.onInviteCreated = { invite in
+            router.dismissSheet()
+            router.present(.shareInvite(invite))
+        }
+        router.present(.createInviteLink(viewModel.list))
     }
 }
 

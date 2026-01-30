@@ -53,16 +53,16 @@ struct SettingsView: View {
 
             // MARK: - Preferences
             Section("Preferences") {
-                NavigationLink {
-                    NotificationSettingsView()
+                Button {
+                    router.push(.notificationSettings, in: .settings)
                 } label: {
-                    Label("Notifications", systemImage: DS.Icon.bell)
+                    SettingsRow("Notifications", icon: DS.Icon.bell)
                 }
 
-                NavigationLink {
-                    AppBlockingSettingsView()
+                Button {
+                    router.push(.appBlockingSettings, in: .settings)
                 } label: {
-                    Label("App Blocking", systemImage: DS.Icon.shield)
+                    SettingsRow("App Blocking", icon: DS.Icon.shield)
                 }
 
                 if calendarPermissionGranted {

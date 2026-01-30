@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ListMembersView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.router) private var router
     @State private var viewModel: ListMembersViewModel
 
     init(list: ListDTO, apiClient: APIClient, inviteService: InviteService, friendService: FriendService) {
@@ -20,7 +21,7 @@ struct ListMembersView: View {
                         icon: DS.Icon.share,
                         actionTitle: "Invite Someone"
                     ) {
-                        viewModel.showingInvite = true
+                        presentInviteMember()
                     }
                 } else {
                     List {
@@ -45,11 +46,18 @@ struct ListMembersView: View {
 
                         // Invite link section
                         Section {
-                            NavigationLink {
-                                ListInvitesView(list: viewModel.list, inviteService: viewModel.inviteService)
+                            Button {
+                                router.push(.listInvites(viewModel.list))
                             } label: {
-                                Label("Create Invite Link", systemImage: "link.badge.plus")
+                                HStack {
+                                    Label("Create Invite Link", systemImage: "link.badge.plus")
+                                    Spacer()
+                                    Image(systemName: DS.Icon.chevronRight)
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
                             }
+                            .foregroundStyle(.primary)
                         } footer: {
                             Text("Share a link with anyone to invite them")
                         }
@@ -83,15 +91,10 @@ struct ListMembersView: View {
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        viewModel.showingInvite = true
+                        presentInviteMember()
                     } label: {
                         Image(systemName: DS.Icon.plus)
                     }
-                }
-            }
-            .sheet(isPresented: $viewModel.showingInvite) {
-                InviteMemberView(list: viewModel.list, apiClient: viewModel.apiClient) {
-                    Task { await viewModel.loadMembers() }
                 }
             }
             .alert("Remove Member", isPresented: .constant(viewModel.memberToRemove != nil)) {
@@ -114,6 +117,15 @@ struct ListMembersView: View {
                 await viewModel.loadFriends()
             }
         }
+    }
+
+    // MARK: - Sheet Presentation
+
+    private func presentInviteMember() {
+        router.sheetCallbacks.onMemberInvited = {
+            Task { await viewModel.loadMembers() }
+        }
+        router.present(.inviteMember(viewModel.list))
     }
 }
 

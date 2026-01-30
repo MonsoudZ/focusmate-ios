@@ -25,7 +25,6 @@ final class TaskFormViewModel {
     var isStarred = false
     var selectedTagIds: Set<Int> = []
     var availableTags: [TagDTO] = []
-    var showingCreateTag = false
     var isLoading = false
     var error: FocusmateError?
 

@@ -102,6 +102,44 @@ struct SheetContent: View {
                 tagService: appState.tagService
             )
 
+        case .editTask(let task, let listId):
+            EditTaskView(
+                listId: listId,
+                task: task,
+                taskService: appState.taskService,
+                tagService: appState.tagService,
+                onSave: router.sheetCallbacks.onTaskSaved
+            )
+
+        case .createTag:
+            CreateTagView(tagService: appState.tagService) {
+                Task { await router.sheetCallbacks.onTagCreated?() }
+            }
+
+        case .overdueReason(let task):
+            OverdueReasonSheet(task: task) { reason in
+                router.sheetCallbacks.onOverdueReasonSubmitted?(reason)
+            }
+
+        case .inviteMember(let list):
+            InviteMemberView(
+                list: list,
+                apiClient: appState.auth.api,
+                onInvited: {
+                    router.sheetCallbacks.onMemberInvited?()
+                }
+            )
+
+        case .createInviteLink(let list):
+            CreateInviteView(
+                viewModel: ListInvitesViewModel(list: list, inviteService: appState.inviteService)
+            ) { invite in
+                router.sheetCallbacks.onInviteCreated?(invite)
+            }
+
+        case .shareInvite(let invite):
+            ShareInviteSheet(invite: invite)
+
         // MARK: - Settings Tab Sheets
         case .editProfile(let user):
             EditProfileView(user: user, apiClient: appState.auth.api)
