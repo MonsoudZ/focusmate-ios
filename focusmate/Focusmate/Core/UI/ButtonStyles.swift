@@ -4,32 +4,27 @@ import SwiftUI
 
 // MARK: - Toolbar Button Styles
 
-/// Toolbar cancel/dismiss button — subtle, secondary styling
+/// Toolbar cancel/dismiss button — clean accent text
 struct IntentiaToolbarCancelStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(DS.Typography.body)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(DS.Colors.accent)
+            .fixedSize()
             .opacity(configuration.isPressed ? 0.5 : 1.0)
     }
 }
 
-/// Toolbar primary action button — accent pill with subtle background
+/// Toolbar primary action button — bold accent text
 struct IntentiaToolbarPrimaryStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(DS.Typography.bodyMedium)
-            .foregroundStyle(isEnabled ? DS.Colors.accent : .secondary)
-            .padding(.horizontal, DS.Spacing.md)
-            .padding(.vertical, DS.Spacing.sm)
-            .background(
-                Capsule()
-                    .fill(isEnabled ? DS.Colors.accent.opacity(0.12) : Color.gray.opacity(0.08))
-            )
-            .opacity(configuration.isPressed ? 0.7 : 1.0)
-            .animation(DS.Anim.quick, value: configuration.isPressed)
+            .foregroundStyle(isEnabled ? DS.Colors.accent : DS.Colors.accent.opacity(0.4))
+            .fixedSize()
+            .opacity(configuration.isPressed ? 0.5 : 1.0)
     }
 }
 
