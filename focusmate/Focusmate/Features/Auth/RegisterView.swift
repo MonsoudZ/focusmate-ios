@@ -21,71 +21,88 @@ struct RegisterView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: DS.Spacing.lg) {
-                VStack(spacing: DS.Spacing.md) {
-                    TextField("Name", text: $name)
-                        .textInputAutocapitalization(.words)
-                        .formFieldStyle()
+            ScrollView {
+                VStack(spacing: DS.Spacing.lg) {
+                    // Form fields
+                    VStack(spacing: DS.Spacing.md) {
+                        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                            Text("Name")
+                                .font(DS.Typography.caption)
+                                .foregroundStyle(.secondary)
+                            TextField("Your name", text: $name)
+                                .textInputAutocapitalization(.words)
+                                .textContentType(.name)
+                                .formFieldStyle()
+                        }
 
-                    TextField("Email", text: $email)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .formFieldStyle()
+                        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                            Text("Email")
+                                .font(DS.Typography.caption)
+                                .foregroundStyle(.secondary)
+                            TextField("your@email.com", text: $email)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .formFieldStyle()
+                            if !email.isEmpty && !InputValidation.isValidEmail(email) {
+                                Text("Enter a valid email address")
+                                    .font(DS.Typography.caption)
+                                    .foregroundStyle(DS.Colors.error)
+                            }
+                        }
 
-                    if !email.isEmpty && !InputValidation.isValidEmail(email) {
-                        Text("Enter a valid email address")
-                            .font(.caption)
-                            .foregroundStyle(DS.Colors.error)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                            Text("Password")
+                                .font(DS.Typography.caption)
+                                .foregroundStyle(.secondary)
+                            SecureField("Create a password", text: $password)
+                                .textContentType(.newPassword)
+                                .formFieldStyle()
+                            if let pwError = InputValidation.passwordError(password) {
+                                Text(pwError)
+                                    .font(DS.Typography.caption)
+                                    .foregroundStyle(DS.Colors.error)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                            Text("Confirm Password")
+                                .font(DS.Typography.caption)
+                                .foregroundStyle(.secondary)
+                            SecureField("Confirm your password", text: $confirmPassword)
+                                .textContentType(.newPassword)
+                                .formFieldStyle()
+                            if passwordMismatch {
+                                Text("Passwords do not match")
+                                    .font(DS.Typography.caption)
+                                    .foregroundStyle(DS.Colors.error)
+                            }
+                        }
                     }
 
-                    SecureField("Password", text: $password)
-                        .textContentType(.newPassword)
-                        .formFieldStyle()
-
-                    if let pwError = InputValidation.passwordError(password) {
-                        Text(pwError)
-                            .font(.caption)
-                            .foregroundStyle(DS.Colors.error)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    Button {
+                        Task { await register() }
+                    } label: {
+                        Text(state.auth.isLoading ? "Creating Account..." : "Create Account")
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(IntentiaPrimaryButtonStyle())
+                    .disabled(state.auth.isLoading || !isValid)
+                    .padding(.top, DS.Spacing.sm)
 
-                    SecureField("Confirm Password", text: $confirmPassword)
-                        .textContentType(.newPassword)
-                        .formFieldStyle()
-
-                    if passwordMismatch {
-                        Text("Passwords do not match")
-                            .font(.caption)
-                            .foregroundStyle(DS.Colors.error)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    if let error = state.auth.error {
+                        ErrorBanner(
+                            error: error,
+                            onRetry: { await register() },
+                            onDismiss: { state.auth.error = nil }
+                        )
                     }
                 }
-
-                Button {
-                    Task { await register() }
-                } label: {
-                    Text(state.auth.isLoading ? "Creating Account…" : "Create Account")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(IntentiaPrimaryButtonStyle())
-                .disabled(state.auth.isLoading || !isValid)
-
-                if let error = state.auth.error {
-                    ErrorBanner(
-                        error: error,
-                        onRetry: { await register() },
-                        onDismiss: { state.auth.error = nil }
-                    )
-                }
-
-                Spacer()
+                .padding(DS.Spacing.xl)
             }
-            .padding(DS.Spacing.xl)
             .navigationTitle("Create Account")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

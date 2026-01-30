@@ -119,6 +119,7 @@ enum DS {
         static let iconLarge: CGFloat = 24
         static let iconXL: CGFloat = 32
         static let iconJumbo: CGFloat = 56
+        static let logo: CGFloat = 80
 
         static let avatarSmall: CGFloat = 32
         static let avatarMedium: CGFloat = 44

@@ -8,14 +8,16 @@ struct ForgotPasswordView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: DS.Spacing.lg) {
-                if submitted {
-                    successView
-                } else {
-                    formView
+            ScrollView {
+                VStack(spacing: DS.Spacing.lg) {
+                    if submitted {
+                        successView
+                    } else {
+                        formView
+                    }
                 }
+                .padding(DS.Spacing.xl)
             }
-            .padding(DS.Spacing.xl)
             .navigationTitle("Reset Password")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -29,27 +31,34 @@ struct ForgotPasswordView: View {
     }
 
     private var formView: some View {
-        VStack(spacing: DS.Spacing.lg) {
-            Spacer()
+        VStack(spacing: DS.Spacing.xl) {
+            Spacer(minLength: DS.Spacing.xxxl)
 
             Image(systemName: "lock.rotation")
-                .font(.system(size: DS.Size.iconJumbo))
+                .font(.system(size: DS.Size.iconJumbo, weight: .light))
                 .foregroundStyle(DS.Colors.accent)
 
-            Text("Forgot your password?")
-                .font(DS.Typography.title2)
+            VStack(spacing: DS.Spacing.sm) {
+                Text("Forgot your password?")
+                    .font(DS.Typography.title2)
 
-            Text("Enter your email and we'll send you instructions to reset your password.")
-                .font(DS.Typography.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                Text("Enter your email and we'll send you instructions to reset your password.")
+                    .font(DS.Typography.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
 
-            TextField("Email", text: $email)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .formFieldStyle()
+            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                Text("Email")
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(.secondary)
+                TextField("your@email.com", text: $email)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .formFieldStyle()
+            }
 
             Button {
                 Task {
@@ -63,7 +72,7 @@ struct ForgotPasswordView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(IntentiaPrimaryButtonStyle())
-            .disabled(state.auth.isLoading || email.isEmpty)
+            .disabled(state.auth.isLoading || !InputValidation.isValidEmail(email))
 
             if let error = state.auth.error {
                 ErrorBanner(
@@ -77,25 +86,27 @@ struct ForgotPasswordView: View {
                 )
             }
 
-            Spacer()
+            Spacer(minLength: DS.Spacing.xxxl)
         }
     }
 
     private var successView: some View {
-        VStack(spacing: DS.Spacing.lg) {
-            Spacer()
+        VStack(spacing: DS.Spacing.xl) {
+            Spacer(minLength: DS.Spacing.xxxl)
 
             Image(systemName: "envelope.circle.fill")
-                .font(.system(size: DS.Size.iconJumbo))
+                .font(.system(size: DS.Size.iconJumbo, weight: .light))
                 .foregroundStyle(DS.Colors.success)
 
-            Text("Check your email")
-                .font(DS.Typography.title2)
+            VStack(spacing: DS.Spacing.sm) {
+                Text("Check your email")
+                    .font(DS.Typography.title2)
 
-            Text("We've sent password reset instructions to \(email)")
-                .font(DS.Typography.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                Text("We've sent password reset instructions to \(email)")
+                    .font(DS.Typography.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
 
             Button {
                 dismiss()
@@ -105,7 +116,7 @@ struct ForgotPasswordView: View {
             }
             .buttonStyle(IntentiaPrimaryButtonStyle())
 
-            Spacer()
+            Spacer(minLength: DS.Spacing.xxxl)
         }
     }
 }

@@ -91,6 +91,14 @@ struct RootView: View {
                 }
             } else if auth.jwt == nil {
                 SignInView()
+                    .sheet(item: Binding(
+                        get: { router.activeSheet },
+                        set: { router.activeSheet = $0 }
+                    )) { sheet in
+                        SheetContent(sheet: sheet, appState: state)
+                            .environmentObject(state)
+                            .environmentObject(state.auth)
+                    }
             } else if showOnboarding {
                 OnboardingView {
                     AppSettings.shared.hasCompletedOnboarding = true
