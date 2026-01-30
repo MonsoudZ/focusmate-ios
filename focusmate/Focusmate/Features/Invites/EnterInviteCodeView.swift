@@ -5,8 +5,8 @@ struct EnterInviteCodeView: View {
     let onAccepted: (ListDTO) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.router) private var router
     @State private var code = ""
-    @State private var showingAcceptView = false
 
     var body: some View {
         NavigationStack {
@@ -36,7 +36,9 @@ struct EnterInviteCodeView: View {
                 Spacer()
 
                 Button("Continue") {
-                    showingAcceptView = true
+                    let trimmedCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
+                    dismiss()
+                    router.present(.acceptInvite(trimmedCode))
                 }
                 .buttonStyle(IntentiaPrimaryButtonStyle())
                 .disabled(code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -51,16 +53,6 @@ struct EnterInviteCodeView: View {
                         dismiss()
                     }
                 }
-            }
-            .sheet(isPresented: $showingAcceptView) {
-                AcceptInviteView(
-                    code: code.trimmingCharacters(in: .whitespacesAndNewlines),
-                    inviteService: inviteService,
-                    onAccepted: { list in
-                        dismiss()
-                        onAccepted(list)
-                    }
-                )
             }
         }
     }

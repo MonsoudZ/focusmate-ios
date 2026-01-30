@@ -190,5 +190,8 @@ struct SheetCallbacks {
     var onMemberInvited: (() -> Void)?
     var onInviteCreated: ((InviteDTO) -> Void)?
 
+    // Auth callbacks
+    var onPreAuthInviteCodeEntered: ((String) -> Void)?
+
     init() {}
 }

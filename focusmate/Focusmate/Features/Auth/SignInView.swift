@@ -3,12 +3,9 @@ import AuthenticationServices
 
 struct SignInView: View {
     @EnvironmentObject var state: AppState
+    @Environment(\.router) private var router
     @State private var email = ""
     @State private var password = ""
-    @State private var showingRegister = false
-    @State private var showingForgotPassword = false
-    @State private var showingInviteCode = false
-    @State private var inviteCode = ""
 
     var body: some View {
         VStack(spacing: DS.Spacing.xl) {
@@ -91,7 +88,7 @@ struct SignInView: View {
                 HStack {
                     Spacer()
                     Button("Forgot Password?") {
-                        showingForgotPassword = true
+                        router.present(.forgotPassword)
                     }
                     .font(DS.Typography.subheadline)
                     .foregroundStyle(DS.Colors.accent)
@@ -109,7 +106,7 @@ struct SignInView: View {
                 .disabled(state.auth.isLoading || !InputValidation.isValidEmail(email) || password.isEmpty)
 
                 Button {
-                    showingRegister = true
+                    router.present(.register)
                 } label: {
                     Text("Create Account")
                         .frame(maxWidth: .infinity)
@@ -121,7 +118,7 @@ struct SignInView: View {
             DSDivider("or")
 
             Button {
-                showingInviteCode = true
+                presentPreAuthInviteCode()
             } label: {
                 Label("I have an invite code", systemImage: "link.badge.plus")
             }
@@ -144,20 +141,14 @@ struct SignInView: View {
         }
         .padding(DS.Spacing.xl)
         .surfaceBackground()
-        .sheet(isPresented: $showingRegister) {
-            RegisterView()
+    }
+
+    // MARK: - Sheet Presentation
+
+    private func presentPreAuthInviteCode() {
+        router.sheetCallbacks.onPreAuthInviteCodeEntered = { code in
+            state.pendingInviteCode = code
         }
-        .sheet(isPresented: $showingForgotPassword) {
-            ForgotPasswordView()
-        }
-        .sheet(isPresented: $showingInviteCode) {
-            PreAuthInviteCodeView(
-                code: $inviteCode,
-                onCodeEntered: { code in
-                    state.pendingInviteCode = code
-                    showingInviteCode = false
-                }
-            )
-        }
+        router.present(.preAuthInviteCode)
     }
 }

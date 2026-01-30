@@ -32,6 +32,11 @@ enum Sheet: Identifiable {
     case changePassword
     case deleteAccount
 
+    // MARK: - Auth Sheets
+    case register
+    case forgotPassword
+    case preAuthInviteCode
+
     // MARK: - Identifiable
     var id: String {
         switch self {
@@ -75,6 +80,12 @@ enum Sheet: Identifiable {
             return "changePassword"
         case .deleteAccount:
             return "deleteAccount"
+        case .register:
+            return "register"
+        case .forgotPassword:
+            return "forgotPassword"
+        case .preAuthInviteCode:
+            return "preAuthInviteCode"
         }
     }
 }

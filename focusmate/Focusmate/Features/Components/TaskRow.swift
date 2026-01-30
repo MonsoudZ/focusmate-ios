@@ -13,7 +13,7 @@ struct TaskRow: View {
     let showNudge: Bool
 
     @EnvironmentObject var state: AppState
-    @State private var showingReasonSheet = false
+    @Environment(\.router) private var router
     @State private var isNudging = false
     @State private var isExpanded = false
     @State private var isCompleting = false
@@ -93,14 +93,6 @@ struct TaskRow: View {
                 .stroke(isOverdue ? DS.Colors.error.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .opacity(task.isCompleted ? 0.6 : 1.0)
-        .sheet(isPresented: $showingReasonSheet) {
-            OverdueReasonSheet(task: task) { reason in
-                Task {
-                    await completeTask(reason: reason)
-                    showingReasonSheet = false
-                }
-            }
-        }
         .onAppear {
             if isOverdue && !task.isCompleted {
                 Task { @MainActor in
@@ -447,13 +439,23 @@ struct TaskRow: View {
                 await onComplete()
             }
         } else if isOverdue {
-            showingReasonSheet = true
+            presentOverdueReasonSheet()
         } else {
             isCompleting = true
             Task {
                 await completeTask(reason: nil)
             }
         }
+    }
+
+    private func presentOverdueReasonSheet() {
+        router.sheetCallbacks.onOverdueReasonSubmitted = { reason in
+            Task {
+                await completeTask(reason: reason)
+                router.dismissSheet()
+            }
+        }
+        router.present(.overdueReason(task))
     }
 
     private func completeTask(reason: String?) async {

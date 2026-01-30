@@ -149,6 +149,22 @@ struct SheetContent: View {
 
         case .deleteAccount:
             DeleteAccountView(apiClient: appState.auth.api, authStore: appState.auth)
+
+        // MARK: - Auth Sheets
+        case .register:
+            RegisterView()
+
+        case .forgotPassword:
+            ForgotPasswordView()
+
+        case .preAuthInviteCode:
+            PreAuthInviteCodeView(
+                code: .constant(""),
+                onCodeEntered: { code in
+                    router.sheetCallbacks.onPreAuthInviteCodeEntered?(code)
+                    router.dismissSheet()
+                }
+            )
         }
     }
 }
