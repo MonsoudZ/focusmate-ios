@@ -11,7 +11,7 @@ private let _iso8601FormatterNoFrac: ISO8601DateFormatter = {
     ISO8601DateFormatter()
 }()
 
-struct TaskCreatorDTO: Codable, Identifiable {
+struct TaskCreatorDTO: Codable, Identifiable, Hashable {
     let id: Int
     let email: String
     let name: String?
@@ -202,4 +202,16 @@ struct TasksResponse: Codable {
 
 struct SingleTaskResponse: Codable {
     let task: TaskDTO
+}
+
+// MARK: - Hashable Conformance
+
+extension TaskDTO: Hashable {
+    static func == (lhs: TaskDTO, rhs: TaskDTO) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 }

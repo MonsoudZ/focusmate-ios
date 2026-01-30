@@ -12,11 +12,8 @@ final class ListsViewModel {
     var lists: [ListDTO] = []
     var isLoading = false
     var error: FocusmateError?
-    var showingCreateList = false
-    var showingSearch = false
     var showingDeleteConfirmation = false
     var listToDelete: ListDTO?
-    var selectedList: ListDTO?
 
     init(listService: ListService, taskService: TaskService, tagService: TagService, inviteService: InviteService, friendService: FriendService) {
         self.listService = listService

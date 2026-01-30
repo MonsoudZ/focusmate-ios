@@ -38,7 +38,8 @@ enum TestFactories {
         minutesOverdue: Int? = nil,
         requiresExplanationIfMissed: Bool? = nil,
         missedReason: String? = nil,
-        missedReasonSubmittedAt: String? = nil
+        missedReasonSubmittedAt: String? = nil,
+        creator: TaskCreatorDTO? = nil
     ) -> TaskDTO {
         TaskDTO(
             id: id,
@@ -60,6 +61,7 @@ enum TestFactories {
             tags: tags,
             parent_task_id: parentTaskId,
             subtasks: subtasks,
+            creator: creator,
             is_recurring: isRecurring,
             recurrence_pattern: recurrencePattern,
             recurrence_interval: recurrenceInterval,
@@ -87,6 +89,10 @@ enum TestFactories {
         color: String? = "blue",
         role: String? = "owner",
         tasksCount: Int? = 0,
+        parentTasksCount: Int? = nil,
+        completedTasksCount: Int? = nil,
+        overdueTasksCount: Int? = nil,
+        members: [ListMemberDTO]? = nil,
         createdAt: String? = nil,
         updatedAt: String? = nil
     ) -> ListDTO {
@@ -98,6 +104,10 @@ enum TestFactories {
             color: color,
             role: role,
             tasks_count: tasksCount,
+            parent_tasks_count: parentTasksCount,
+            completed_tasks_count: completedTasksCount,
+            overdue_tasks_count: overdueTasksCount,
+            members: members,
             created_at: createdAt,
             updated_at: updatedAt
         )

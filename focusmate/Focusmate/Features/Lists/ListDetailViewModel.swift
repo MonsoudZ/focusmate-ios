@@ -17,18 +17,9 @@ final class ListDetailViewModel {
     var isLoading = false
     var error: FocusmateError?
 
-    // MARK: - Sheets
+    // MARK: - Alerts
 
-    var showingCreateTask = false
-    var showingEditList = false
     var showingDeleteConfirmation = false
-    var showingMembers = false
-    var selectedTask: TaskDTO?
-
-    // MARK: - Subtask
-
-    var taskForSubtask: TaskDTO?
-    var subtaskEditInfo: SubtaskEditInfo?
 
     // MARK: - UI
 
@@ -338,20 +329,11 @@ final class ListDetailViewModel {
         }
     }
 
-    // MARK: - Sheet Helpers
-
-    func startAddSubtask(for task: TaskDTO) {
-        taskForSubtask = task
-    }
-
-    func startEditSubtask(_ subtask: SubtaskDTO, parentTask: TaskDTO) {
-        subtaskEditInfo = SubtaskEditInfo(subtask: subtask, parentTask: parentTask)
-    }
 }
 
 // MARK: - Subtask Edit Info
 
-struct SubtaskEditInfo: Identifiable {
+struct SubtaskEditInfo: Identifiable, Hashable {
     let id = UUID()
     let subtask: SubtaskDTO
     let parentTask: TaskDTO

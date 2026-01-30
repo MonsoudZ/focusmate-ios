@@ -1,0 +1,116 @@
+import SwiftUI
+
+/// View builder for sheet content based on Sheet type
+struct SheetContent: View {
+    let sheet: Sheet
+    let appState: AppState
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.router) private var router
+
+    var body: some View {
+        switch sheet {
+        // MARK: - Today Tab Sheets
+        case .quickAddTask:
+            QuickAddTaskView(
+                listService: appState.listService,
+                taskService: appState.taskService,
+                onTaskCreated: {
+                    await router.sheetCallbacks.onTaskCreated?()
+                }
+            )
+
+        case .taskDetail(let task, let listName):
+            TaskDetailView(
+                task: task,
+                listName: listName,
+                onComplete: {
+                    await router.sheetCallbacks.onTaskCompleted?(task)
+                },
+                onDelete: {
+                    await router.sheetCallbacks.onTaskDeleted?(task)
+                },
+                onUpdate: {
+                    await router.sheetCallbacks.onTaskUpdated?()
+                },
+                taskService: appState.taskService,
+                tagService: appState.tagService,
+                listId: task.list_id
+            )
+
+        case .addSubtask(let parentTask):
+            AddSubtaskSheet(parentTask: parentTask) { title in
+                await router.sheetCallbacks.onSubtaskCreated?(parentTask, title)
+            }
+
+        case .editSubtask(let info):
+            EditSubtaskSheet(subtask: info.subtask) { newTitle in
+                await router.sheetCallbacks.onSubtaskUpdated?(info, newTitle)
+            }
+
+        // MARK: - Lists Tab Sheets
+        case .createList:
+            CreateListView(listService: appState.listService)
+
+        case .editList(let list):
+            EditListView(list: list, listService: appState.listService)
+
+        case .enterInviteCode:
+            EnterInviteCodeView(
+                inviteService: appState.inviteService,
+                onAccepted: { list in
+                    router.sheetCallbacks.onListJoined?(list)
+                    router.navigateToList(list)
+                }
+            )
+
+        case .acceptInvite(let code):
+            AcceptInviteView(
+                code: code,
+                inviteService: appState.inviteService,
+                onAccepted: { list in
+                    router.sheetCallbacks.onListJoined?(list)
+                    router.navigateToList(list)
+                    router.switchTab(to: .lists)
+                }
+            )
+            .environmentObject(appState.auth)
+
+        case .search(let initialQuery):
+            SearchView(
+                taskService: appState.taskService,
+                listService: appState.listService,
+                tagService: appState.tagService,
+                onSelectList: { list in
+                    router.navigateToList(list)
+                },
+                initialQuery: initialQuery
+            )
+
+        case .listMembers(let list):
+            ListMembersView(
+                list: list,
+                apiClient: appState.auth.api,
+                inviteService: appState.inviteService,
+                friendService: appState.friendService
+            )
+
+        case .createTask(let listId):
+            CreateTaskView(
+                listId: listId,
+                taskService: appState.taskService,
+                tagService: appState.tagService
+            )
+
+        // MARK: - Settings Tab Sheets
+        case .editProfile(let user):
+            EditProfileView(user: user, apiClient: appState.auth.api)
+
+        case .changePassword:
+            ChangePasswordView(apiClient: appState.auth.api)
+
+        case .deleteAccount:
+            DeleteAccountView(apiClient: appState.auth.api, authStore: appState.auth)
+        }
+    }
+}

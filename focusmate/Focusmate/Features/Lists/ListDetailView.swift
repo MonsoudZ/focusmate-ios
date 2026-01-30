@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ListDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.router) private var router
 
     @State private var viewModel: ListDetailViewModel
 
@@ -29,45 +30,6 @@ struct ListDetailView: View {
         .navigationTitle(viewModel.list.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
-        .sheet(isPresented: $viewModel.showingCreateTask) {
-            CreateTaskView(listId: viewModel.list.id, taskService: viewModel.taskService, tagService: viewModel.tagService)
-        }
-        .sheet(isPresented: $viewModel.showingEditList) {
-            EditListView(list: viewModel.list, listService: viewModel.listService)
-        }
-        .sheet(isPresented: $viewModel.showingMembers) {
-            ListMembersView(list: viewModel.list, apiClient: viewModel.taskService.apiClient, inviteService: viewModel.inviteService, friendService: viewModel.friendService)
-        }
-        .sheet(item: $viewModel.selectedTask) { task in
-            TaskDetailView(
-                task: task,
-                listName: viewModel.list.name,
-                onComplete: {
-                    await viewModel.toggleComplete(task)
-                    viewModel.selectedTask = nil
-                },
-                onDelete: {
-                    await viewModel.deleteTask(task)
-                    viewModel.selectedTask = nil
-                },
-                onUpdate: {
-                    await viewModel.loadTasks()
-                },
-                taskService: viewModel.taskService,
-                tagService: viewModel.tagService,
-                listId: viewModel.list.id
-            )
-        }
-        .sheet(item: $viewModel.taskForSubtask) { parentTask in
-            AddSubtaskSheet(parentTask: parentTask) { title in
-                await viewModel.createSubtask(parentTask: parentTask, title: title)
-            }
-        }
-        .sheet(item: $viewModel.subtaskEditInfo) { info in
-            EditSubtaskSheet(subtask: info.subtask) { newTitle in
-                await viewModel.updateSubtask(info: info, title: newTitle)
-            }
-        }
         .alert("Delete List", isPresented: $viewModel.showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
@@ -104,6 +66,56 @@ struct ListDetailView: View {
         }
     }
 
+    // MARK: - Sheet Presentation
+
+    private func presentCreateTask() {
+        router.sheetCallbacks.onTaskCreated = {
+            await viewModel.loadTasks()
+        }
+        router.present(.createTask(listId: viewModel.list.id))
+    }
+
+    private func presentEditList() {
+        router.sheetCallbacks.onListUpdated = {
+            await viewModel.loadTasks()
+        }
+        router.present(.editList(viewModel.list))
+    }
+
+    private func presentMembers() {
+        router.present(.listMembers(viewModel.list))
+    }
+
+    private func presentTaskDetail(_ task: TaskDTO) {
+        router.sheetCallbacks.onTaskCompleted = { task in
+            await viewModel.toggleComplete(task)
+            router.dismissSheet()
+        }
+        router.sheetCallbacks.onTaskDeleted = { task in
+            await viewModel.deleteTask(task)
+            router.dismissSheet()
+        }
+        router.sheetCallbacks.onTaskUpdated = {
+            await viewModel.loadTasks()
+        }
+        router.present(.taskDetail(task, listName: viewModel.list.name))
+    }
+
+    private func presentAddSubtask(for task: TaskDTO) {
+        router.sheetCallbacks.onSubtaskCreated = { parentTask, title in
+            await viewModel.createSubtask(parentTask: parentTask, title: title)
+        }
+        router.present(.addSubtask(task))
+    }
+
+    private func presentEditSubtask(_ subtask: SubtaskDTO, parentTask: TaskDTO) {
+        let info = SubtaskEditInfo(subtask: subtask, parentTask: parentTask)
+        router.sheetCallbacks.onSubtaskUpdated = { info, title in
+            await viewModel.updateSubtask(info: info, title: title)
+        }
+        router.present(.editSubtask(info))
+    }
+
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -112,7 +124,7 @@ struct ListDetailView: View {
             Menu {
                 if viewModel.canEdit {
                     Button {
-                        viewModel.showingCreateTask = true
+                        presentCreateTask()
                     } label: {
                         Label("Add Task", systemImage: DS.Icon.plus)
                     }
@@ -121,14 +133,14 @@ struct ListDetailView: View {
                 }
 
                 Button {
-                    viewModel.showingMembers = true
+                    presentMembers()
                 } label: {
                     Label("Members", systemImage: "person.2")
                 }
 
                 if viewModel.isOwner {
                     Button {
-                        viewModel.showingEditList = true
+                        presentEditList()
                     } label: {
                         Label("Edit List", systemImage: DS.Icon.edit)
                     }
@@ -157,7 +169,7 @@ struct ListDetailView: View {
                 message: "Add your first task to get started",
                 icon: DS.Icon.circle,
                 actionTitle: "Add Task",
-                action: { viewModel.showingCreateTask = true }
+                action: { presentCreateTask() }
             )
         } else {
             EmptyStateView(
@@ -250,17 +262,17 @@ struct ListDetailView: View {
             isSharedList: viewModel.isSharedList,
             onComplete: { viewModel.markTaskCompleted(task.id) },
             onStar: { await viewModel.toggleStar(task) },
-            onTap: { viewModel.selectedTask = task },
+            onTap: { presentTaskDetail(task) },
             onNudge: { await viewModel.nudgeAboutTask(task) },
             onDelete: { await viewModel.deleteTask(task) },
             onSubtaskEdit: { subtask in
-                viewModel.startEditSubtask(subtask, parentTask: task)
+                presentEditSubtask(subtask, parentTask: task)
             },
             onSubtaskChanged: {
                 await viewModel.loadTasks()
             },
             onAddSubtask: {
-                viewModel.startAddSubtask(for: task)
+                presentAddSubtask(for: task)
             }
         )
     }

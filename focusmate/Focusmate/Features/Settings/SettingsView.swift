@@ -2,9 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
-    @State private var showingEditProfile = false
-    @State private var showingChangePassword = false
-    @State private var showingDeleteAccount = false
+    @Environment(\.router) private var router
     @State private var showingSignOutConfirmation = false
     @State private var calendarPermissionGranted = CalendarService.shared.checkPermission()
     @State private var calendarSyncEnabled = AppSettings.shared.calendarSyncEnabled
@@ -14,156 +12,160 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            List {
-                // MARK: - Profile Header
-                Section {
-                    Button {
-                        showingEditProfile = true
-                    } label: {
-                        HStack(spacing: DS.Spacing.lg) {
-                            Avatar(user?.name ?? user?.email, size: DS.Size.avatarLarge)
+        List {
+            // MARK: - Profile Header
+            Section {
+                Button {
+                    presentEditProfile()
+                } label: {
+                    HStack(spacing: DS.Spacing.lg) {
+                        Avatar(user?.name ?? user?.email, size: DS.Size.avatarLarge)
 
-                            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-                                Text(user?.name ?? "No Name")
-                                    .font(DS.Typography.headline)
-                                Text(user?.email ?? "")
-                                    .font(DS.Typography.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            Spacer()
-
-                            Image(systemName: DS.Icon.chevronRight)
-                                .font(DS.Typography.footnote)
-                                .foregroundStyle(.tertiary)
+                        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                            Text(user?.name ?? "No Name")
+                                .font(DS.Typography.headline)
+                            Text(user?.email ?? "")
+                                .font(DS.Typography.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                        .padding(.vertical, DS.Spacing.sm)
-                    }
-                    .foregroundStyle(.primary)
-                }
 
-                // MARK: - Account
-                if user?.hasPassword == true {
-                    Section("Account") {
-                        Button {
-                            showingChangePassword = true
-                        } label: {
-                            SettingsRow("Change Password", icon: "lock")
-                        }
-                    }
-                }
-
-                // MARK: - Preferences
-                Section("Preferences") {
-                    NavigationLink {
-                        NotificationSettingsView()
-                    } label: {
-                        Label("Notifications", systemImage: DS.Icon.bell)
-                    }
-
-                    NavigationLink {
-                        AppBlockingSettingsView()
-                    } label: {
-                        Label("App Blocking", systemImage: DS.Icon.shield)
-                    }
-
-                    if calendarPermissionGranted {
-                        Toggle(isOn: $calendarSyncEnabled) {
-                            Label("Calendar Sync", systemImage: "calendar")
-                        }
-                        .onChange(of: calendarSyncEnabled) { _, newValue in
-                            AppSettings.shared.calendarSyncEnabled = newValue
-                        }
-                    } else {
-                        HStack {
-                            Label("Calendar Sync", systemImage: "calendar")
-                            Spacer()
-                            Button("Enable") {
-                                requestCalendarAccess()
-                            }
-                            .font(DS.Typography.subheadline)
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                        }
-                    }
-                }
-
-                // MARK: - About
-                Section {
-                    HStack {
-                        Label("Version", systemImage: DS.Icon.info)
                         Spacer()
-                        Text(appVersion)
-                            .foregroundStyle(.secondary)
-                    }
 
-                    if let privacyURL = URL(string: "https://intentia.app/privacy") {
-                        Link(destination: privacyURL) {
-                            SettingsRow("Privacy Policy", icon: "hand.raised", external: true)
-                        }
+                        Image(systemName: DS.Icon.chevronRight)
+                            .font(DS.Typography.footnote)
+                            .foregroundStyle(.tertiary)
                     }
-
-                    if let termsURL = URL(string: "https://intentia.app/terms") {
-                        Link(destination: termsURL) {
-                            SettingsRow("Terms of Service", icon: "doc.text", external: true)
-                        }
-                    }
+                    .padding(.vertical, DS.Spacing.sm)
                 }
+                .foregroundStyle(.primary)
+            }
 
-                // MARK: - Sign Out
-                Section {
+            // MARK: - Account
+            if user?.hasPassword == true {
+                Section("Account") {
                     Button {
-                        showingSignOutConfirmation = true
+                        presentChangePassword()
                     } label: {
-                        HStack {
-                            Spacer()
-                            Text("Sign Out")
-                            Spacer()
-                        }
+                        SettingsRow("Change Password", icon: "lock")
                     }
-                    .foregroundStyle(DS.Colors.error)
+                }
+            }
+
+            // MARK: - Preferences
+            Section("Preferences") {
+                NavigationLink {
+                    NotificationSettingsView()
+                } label: {
+                    Label("Notifications", systemImage: DS.Icon.bell)
                 }
 
-                // MARK: - Delete Account
-                Section {
-                    Button(role: .destructive) {
-                        showingDeleteAccount = true
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Text("Delete Account")
-                            Spacer()
-                        }
+                NavigationLink {
+                    AppBlockingSettingsView()
+                } label: {
+                    Label("App Blocking", systemImage: DS.Icon.shield)
+                }
+
+                if calendarPermissionGranted {
+                    Toggle(isOn: $calendarSyncEnabled) {
+                        Label("Calendar Sync", systemImage: "calendar")
                     }
-                } footer: {
-                    Text("Permanently delete your account and all data.")
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    .onChange(of: calendarSyncEnabled) { _, newValue in
+                        AppSettings.shared.calendarSyncEnabled = newValue
+                    }
+                } else {
+                    HStack {
+                        Label("Calendar Sync", systemImage: "calendar")
+                        Spacer()
+                        Button("Enable") {
+                            requestCalendarAccess()
+                        }
+                        .font(DS.Typography.subheadline)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
                 }
             }
-            .surfaceFormBackground()
-            .navigationTitle("Settings")
-            .sheet(isPresented: $showingEditProfile) {
-                if let user {
-                    EditProfileView(user: user, apiClient: appState.auth.api)
+
+            // MARK: - About
+            Section {
+                HStack {
+                    Label("Version", systemImage: DS.Icon.info)
+                    Spacer()
+                    Text(appVersion)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let privacyURL = URL(string: "https://intentia.app/privacy") {
+                    Link(destination: privacyURL) {
+                        SettingsRow("Privacy Policy", icon: "hand.raised", external: true)
+                    }
+                }
+
+                if let termsURL = URL(string: "https://intentia.app/terms") {
+                    Link(destination: termsURL) {
+                        SettingsRow("Terms of Service", icon: "doc.text", external: true)
+                    }
                 }
             }
-            .sheet(isPresented: $showingChangePassword) {
-                ChangePasswordView(apiClient: appState.auth.api)
-            }
-            .sheet(isPresented: $showingDeleteAccount) {
-                DeleteAccountView(apiClient: appState.auth.api, authStore: appState.auth)
-            }
-            .alert("Sign Out", isPresented: $showingSignOutConfirmation) {
-                Button("Cancel", role: .cancel) {}
-                Button("Sign Out", role: .destructive) {
-                    Task { await appState.auth.signOut() }
+
+            // MARK: - Sign Out
+            Section {
+                Button {
+                    showingSignOutConfirmation = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text("Sign Out")
+                        Spacer()
+                    }
                 }
-            } message: {
-                Text("Are you sure you want to sign out?")
+                .foregroundStyle(DS.Colors.error)
+            }
+
+            // MARK: - Delete Account
+            Section {
+                Button(role: .destructive) {
+                    presentDeleteAccount()
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text("Delete Account")
+                        Spacer()
+                    }
+                }
+            } footer: {
+                Text("Permanently delete your account and all data.")
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
+        .surfaceFormBackground()
+        .navigationTitle("Settings")
+        .alert("Sign Out", isPresented: $showingSignOutConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) {
+                Task { await appState.auth.signOut() }
+            }
+        } message: {
+            Text("Are you sure you want to sign out?")
+        }
     }
+
+    // MARK: - Sheet Presentation
+
+    private func presentEditProfile() {
+        guard let user else { return }
+        router.present(.editProfile(user))
+    }
+
+    private func presentChangePassword() {
+        router.present(.changePassword)
+    }
+
+    private func presentDeleteAccount() {
+        router.present(.deleteAccount)
+    }
+
+    // MARK: - Helpers
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"

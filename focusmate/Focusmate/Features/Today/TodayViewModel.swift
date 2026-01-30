@@ -15,12 +15,6 @@ final class TodayViewModel {
     var todayData: TodayResponse?
     var isLoading = true
     var error: FocusmateError?
-    var showingQuickAdd = false
-    var selectedTask: TaskDTO?
-
-    // Subtask sheets
-    var taskForSubtask: TaskDTO?
-    var subtaskEditInfo: SubtaskEditInfo?
 
     var onOverdueCountChange: ((Int) -> Void)?
 
@@ -131,14 +125,6 @@ final class TodayViewModel {
     }
 
     // MARK: - Subtask Actions
-
-    func startAddSubtask(for task: TaskDTO) {
-        taskForSubtask = task
-    }
-
-    func startEditSubtask(_ subtask: SubtaskDTO, parentTask: TaskDTO) {
-        subtaskEditInfo = SubtaskEditInfo(subtask: subtask, parentTask: parentTask)
-    }
 
     func createSubtask(parentTask: TaskDTO, title: String) async {
         do {

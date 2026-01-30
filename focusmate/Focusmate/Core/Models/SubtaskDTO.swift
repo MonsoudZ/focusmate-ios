@@ -1,6 +1,6 @@
 import Foundation
 
-struct SubtaskDTO: Codable, Identifiable {
+struct SubtaskDTO: Codable, Identifiable, Hashable {
     let id: Int
     let task_id: Int?
     let title: String

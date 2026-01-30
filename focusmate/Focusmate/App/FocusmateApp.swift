@@ -55,11 +55,14 @@ struct FocusmateApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .environment(\.router, AppRouter.shared)
                 .environmentObject(state)
                 .environmentObject(state.auth)
                 .environmentObject(bootstrapper)
                 .onOpenURL { url in
-                    _ = AppDelegate.handleIncomingURL(url)
+                    if let route = DeepLinkRoute(url: url) {
+                        AppRouter.shared.handleDeepLink(route)
+                    }
                 }
         }
     }
@@ -70,11 +73,10 @@ struct RootView: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var auth: AuthStore
     @EnvironmentObject var bootstrapper: AppBootstrapper
+    @Environment(\.router) private var router
 
     @State private var overdueCount: Int = 0
-    @State private var selectedTab: Int = 0
     @State private var showOnboarding: Bool = !AppSettings.shared.hasCompletedOnboarding
-    @State private var inviteCode: String?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -102,82 +104,61 @@ struct RootView: View {
                     await bootstrapper.runAuthenticatedBootTasksIfNeeded()
                 }
             } else {
-                TabView(selection: $selectedTab) {
-                    TodayView(
-                        taskService: state.taskService,
-                        listService: state.listService,
-                        tagService: state.tagService,
-                        apiClient: state.auth.api,
-                        onOverdueCountChange: { count in
-                            overdueCount = count
-                        }
-                    )
-                    .tabItem {
-                        Image(systemName: DS.Icon.afternoon)
-                        Text("Today")
-                    }
-                    .tag(0)
-                    .badge(overdueCount)
-
-                    ListsView(
-                        listService: state.listService,
-                        taskService: state.taskService,
-                        tagService: state.tagService,
-                        inviteService: state.inviteService,
-                        friendService: state.friendService
-                    )
-                        .tabItem {
-                            Image(systemName: "list.bullet")
-                            Text("Lists")
-                        }
-                        .tag(1)
-
-                    SettingsView()
-                        .tabItem {
-                            Image(systemName: "person.circle")
-                            Text("Profile")
-                        }
-                        .tag(2)
-                }
-                .tint(DS.Colors.accent)
-                .task(id: auth.jwt != nil) {
-                    guard auth.jwt != nil else { return }
-                    await bootstrapper.runAuthenticatedBootTasksIfNeeded()
-                }
-                .onChange(of: scenePhase) { _, newPhase in
-                    if newPhase == .active {
-                        Task { await bootstrapper.handleBecameActive() }
-                    }
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .openToday)) { _ in
-                    selectedTab = 0
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .openTask)) { _ in
-                    selectedTab = 0
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .openInvite)) { notification in
-                    if let code = notification.userInfo?["code"] as? String {
-                        inviteCode = code
-                    }
-                }
-                .sheet(item: $inviteCode) { code in
-                    AcceptInviteView(
-                        code: code,
-                        inviteService: state.inviteService,
-                        onAccepted: { _ in
-                            inviteCode = nil
-                            selectedTab = 1 // Go to Lists tab
-                        }
-                    )
-                    .environmentObject(state.auth)
-                }
-                .onAppear {
-                    // Flush any notification route buffered during cold start.
-                    // Must happen here (not AppState.init) so .onReceive
-                    // listeners are active before the post fires.
-                    AppDelegate.flushPendingRouteIfAny()
-                }
+                mainTabView
             }
+        }
+    }
+
+    @ViewBuilder
+    private var mainTabView: some View {
+        TabView(selection: Binding(
+            get: { router.selectedTab },
+            set: { router.selectedTab = $0 }
+        )) {
+            TodayTab(onOverdueCountChange: { count in
+                overdueCount = count
+            })
+            .tabItem {
+                Image(systemName: DS.Icon.afternoon)
+                Text("Today")
+            }
+            .tag(Tab.today)
+            .badge(overdueCount)
+
+            ListsTab()
+                .tabItem {
+                    Image(systemName: "list.bullet")
+                    Text("Lists")
+                }
+                .tag(Tab.lists)
+
+            SettingsTab()
+                .tabItem {
+                    Image(systemName: "person.circle")
+                    Text("Profile")
+                }
+                .tag(Tab.settings)
+        }
+        .tint(DS.Colors.accent)
+        .task(id: auth.jwt != nil) {
+            guard auth.jwt != nil else { return }
+            await bootstrapper.runAuthenticatedBootTasksIfNeeded()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                Task { await bootstrapper.handleBecameActive() }
+            }
+        }
+        .sheet(item: Binding(
+            get: { router.activeSheet },
+            set: { router.activeSheet = $0 }
+        )) { sheet in
+            SheetContent(sheet: sheet, appState: state)
+                .environmentObject(state.auth)
+        }
+        .onAppear {
+            // Mark router as ready and flush any pending deep links
+            router.markReady()
         }
     }
 }

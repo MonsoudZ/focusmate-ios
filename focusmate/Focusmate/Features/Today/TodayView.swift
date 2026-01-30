@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TodayView: View {
     @State private var viewModel: TodayViewModel
+    @Environment(\.router) private var router
 
     init(
         taskService: TaskService,
@@ -25,68 +26,27 @@ struct TodayView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if viewModel.isLoading {
-                    ProgressView()
-                } else if let error = viewModel.error {
-                    errorView(error)
-                } else if let data = viewModel.todayData {
-                    contentView(data)
-                } else {
-                    emptyView
-                }
+        Group {
+            if viewModel.isLoading {
+                ProgressView()
+            } else if let error = viewModel.error {
+                errorView(error)
+            } else if let data = viewModel.todayData {
+                contentView(data)
+            } else {
+                emptyView
             }
-            .navigationTitle("Today")
-            .refreshable {
-                await viewModel.loadToday()
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        viewModel.showingQuickAdd = true
-                    } label: {
-                        Image(systemName: DS.Icon.plus)
-                    }
-                }
-            }
-            .sheet(isPresented: $viewModel.showingQuickAdd) {
-                QuickAddTaskView(
-                    listService: viewModel.listService,
-                    taskService: viewModel.taskService,
-                    onTaskCreated: {
-                        await viewModel.loadToday()
-                    }
-                )
-            }
-            .sheet(item: $viewModel.selectedTask) { task in
-                TaskDetailView(
-                    task: task,
-                    listName: task.list_name ?? "Unknown",
-                    onComplete: {
-                        await viewModel.toggleComplete(task)
-                        viewModel.selectedTask = nil
-                    },
-                    onDelete: {
-                        await viewModel.deleteTask(task)
-                        viewModel.selectedTask = nil
-                    },
-                    onUpdate: {
-                        await viewModel.loadToday()
-                    },
-                    taskService: viewModel.taskService,
-                    tagService: viewModel.tagService,
-                    listId: task.list_id
-                )
-            }
-            .sheet(item: $viewModel.taskForSubtask) { parentTask in
-                AddSubtaskSheet(parentTask: parentTask) { title in
-                    await viewModel.createSubtask(parentTask: parentTask, title: title)
-                }
-            }
-            .sheet(item: $viewModel.subtaskEditInfo) { info in
-                EditSubtaskSheet(subtask: info.subtask) { newTitle in
-                    await viewModel.updateSubtask(info: info, title: newTitle)
+        }
+        .navigationTitle("Today")
+        .refreshable {
+            await viewModel.loadToday()
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    presentQuickAdd()
+                } label: {
+                    Image(systemName: DS.Icon.plus)
                 }
             }
         }
@@ -95,6 +55,47 @@ struct TodayView: View {
             await viewModel.loadToday()
         }
     }
+
+    // MARK: - Sheet Presentation
+
+    private func presentQuickAdd() {
+        router.sheetCallbacks.onTaskCreated = {
+            await viewModel.loadToday()
+        }
+        router.present(.quickAddTask)
+    }
+
+    private func presentTaskDetail(_ task: TaskDTO) {
+        router.sheetCallbacks.onTaskCompleted = { task in
+            await viewModel.toggleComplete(task)
+            router.dismissSheet()
+        }
+        router.sheetCallbacks.onTaskDeleted = { task in
+            await viewModel.deleteTask(task)
+            router.dismissSheet()
+        }
+        router.sheetCallbacks.onTaskUpdated = {
+            await viewModel.loadToday()
+        }
+        router.present(.taskDetail(task, listName: task.list_name ?? "Unknown"))
+    }
+
+    private func presentAddSubtask(for task: TaskDTO) {
+        router.sheetCallbacks.onSubtaskCreated = { parentTask, title in
+            await viewModel.createSubtask(parentTask: parentTask, title: title)
+        }
+        router.present(.addSubtask(task))
+    }
+
+    private func presentEditSubtask(_ subtask: SubtaskDTO, parentTask: TaskDTO) {
+        let info = SubtaskEditInfo(subtask: subtask, parentTask: parentTask)
+        router.sheetCallbacks.onSubtaskUpdated = { info, title in
+            await viewModel.updateSubtask(info: info, title: title)
+        }
+        router.present(.editSubtask(info))
+    }
+
+    // MARK: - Content Views
 
     private func contentView(_ data: TodayResponse) -> some View {
         let grouped = viewModel.groupedTasks
@@ -320,12 +321,12 @@ struct TodayView: View {
                 TaskRow(
                     task: task,
                     onComplete: { await viewModel.loadToday() },
-                    onTap: { viewModel.selectedTask = task },
+                    onTap: { presentTaskDetail(task) },
                     onSubtaskEdit: { subtask in
-                        viewModel.startEditSubtask(subtask, parentTask: task)
+                        presentEditSubtask(subtask, parentTask: task)
                     },
                     onAddSubtask: {
-                        viewModel.startAddSubtask(for: task)
+                        presentAddSubtask(for: task)
                     }
                 )
             }

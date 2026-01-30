@@ -9,6 +9,8 @@ final class ListsViewModelTests: XCTestCase {
     private var listService: ListService!
     private var taskService: TaskService!
     private var tagService: TagService!
+    private var inviteService: InviteService!
+    private var friendService: FriendService!
 
     override func setUp() async throws {
         try await super.setUp()
@@ -19,6 +21,8 @@ final class ListsViewModelTests: XCTestCase {
         listService = ListService(apiClient: apiClient)
         taskService = TaskService(apiClient: apiClient, sideEffects: NoOpSideEffects())
         tagService = TagService(apiClient: apiClient)
+        inviteService = InviteService(apiClient: apiClient)
+        friendService = FriendService(apiClient: apiClient)
     }
 
     override func tearDown() async throws {
@@ -39,7 +43,9 @@ final class ListsViewModelTests: XCTestCase {
         ListsViewModel(
             listService: listService,
             taskService: taskService,
-            tagService: tagService
+            tagService: tagService,
+            inviteService: inviteService,
+            friendService: friendService
         )
     }
 
@@ -142,20 +148,6 @@ final class ListsViewModelTests: XCTestCase {
         await ResponseCache.shared.invalidateAll()
         let vm = makeViewModel()
 
-        // showingCreateList toggle
-        XCTAssertFalse(vm.showingCreateList)
-        vm.showingCreateList = true
-        XCTAssertTrue(vm.showingCreateList)
-        vm.showingCreateList = false
-        XCTAssertFalse(vm.showingCreateList)
-
-        // showingSearch toggle
-        XCTAssertFalse(vm.showingSearch)
-        vm.showingSearch = true
-        XCTAssertTrue(vm.showingSearch)
-        vm.showingSearch = false
-        XCTAssertFalse(vm.showingSearch)
-
         // Delete confirmation state
         let listToDelete = TestFactories.makeSampleList(id: 1, name: "Test")
         XCTAssertFalse(vm.showingDeleteConfirmation)
@@ -164,15 +156,6 @@ final class ListsViewModelTests: XCTestCase {
         vm.showingDeleteConfirmation = true
         XCTAssertTrue(vm.showingDeleteConfirmation)
         XCTAssertEqual(vm.listToDelete?.id, 1)
-
-        // selectedList state
-        let selectedList = TestFactories.makeSampleList(id: 3, name: "Selected")
-        XCTAssertNil(vm.selectedList)
-        vm.selectedList = selectedList
-        XCTAssertEqual(vm.selectedList?.id, 3)
-        XCTAssertEqual(vm.selectedList?.name, "Selected")
-        vm.selectedList = nil
-        XCTAssertNil(vm.selectedList)
     }
 
     // MARK: - Empty State Tests
