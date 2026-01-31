@@ -121,6 +121,13 @@ struct SheetContent: View {
                 router.sheetCallbacks.onOverdueReasonSubmitted?(reason)
             }
 
+        case .taskDeepLink(let taskId):
+            TaskDeepLinkView(
+                taskId: taskId,
+                taskService: appState.taskService,
+                tagService: appState.tagService
+            )
+
         case .inviteMember(let list):
             InviteMemberView(
                 list: list,

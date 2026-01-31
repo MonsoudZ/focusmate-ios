@@ -66,6 +66,21 @@ final class TaskService {
         }
     }
 
+    /// Fetch a task by ID without knowing the list ID (for deep links)
+    func fetchTaskById(_ taskId: Int) async throws -> TaskDTO {
+        try validateTaskId(taskId)
+        do {
+            let response: SingleTaskResponse = try await apiClient.request(
+                "GET",
+                API.Tasks.id(String(taskId)),
+                body: nil as String?
+            )
+            return response.task
+        } catch {
+            throw ErrorHandler.shared.handle(error, context: "Fetching task")
+        }
+    }
+
     func createTask(
         listId: Int,
         title: String,

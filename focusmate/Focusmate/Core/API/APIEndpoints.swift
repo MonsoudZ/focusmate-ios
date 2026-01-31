@@ -148,6 +148,7 @@ enum API {
     enum Tasks {
         static let root = "api/v1/tasks"
         static let search = "api/v1/tasks/search"
+        static func id(_ id: String) -> String { "api/v1/tasks/\(id)" }
     }
 
     enum Today {

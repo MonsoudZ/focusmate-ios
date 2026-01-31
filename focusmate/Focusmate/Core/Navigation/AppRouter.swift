@@ -125,10 +125,9 @@ final class AppRouter {
         case .openToday:
             selectedTab = .today
 
-        case .openTask:
-            // TODO: Implement task-specific navigation
-            // For now, just switch to the today tab
+        case .openTask(let taskId):
             selectedTab = .today
+            present(.taskDeepLink(taskId))
 
         case .openInvite(let code):
             present(.acceptInvite(code))
