@@ -86,8 +86,8 @@ struct EditTaskView: View {
                 }
 
                 Section("Color (Optional)") {
-                    OptionalColorPicker(selected: $viewModel.selectedColor)
-                        .padding(.vertical, 8)
+                    TaskColorPicker(selected: $viewModel.selectedColor)
+                        .padding(.vertical, DS.Spacing.sm)
                 }
             }
             .surfaceFormBackground()
