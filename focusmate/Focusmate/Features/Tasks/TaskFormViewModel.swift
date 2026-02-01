@@ -220,10 +220,12 @@ final class TaskFormViewModel {
             HapticManager.success()
             onDismiss?()
         } catch let err as FocusmateError {
+            Logger.error("Failed to create task", error: err, category: .api)
             error = err
             HapticManager.error()
         } catch {
-            self.error = .custom("UNKNOWN", error.localizedDescription)
+            Logger.error("Failed to create task", error: error, category: .api)
+            self.error = ErrorHandler.shared.handle(error, context: "Creating task")
             HapticManager.error()
         }
     }
@@ -251,10 +253,12 @@ final class TaskFormViewModel {
             onSave?()
             onDismiss?()
         } catch let err as FocusmateError {
+            Logger.error("Failed to update task", error: err, category: .api)
             error = err
             HapticManager.error()
         } catch {
-            self.error = .custom("UPDATE_ERROR", error.localizedDescription)
+            Logger.error("Failed to update task", error: error, category: .api)
+            self.error = ErrorHandler.shared.handle(error, context: "Updating task")
             HapticManager.error()
         }
     }

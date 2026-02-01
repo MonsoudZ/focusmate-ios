@@ -42,7 +42,7 @@ final class ListMembersViewModel {
         } catch let err as FocusmateError {
             error = err
         } catch {
-            self.error = ErrorHandler.shared.handle(error)
+            self.error = ErrorHandler.shared.handle(error, context: "Loading members")
         }
         isLoading = false
     }
@@ -59,7 +59,7 @@ final class ListMembersViewModel {
         } catch let err as FocusmateError {
             error = err
         } catch {
-            self.error = ErrorHandler.shared.handle(error)
+            self.error = ErrorHandler.shared.handle(error, context: "Removing member")
         }
     }
 
@@ -85,10 +85,12 @@ final class ListMembersViewModel {
             memberships.append(membership)
             HapticManager.success()
         } catch let err as FocusmateError {
+            Logger.error("Failed to add friend to list", error: err, category: .api)
             error = err
             HapticManager.error()
         } catch {
-            self.error = ErrorHandler.shared.handle(error)
+            Logger.error("Failed to add friend to list", error: error, category: .api)
+            self.error = ErrorHandler.shared.handle(error, context: "Adding friend to list")
             HapticManager.error()
         }
         addingFriendId = nil
