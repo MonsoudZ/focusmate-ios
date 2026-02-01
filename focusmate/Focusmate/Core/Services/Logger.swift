@@ -198,8 +198,30 @@ extension Logger {
     }
 
     static func sanitizeToken(_ string: String) -> String {
-        let pattern = "Bearer [A-Za-z0-9._-]+"
-        return string.replacingOccurrences(of: pattern, with: "Bearer [TOKEN]", options: .regularExpression)
+        var result = string
+
+        // Bearer tokens (Authorization header)
+        result = result.replacingOccurrences(
+            of: "Bearer [A-Za-z0-9._-]+",
+            with: "Bearer [TOKEN]",
+            options: .regularExpression
+        )
+
+        // JWT tokens (three base64 segments separated by dots)
+        result = result.replacingOccurrences(
+            of: "eyJ[A-Za-z0-9_-]*\\.[A-Za-z0-9_-]*\\.[A-Za-z0-9_-]*",
+            with: "[JWT]",
+            options: .regularExpression
+        )
+
+        // Generic long alphanumeric strings that look like tokens (40+ chars)
+        result = result.replacingOccurrences(
+            of: "(?<![A-Za-z0-9])[A-Za-z0-9_-]{40,}(?![A-Za-z0-9])",
+            with: "[TOKEN]",
+            options: .regularExpression
+        )
+
+        return result
     }
 
     static func sanitize(_ string: String) -> String {
