@@ -24,7 +24,7 @@ final class ListInvitesViewModel {
         } catch let err as FocusmateError {
             error = err
         } catch {
-            self.error = .custom("INVITES_ERROR", "Failed to load invites")
+            self.error = ErrorHandler.shared.handle(error, context: "Loading invites")
         }
 
         isLoading = false
@@ -45,7 +45,7 @@ final class ListInvitesViewModel {
             error = err
             HapticManager.error()
         } catch {
-            self.error = .custom("INVITE_ERROR", "Failed to create invite")
+            self.error = ErrorHandler.shared.handle(error, context: "Creating invite")
             HapticManager.error()
         }
         return nil
@@ -60,7 +60,7 @@ final class ListInvitesViewModel {
             error = err
             HapticManager.error()
         } catch {
-            self.error = .custom("INVITE_ERROR", "Failed to revoke invite")
+            self.error = ErrorHandler.shared.handle(error, context: "Revoking invite")
             HapticManager.error()
         }
     }
