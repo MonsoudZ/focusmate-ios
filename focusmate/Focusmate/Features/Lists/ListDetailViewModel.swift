@@ -130,7 +130,7 @@ final class ListDetailViewModel {
             error = err
             HapticManager.error()
         } catch {
-            self.error = ErrorHandler.shared.handle(error)
+            self.error = ErrorHandler.shared.handle(error, context: "Loading tasks")
             HapticManager.error()
         }
 
@@ -221,7 +221,7 @@ final class ListDetailViewModel {
             try await taskService.deleteTask(listId: list.id, taskId: task.id)
         } catch {
             tasks = originalTasks
-            self.error = ErrorHandler.shared.handle(error)
+            self.error = ErrorHandler.shared.handle(error, context: "Deleting task")
             HapticManager.error()
         }
     }
@@ -261,7 +261,7 @@ final class ListDetailViewModel {
             }
         } catch {
             Logger.error("Failed to create subtask: \(error)", category: .api)
-            self.error = ErrorHandler.shared.handle(error)
+            self.error = ErrorHandler.shared.handle(error, context: "Creating subtask")
             HapticManager.error()
         }
     }
@@ -283,7 +283,7 @@ final class ListDetailViewModel {
             }
         } catch {
             Logger.error("Failed to update subtask: \(error)", category: .api)
-            self.error = ErrorHandler.shared.handle(error)
+            self.error = ErrorHandler.shared.handle(error, context: "Updating subtask")
             HapticManager.error()
         }
     }
@@ -296,7 +296,7 @@ final class ListDetailViewModel {
                 tasks = originalTasks
             }
             Logger.error("Failed to reorder tasks: \(error)", category: .api)
-            self.error = ErrorHandler.shared.handle(error)
+            self.error = ErrorHandler.shared.handle(error, context: "Reordering tasks")
             HapticManager.error()
         }
     }
@@ -342,7 +342,7 @@ final class ListDetailViewModel {
             HapticManager.medium()
             onDismiss?()
         } catch {
-            self.error = ErrorHandler.shared.handle(error)
+            self.error = ErrorHandler.shared.handle(error, context: "Deleting list")
             HapticManager.error()
         }
     }

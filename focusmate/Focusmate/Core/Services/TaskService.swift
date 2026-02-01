@@ -181,7 +181,9 @@ final class TaskService {
         try validateListId(listId)
         try validateTaskId(taskId)
         do {
-            let body: CompleteTaskRequest? = reason.map { CompleteTaskRequest(missed_reason: $0) }
+            // Only include reason if it's non-empty after trimming
+            let trimmedReason = reason?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let body: CompleteTaskRequest? = trimmedReason.flatMap { $0.isEmpty ? nil : CompleteTaskRequest(missed_reason: $0) }
             let response: SingleTaskResponse = try await apiClient.request(
                 "PATCH",
                 API.Lists.taskAction(String(listId), String(taskId), "complete"),
@@ -229,12 +231,16 @@ final class TaskService {
     }
     
     func searchTasks(query: String) async throws -> [TaskDTO] {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else {
+            return [] // Return empty results for empty query instead of making API call
+        }
         do {
             let response: TasksResponse = try await apiClient.request(
                 "GET",
                 API.Tasks.search,
                 body: nil as String?,
-                queryParameters: ["q": query]
+                queryParameters: ["q": trimmedQuery]
             )
             return response.tasks
         } catch {

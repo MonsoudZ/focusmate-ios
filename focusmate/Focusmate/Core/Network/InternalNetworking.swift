@@ -120,9 +120,16 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         var url = API.path(path)
 
         if !queryParameters.isEmpty {
-            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            components?.queryItems = queryParameters.map { URLQueryItem(name: $0.key, value: $0.value) }
-            if let newURL = components?.url { url = newURL }
+            if var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+                components.queryItems = queryParameters.map { URLQueryItem(name: $0.key, value: $0.value) }
+                if let newURL = components.url {
+                    url = newURL
+                } else {
+                    Logger.warning("Failed to construct URL with query parameters for \(path), using URL without params", category: .api)
+                }
+            } else {
+                Logger.warning("Failed to create URLComponents for \(path), query parameters will be ignored", category: .api)
+            }
         }
 
         var req = URLRequest(url: url)
@@ -234,9 +241,16 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         var url = API.path(endpoint)
 
         if !params.isEmpty {
-            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            components?.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
-            if let newURL = components?.url { url = newURL }
+            if var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+                components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
+                if let newURL = components.url {
+                    url = newURL
+                } else {
+                    Logger.warning("Failed to construct URL with params for \(endpoint), using URL without params", category: .api)
+                }
+            } else {
+                Logger.warning("Failed to create URLComponents for \(endpoint), params will be ignored", category: .api)
+            }
         }
 
         var req = URLRequest(url: url)
