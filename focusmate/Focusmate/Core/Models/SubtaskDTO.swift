@@ -14,3 +14,7 @@ struct SubtaskDTO: Codable, Identifiable, Hashable {
         completed_at != nil
     }
 }
+
+struct SubtaskResponse: Codable {
+    let subtask: SubtaskDTO
+}

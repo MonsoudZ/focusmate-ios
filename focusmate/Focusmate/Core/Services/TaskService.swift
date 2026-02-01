@@ -250,13 +250,13 @@ final class TaskService {
         try validateTitle(title)
         do {
             let request = CreateSubtaskRequest(subtask: .init(title: title))
-            let subtask: SubtaskDTO = try await apiClient.request(
+            let response: SubtaskResponse = try await apiClient.request(
                 "POST",
                 API.Lists.subtasks(String(listId), String(parentTaskId)),
                 body: request
             )
             Logger.debug("TaskService: Created subtask '\(title)' under task \(parentTaskId)", category: .api)
-            return subtask
+            return response.subtask
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Creating subtask")
         }
@@ -278,13 +278,13 @@ final class TaskService {
         try validateTitle(title)
         do {
             let request = UpdateSubtaskRequest(subtask: .init(title: title))
-            let subtask: SubtaskDTO = try await apiClient.request(
+            let response: SubtaskResponse = try await apiClient.request(
                 "PUT",
                 API.Lists.subtask(String(listId), String(parentTaskId), String(subtaskId)),
                 body: request
             )
             Logger.debug("TaskService: Updated subtask \(subtaskId)", category: .api)
-            return subtask
+            return response.subtask
         } catch {
             throw ErrorHandler.shared.handle(error, context: "Updating subtask")
         }
@@ -324,13 +324,13 @@ final class TaskService {
     ) async throws -> SubtaskDTO {
         try validateSubtaskContext(listId: listId, parentTaskId: parentTaskId, subtaskId: subtaskId)
         do {
-            let subtask: SubtaskDTO = try await apiClient.request(
+            let response: SubtaskResponse = try await apiClient.request(
                 "PATCH",
                 API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), action),
                 body: nil as String?
             )
             Logger.debug("TaskService: \(action.capitalized) subtask \(subtaskId)", category: .api)
-            return subtask
+            return response.subtask
         } catch {
             throw ErrorHandler.shared.handle(error, context: "\(action.capitalized) subtask")
         }
