@@ -17,6 +17,12 @@ final class RetryCoordinator {
     private var retryCount: [String: Int] = [:]
     private var lastRetryTime: [String: Date] = [:]
 
+    /// Maximum number of entries to keep in tracking dictionaries
+    private let maxTrackedEntries = 100
+
+    /// Entries older than this are considered stale and can be cleaned up
+    private let staleEntryThreshold: TimeInterval = 300 // 5 minutes
+
     // MARK: - Init
 
     init(
@@ -66,6 +72,27 @@ final class RetryCoordinator {
         lastRetryTime[retryKey] = Date()
 
         Logger.debug("RetryCoordinator: Attempt \(retryCount[retryKey] ?? 0) for \(retryKey)", category: .general)
+
+        // Periodically clean up stale entries to prevent unbounded growth
+        cleanupStaleEntriesIfNeeded()
+    }
+
+    /// Removes stale entries to prevent memory leaks from unbounded dictionary growth.
+    private func cleanupStaleEntriesIfNeeded() {
+        // Only clean up if we have too many entries
+        guard retryCount.count > maxTrackedEntries else { return }
+
+        let now = Date()
+        let staleKeys = lastRetryTime.filter { now.timeIntervalSince($0.value) > staleEntryThreshold }.map(\.key)
+
+        for key in staleKeys {
+            retryCount.removeValue(forKey: key)
+            lastRetryTime.removeValue(forKey: key)
+        }
+
+        if !staleKeys.isEmpty {
+            Logger.debug("RetryCoordinator: Cleaned up \(staleKeys.count) stale entries", category: .general)
+        }
     }
 
     /// Resets retry tracking for a context after successful operation.

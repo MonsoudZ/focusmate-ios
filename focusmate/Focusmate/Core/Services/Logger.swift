@@ -178,10 +178,16 @@ final class Logger {
         (path as NSString).lastPathComponent
     }
 
-    private static func timestampString() -> String {
+    /// Cached DateFormatter for thread-safe timestamp generation.
+    /// DateFormatter is expensive to create, so we cache a static instance.
+    private static let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss.SSS"
-        return formatter.string(from: Date())
+        return formatter
+    }()
+
+    private static func timestampString() -> String {
+        timestampFormatter.string(from: Date())
     }
 }
 

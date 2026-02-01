@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// Main router class for centralized navigation state management
 @MainActor
@@ -31,9 +32,29 @@ final class AppRouter {
     private var pendingDeepLink: DeepLinkRoute?
     private var isReady = false
 
+    // MARK: - Auth Event Subscription
+
+    private var cancellables = Set<AnyCancellable>()
+
     // MARK: - Init
 
-    private init() {}
+    private init() {
+        bindAuthEvents()
+    }
+
+    /// Listen for auth events to reset navigation on logout.
+    /// This keeps the dependency one-directional (AppRouter depends on AuthEventBus,
+    /// not the other way around).
+    private func bindAuthEvents() {
+        AuthEventBus.shared.publisher
+            .receive(on: RunLoop.main)
+            .sink { [weak self] event in
+                if event == .signedOut {
+                    self?.resetAllNavigation()
+                }
+            }
+            .store(in: &cancellables)
+    }
 
     // MARK: - Tab Navigation
 
@@ -81,6 +102,19 @@ final class AppRouter {
         case .settings:
             settingsPath.removeAll()
         }
+    }
+
+    /// Resets all navigation state. Call this on logout to prevent
+    /// stale navigation data from being visible to the next user.
+    func resetAllNavigation() {
+        todayPath.removeAll()
+        listsPath.removeAll()
+        settingsPath.removeAll()
+        selectedTab = .today
+        activeSheet = nil
+        sheetCallbacks = SheetCallbacks()
+        pendingDeepLink = nil
+        Logger.debug("AppRouter: All navigation state reset", category: .general)
     }
 
     // MARK: - Sheet Presentation

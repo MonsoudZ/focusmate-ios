@@ -267,12 +267,20 @@ final class AuthStore: ObservableObject {
     }
 
     private func handleUnauthorizedEvent() {
-        // Prevent race condition: only handle one unauthorized event at a time
-        guard jwt != nil, !isHandlingUnauthorized else { return }
+        // Atomic check-and-set to prevent race conditions.
+        // Since AuthStore is @MainActor, synchronous flag access is thread-safe.
+        guard jwt != nil else { return }
+        guard !isHandlingUnauthorized else {
+            Logger.debug("Already handling unauthorized event, skipping duplicate", category: .auth)
+            return
+        }
+
         isHandlingUnauthorized = true
 
         unauthorizedTask = Task {
+            // defer ensures flag reset even if task is cancelled
             defer { isHandlingUnauthorized = false }
+
             Logger.warning("Global unauthorized received. Clearing local session.", category: .auth)
             escalationService.resetAll()
             _ = await errorHandler.handleUnauthorized()
@@ -282,26 +290,30 @@ final class AuthStore: ObservableObject {
     }
 
     private func setAuthenticatedSession(token: String, user: UserDTO, refreshToken: String? = nil) async {
-        await authSession.set(token: token)
+        // Update @Published jwt first since API tokenProvider reads from it.
+        // This ensures API calls use the new token immediately.
         jwt = token
         keychain.save(token: token)
         currentUser = user
+        await authSession.set(token: token)
 
         if let refreshToken {
-            await authSession.setRefreshToken(refreshToken)
             keychain.save(refreshToken: refreshToken)
+            await authSession.setRefreshToken(refreshToken)
         }
     }
 
     /// Called by InternalNetworking after a successful token refresh.
     func handleTokenRefresh(newToken: String, newRefreshToken: String?) async {
-        await authSession.set(token: newToken)
+        // Update @Published jwt first since API tokenProvider reads from it.
+        // This ensures subsequent API calls use the new token immediately.
         jwt = newToken
         keychain.save(token: newToken)
+        await authSession.set(token: newToken)
 
         if let newRefreshToken {
-            await authSession.setRefreshToken(newRefreshToken)
             keychain.save(refreshToken: newRefreshToken)
+            await authSession.setRefreshToken(newRefreshToken)
         }
     }
 
@@ -311,5 +323,6 @@ final class AuthStore: ObservableObject {
         currentUser = nil
         keychain.clear()
         keychain.clearRefreshToken()
+        // Navigation state is cleared by AppRouter listening to AuthEventBus.signedOut
     }
 }
