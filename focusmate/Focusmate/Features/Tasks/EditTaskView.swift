@@ -21,9 +21,15 @@ struct EditTaskView: View {
         NavigationStack {
             Form {
                 Section("Task Details") {
-                    TextField("Title", text: $viewModel.title)
+                    HStack(spacing: DS.Spacing.sm) {
+                        Image(systemName: "pencil.line")
+                            .foregroundStyle(DS.Colors.accent)
+                            .frame(width: 24)
+                        TextField("Task title", text: $viewModel.title)
+                            .font(DS.Typography.body)
+                    }
 
-                    TextField("Notes (Optional)", text: $viewModel.note, axis: .vertical)
+                    TextField("Notes (optional)", text: $viewModel.note, axis: .vertical)
                         .lineLimit(3...6)
                 }
 
@@ -52,29 +58,12 @@ struct EditTaskView: View {
                 }
 
                 Section("Priority") {
-                    Picker("Priority", selection: $viewModel.selectedPriority) {
-                        ForEach(TaskPriority.allCases, id: \.self) { priority in
-                            HStack {
-                                if let icon = priority.icon {
-                                    Image(systemName: icon)
-                                        .foregroundColor(priority.color)
-                                }
-                                Text(priority.label)
-                            }
-                            .tag(priority)
-                        }
-                    }
-                    .pickerStyle(.menu)
+                    PriorityPicker(selected: $viewModel.selectedPriority)
+                        .padding(.vertical, DS.Spacing.xs)
                 }
 
                 Section {
-                    Toggle(isOn: $viewModel.isStarred) {
-                        HStack {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
-                            Text("Starred")
-                        }
-                    }
+                    StarredRow(isStarred: $viewModel.isStarred)
                 }
 
                 Section("Tags") {
