@@ -28,7 +28,12 @@ final class EscalationService: ObservableObject {
         self.screenTimeService = screenTimeService ?? .shared
         self.notificationService = notificationService ?? .shared
         loadState()
-        startPeriodicCheck()
+
+        // Only start periodic check if there's persisted escalation state
+        if !overdueTaskIds.isEmpty || UserDefaults.standard.object(forKey: gracePeriodStartKey) != nil {
+            checkGracePeriodStatus()
+            startPeriodicCheck()
+        }
     }
 
     // MARK: - Task Became Overdue
@@ -38,6 +43,11 @@ final class EscalationService: ObservableObject {
 
         overdueTaskIds.insert(task.id)
         saveState()
+
+        // Start periodic check if not already running
+        if checkTimer == nil {
+            startPeriodicCheck()
+        }
 
         // Start grace period if not already running and blocking is possible
         if !isInGracePeriod && !screenTimeService.isBlocking
@@ -140,6 +150,10 @@ final class EscalationService: ObservableObject {
         gracePeriodTimer = nil
         isInGracePeriod = false
         gracePeriodEndTime = nil
+
+        // Stop periodic check timer (no need to check when not in escalation)
+        checkTimer?.invalidate()
+        checkTimer = nil
 
         // Stop blocking
         screenTimeService.stopBlocking()
