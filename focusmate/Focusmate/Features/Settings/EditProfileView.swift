@@ -16,9 +16,15 @@ struct EditProfileView: View {
         NavigationStack {
             Form {
                 Section("Profile Information") {
-                    TextField("Name", text: $viewModel.name)
-                        .textContentType(.name)
-                        .textInputAutocapitalization(.words)
+                    HStack(spacing: DS.Spacing.sm) {
+                        Image(systemName: "person.fill")
+                            .foregroundStyle(DS.Colors.accent)
+                            .frame(width: 24)
+                        TextField("Your name", text: $viewModel.name)
+                            .font(DS.Typography.body)
+                            .textContentType(.name)
+                            .textInputAutocapitalization(.words)
+                    }
 
                     Picker("Timezone", selection: $viewModel.timezone) {
                         ForEach(timezones, id: \.self) { tz in

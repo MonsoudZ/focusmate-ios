@@ -4,17 +4,25 @@ struct CreateTagView: View {
     let tagService: TagService
     var onCreated: (() -> Void)? = nil
     @Environment(\.dismiss) var dismiss
-    
+    @FocusState private var isNameFocused: Bool
+
     @State private var name = ""
     @State private var selectedColor: String = "blue"
     @State private var isLoading = false
     @State private var error: FocusmateError?
-    
+
     var body: some View {
         NavigationStack {
             Form {
                 Section("Tag Name") {
-                    TextField("Name", text: $name)
+                    HStack(spacing: DS.Spacing.sm) {
+                        Image(systemName: "tag.fill")
+                            .foregroundStyle(DS.Colors.list(selectedColor))
+                            .frame(width: 24)
+                        TextField("Enter tag name", text: $name)
+                            .font(DS.Typography.body)
+                            .focused($isNameFocused)
+                    }
                 }
                 
                 Section("Color") {
@@ -56,9 +64,14 @@ struct CreateTagView: View {
                 }
             }
             .errorBanner($error)
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    isNameFocused = true
+                }
+            }
         }
     }
-    
+
     private func createTag() async {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
