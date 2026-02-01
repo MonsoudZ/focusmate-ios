@@ -102,16 +102,24 @@ final class TodayViewModel {
         isLoading = false
     }
 
-    func toggleComplete(_ task: TaskDTO) async {
+    func toggleComplete(_ task: TaskDTO, reason: String? = nil) async {
         if task.isCompleted {
             do {
                 _ = try await taskService.reopenTask(listId: task.list_id, taskId: task.id)
                 await loadToday()
             } catch {
                 Logger.error("Failed to reopen task", error: error, category: .api)
+                self.error = ErrorHandler.shared.handle(error, context: "Reopening task")
             }
         } else {
-            await loadToday()
+            do {
+                _ = try await taskService.completeTask(listId: task.list_id, taskId: task.id, reason: reason)
+                HapticManager.success()
+                await loadToday()
+            } catch {
+                Logger.error("Failed to complete task", error: error, category: .api)
+                self.error = ErrorHandler.shared.handle(error, context: "Completing task")
+            }
         }
     }
 
@@ -137,6 +145,8 @@ final class TodayViewModel {
             await loadToday()
         } catch {
             Logger.error("Failed to create subtask", error: error, category: .api)
+            self.error = ErrorHandler.shared.handle(error, context: "Creating subtask")
+            HapticManager.error()
         }
     }
 
@@ -152,6 +162,8 @@ final class TodayViewModel {
             await loadToday()
         } catch {
             Logger.error("Failed to update subtask", error: error, category: .api)
+            self.error = ErrorHandler.shared.handle(error, context: "Updating subtask")
+            HapticManager.error()
         }
     }
 }

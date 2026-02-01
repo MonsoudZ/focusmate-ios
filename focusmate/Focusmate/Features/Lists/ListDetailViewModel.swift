@@ -163,7 +163,7 @@ final class ListDetailViewModel {
         }
     }
 
-    func toggleComplete(_ task: TaskDTO) async {
+    func toggleComplete(_ task: TaskDTO, reason: String? = nil) async {
         if task.isCompleted {
             let originalTasks = tasks
             if let idx = tasks.firstIndex(where: { $0.id == task.id }) {
@@ -178,14 +178,32 @@ final class ListDetailViewModel {
                 }
             } catch {
                 tasks = originalTasks
-                self.error = ErrorHandler.shared.handle(error)
+                self.error = ErrorHandler.shared.handle(error, context: "Reopening task")
                 HapticManager.error()
             }
         } else {
-            markTaskCompleted(task.id)
+            // Optimistic UI update
+            let originalTasks = tasks
+            if let idx = tasks.firstIndex(where: { $0.id == task.id }) {
+                tasks[idx].completed_at = ISO8601DateFormatter().string(from: Date())
+            }
+
+            do {
+                let updated = try await taskService.completeTask(listId: list.id, taskId: task.id, reason: reason)
+                HapticManager.success()
+                if let idx = tasks.firstIndex(where: { $0.id == updated.id }) {
+                    tasks[idx] = updated
+                }
+            } catch {
+                tasks = originalTasks
+                self.error = ErrorHandler.shared.handle(error, context: "Completing task")
+                HapticManager.error()
+            }
         }
     }
 
+    /// Updates local task state to show as completed.
+    /// Called by TaskRow's onComplete callback after TaskRow handles the API call.
     func markTaskCompleted(_ taskId: Int) {
         if let idx = tasks.firstIndex(where: { $0.id == taskId }) {
             tasks[idx].completed_at = ISO8601DateFormatter().string(from: Date())
