@@ -105,10 +105,12 @@ struct InviteRowView: View {
                 Label("Revoke", systemImage: "trash")
             }
 
-            ShareLink(item: URL(string: invite.invite_url)!) {
-                Label("Share", systemImage: "square.and.arrow.up")
+            if let url = URL(string: invite.invite_url) {
+                ShareLink(item: url) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+                .tint(DS.Colors.accent)
             }
-            .tint(DS.Colors.accent)
         }
         .confirmationDialog(
             "Revoke Invite",
@@ -134,7 +136,7 @@ struct CreateInviteView: View {
 
     @State private var role = "viewer"
     @State private var hasExpiry = false
-    @State private var expiresAt = Calendar.current.date(byAdding: .day, value: 7, to: Date())!
+    @State private var expiresAt = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date().addingTimeInterval(7 * 24 * 60 * 60)
     @State private var hasMaxUses = false
     @State private var maxUses = 10
     @State private var isCreating = false
@@ -253,11 +255,13 @@ struct ShareInviteSheet: View {
 
                 // Actions
                 VStack(spacing: DS.Spacing.md) {
-                    ShareLink(item: URL(string: invite.invite_url)!) {
-                        Label("Share Link", systemImage: "square.and.arrow.up")
-                            .frame(maxWidth: .infinity)
+                    if let url = URL(string: invite.invite_url) {
+                        ShareLink(item: url) {
+                            Label("Share Link", systemImage: "square.and.arrow.up")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(IntentiaPrimaryButtonStyle())
                     }
-                    .buttonStyle(IntentiaPrimaryButtonStyle())
 
                     Button {
                         UIPasteboard.general.string = invite.invite_url
