@@ -78,18 +78,21 @@ final class ScreenTimeService: ObservableObject {
     // MARK: - Persistence
     
     private func saveSelections() {
+        // Encode both values first to ensure atomicity - if either fails, neither is saved
+        let appsData: Data
+        let categoriesData: Data
+
         do {
-            let appsData = try JSONEncoder().encode(selectedApps)
-            UserDefaults.standard.set(appsData, forKey: appsKey)
+            appsData = try JSONEncoder().encode(selectedApps)
+            categoriesData = try JSONEncoder().encode(selectedCategories)
         } catch {
-            Logger.error("Failed to encode selected apps: \(error)", category: .general)
+            Logger.error("Failed to encode selections, not saving: \(error)", category: .general)
+            return
         }
-        do {
-            let categoriesData = try JSONEncoder().encode(selectedCategories)
-            UserDefaults.standard.set(categoriesData, forKey: categoriesKey)
-        } catch {
-            Logger.error("Failed to encode selected categories: \(error)", category: .general)
-        }
+
+        // Both encoded successfully, now save atomically
+        UserDefaults.standard.set(appsData, forKey: appsKey)
+        UserDefaults.standard.set(categoriesData, forKey: categoriesKey)
     }
     
     private func loadSelections() {

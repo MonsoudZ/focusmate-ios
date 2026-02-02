@@ -178,7 +178,10 @@ final class CalendarService {
     func removeTaskFromCalendar(taskId: Int) {
         guard checkPermission() else { return }
 
-        guard let calendar = getCachedCalendar() else { return }
+        guard let calendar = getCachedCalendar() else {
+            Logger.debug("Calendar not found when removing task \(taskId) - may not have been synced yet", category: .general)
+            return
+        }
 
         let events = getCachedEvents(for: calendar)
         let taskURL = URL(string: "intentia://task/\(taskId)")
