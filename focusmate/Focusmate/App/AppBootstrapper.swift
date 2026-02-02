@@ -26,14 +26,8 @@ final class AppBootstrapper: ObservableObject {
         // ✅ One-time authenticated boot (persisted)
         guard !settings.didCompleteAuthenticatedBoot else { return }
 
-        // Notification and Screen Time permissions are now handled by the
-        // onboarding flow (OnboardingPermissionsPage). Only calendar
-        // permission remains here as a low-priority, no-explanation request.
-
-        if !settings.didRequestCalendarPermission {
-            _ = await CalendarService.shared.requestPermission()
-            settings.didRequestCalendarPermission = true
-        }
+        // All permissions (notifications, screen time, calendar) are now
+        // handled by the onboarding flow (OnboardingPermissionsPage).
 
         _ = EscalationService.shared
 

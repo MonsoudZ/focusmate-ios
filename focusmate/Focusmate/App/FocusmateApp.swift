@@ -77,6 +77,8 @@ struct RootView: View {
 
     @State private var overdueCount: Int = 0
     @State private var showOnboarding: Bool = !AppSettings.shared.hasCompletedOnboarding
+    @State private var hasCheckedLists: Bool = false
+    @State private var userHasLists: Bool = true  // Assume true until checked
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -99,9 +101,10 @@ struct RootView: View {
                             .environmentObject(state)
                             .environmentObject(state.auth)
                     }
-            } else if showOnboarding {
+            } else if showOnboarding || (hasCheckedLists && !userHasLists) {
                 OnboardingView {
                     AppSettings.shared.hasCompletedOnboarding = true
+                    userHasLists = true  // After onboarding, assume they created a list
                     withAnimation {
                         showOnboarding = false
                     }
@@ -110,6 +113,24 @@ struct RootView: View {
                 .task(id: auth.jwt != nil) {
                     guard auth.jwt != nil else { return }
                     await bootstrapper.runAuthenticatedBootTasksIfNeeded()
+                }
+            } else if !hasCheckedLists {
+                // Loading state while checking if user has lists
+                VStack {
+                    ProgressView()
+                    Text("Loading...")
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, DS.Spacing.sm)
+                }
+                .task {
+                    do {
+                        let lists = try await state.listService.fetchLists()
+                        userHasLists = !lists.isEmpty
+                    } catch {
+                        userHasLists = true  // On error, don't force onboarding
+                    }
+                    hasCheckedLists = true
                 }
             } else {
                 mainTabView
