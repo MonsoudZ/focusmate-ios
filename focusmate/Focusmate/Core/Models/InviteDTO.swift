@@ -42,10 +42,26 @@ struct InviteDTO: Codable, Identifiable {
 // MARK: - Invite Preview (for unauthenticated preview)
 
 struct InvitePreviewDTO: Codable {
-    let list_name: String
-    let inviter_name: String?
+    let code: String
     let role: String
+    let list: InviteListInfo
+    let inviter: InviterInfo?
     let usable: Bool
+    let expired: Bool
+    let exhausted: Bool
+
+    struct InviteListInfo: Codable {
+        let id: Int
+        let name: String
+        let color: String
+    }
+
+    struct InviterInfo: Codable {
+        let name: String
+    }
+
+    var listName: String { list.name }
+    var inviterName: String? { inviter?.name }
 
     var roleDisplayName: String {
         switch role {

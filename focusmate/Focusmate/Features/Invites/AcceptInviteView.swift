@@ -67,7 +67,7 @@ struct AcceptInviteView: View {
 
             // Invitation text
             VStack(spacing: DS.Spacing.sm) {
-                if let inviterName = preview.inviter_name {
+                if let inviterName = preview.inviterName {
                     Text("\(inviterName) invited you to")
                         .font(DS.Typography.body)
                         .foregroundStyle(.secondary)
@@ -77,7 +77,7 @@ struct AcceptInviteView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Text(preview.list_name)
+                Text(preview.listName)
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .multilineTextAlignment(.center)
 
