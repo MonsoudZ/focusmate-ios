@@ -24,6 +24,7 @@ final class InviteMemberViewModel {
     func invite() async -> Bool {
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             let _: MembershipResponse = try await apiClient.request(
@@ -36,15 +37,15 @@ final class InviteMemberViewModel {
                     )
                 )
             )
-            isLoading = false
             return true
         } catch let err as FocusmateError {
             error = err
+            HapticManager.error()
         } catch {
-            self.error = ErrorHandler.shared.handle(error)
+            self.error = ErrorHandler.shared.handle(error, context: "Inviting member")
+            HapticManager.error()
         }
 
-        isLoading = false
         return false
     }
 }

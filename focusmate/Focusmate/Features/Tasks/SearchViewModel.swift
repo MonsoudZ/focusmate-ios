@@ -42,6 +42,7 @@ final class SearchViewModel {
 
         isSearching = true
         hasSearched = true
+        error = nil  // Reset error before new search
 
         do {
             results = try await taskService.searchTasks(query: searchQuery)
@@ -50,7 +51,7 @@ final class SearchViewModel {
             error = err
             HapticManager.error()
         } catch {
-            self.error = .custom("SEARCH_ERROR", error.localizedDescription)
+            self.error = ErrorHandler.shared.handle(error, context: "Searching tasks")
             HapticManager.error()
         }
 
