@@ -116,10 +116,23 @@ struct ListDetailView: View {
         router.present(.editSubtask(info))
     }
 
+    private func presentInvites() {
+        router.push(.listInvites(viewModel.list))
+    }
+
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button {
+                presentInvites()
+            } label: {
+                Image(systemName: "person.badge.plus")
+            }
+            .accessibilityLabel("Invite to list")
+        }
+
         ToolbarItem(placement: .navigationBarTrailing) {
             Menu {
                 if viewModel.canEdit {
