@@ -18,7 +18,7 @@ actor AuthSession {
     }
 
     func access() throws -> String {
-        guard let t = jwt else { throw APIError.unauthorized }
+        guard let t = jwt else { throw APIError.unauthorized(nil) }
         return t
     }
 

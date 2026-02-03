@@ -103,7 +103,7 @@ final class AuthStoreTests: XCTestCase {
         let keychain = FakeKeychain()
         keychain.token = "jwt-123"
 
-        let networking = MockNetworking(mode: .failure(APIError.unauthorized))
+        let networking = MockNetworking(mode: .failure(APIError.unauthorized(nil)))
 
         let store = await MainActor.run {
             AuthStore(keychain: keychain, networking: networking, autoValidateOnInit: false, eventBus: AuthEventBus())

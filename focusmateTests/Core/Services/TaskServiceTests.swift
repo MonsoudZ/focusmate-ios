@@ -55,7 +55,7 @@ final class TaskServiceTests: XCTestCase {
     }
 
     func testFetchTasksPropagatesError() async {
-        mock.stubbedError = APIError.unauthorized
+        mock.stubbedError = APIError.unauthorized(nil)
 
         do {
             _ = try await service.fetchTasks(listId: 1)
@@ -166,7 +166,7 @@ final class TaskServiceTests: XCTestCase {
     }
 
     func testDeleteTaskPropagatesError() async {
-        mock.stubbedError = APIError.unauthorized
+        mock.stubbedError = APIError.unauthorized(nil)
 
         do {
             try await service.deleteTask(listId: 1, taskId: 5)

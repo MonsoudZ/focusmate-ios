@@ -193,7 +193,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
             if !isPublicEndpoint {
                 AuthEventBus.shared.send(.unauthorized)
             }
-            throw APIError.unauthorized
+            throw APIError.unauthorized(errorResponse?.errorMessage)
 
         case 422:
             Logger.warning("422 Validation error for \(method) \(path)", category: .api)
@@ -286,7 +286,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
                 }
             }
             AuthEventBus.shared.send(.unauthorized)
-            throw APIError.unauthorized
+            throw APIError.unauthorized(nil)
         default:
             throw APIError.badStatus(http.statusCode, nil, nil)
         }
@@ -301,12 +301,12 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
     private func attemptTokenRefresh() async throws {
         try await refreshCoordinator.refreshIfNeeded { [self] in
             guard let refreshTokenProvider, let onTokenRefreshed else {
-                throw APIError.unauthorized
+                throw APIError.unauthorized(nil)
             }
 
             guard let refreshToken = refreshTokenProvider() else {
                 Logger.warning("No refresh token available", category: .auth)
-                throw APIError.unauthorized
+                throw APIError.unauthorized(nil)
             }
 
             let url = API.path(API.Auth.refresh)
@@ -320,7 +320,7 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
 
             guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
                 Logger.warning("Refresh endpoint returned non-2xx", category: .auth)
-                throw APIError.unauthorized
+                throw APIError.unauthorized(nil)
             }
 
             let result = try APIClient.decoder.decode(AuthSignInResponse.self, from: data)

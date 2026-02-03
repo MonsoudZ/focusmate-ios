@@ -4,7 +4,7 @@ enum APIError: Error {
   case badURL
   case badStatus(Int, String?, [String: Any]?)
   case decoding
-  case unauthorized
+  case unauthorized(String?)
   case network(Error)
   case rateLimited(Int)
   case serverError(Int, String?, [String: Any]?)

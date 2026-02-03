@@ -53,7 +53,7 @@ final class InternalNetworkingTests: XCTestCase {
             )
             XCTFail("Expected to throw APIError.unauthorized")
         } catch let err as APIError {
-            guard case .unauthorized = err else {
+            guard case .unauthorized(_) = err else {
                 return XCTFail("Expected .unauthorized but got \(err)")
             }
         } catch {

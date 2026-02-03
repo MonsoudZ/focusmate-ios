@@ -27,8 +27,8 @@ enum ErrorMapper {
             return .custom("BAD_URL", "Invalid URL")
         case .decoding:
             return .decoding(nil)
-        case .unauthorized:
-            return .unauthorized(nil)
+        case let .unauthorized(message):
+            return .unauthorized(message)
         case let .network(underlyingError):
             return .network(underlyingError)
         case let .badStatus(code, message, details):
