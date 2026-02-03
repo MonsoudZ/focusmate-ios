@@ -53,7 +53,7 @@ struct EditListView: View {
                     .disabled(viewModel.name.isEmpty || viewModel.isLoading)
                 }
             }
-            .errorBanner($viewModel.error)
+            .floatingErrorBanner($viewModel.error)
         }
     }
 }

@@ -63,7 +63,7 @@ struct CreateTagView: View {
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
                 }
             }
-            .errorBanner($error)
+            .floatingErrorBanner($error)
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     isNameFocused = true

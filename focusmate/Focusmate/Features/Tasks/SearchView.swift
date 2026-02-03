@@ -42,7 +42,7 @@ struct SearchView: View {
                     viewModel.clearSearch()
                 }
             }
-            .errorBanner($viewModel.error)
+            .floatingErrorBanner($viewModel.error)
         }
     }
 

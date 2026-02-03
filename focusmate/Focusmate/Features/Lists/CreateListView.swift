@@ -55,7 +55,7 @@ struct CreateListView: View {
                     .disabled(viewModel.name.isEmpty || viewModel.isLoading)
                 }
             }
-            .errorBanner($viewModel.error)
+            .floatingErrorBanner($viewModel.error)
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     isNameFocused = true

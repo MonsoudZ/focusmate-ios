@@ -90,16 +90,11 @@ struct RegisterView: View {
                     .buttonStyle(IntentiaPrimaryButtonStyle())
                     .disabled(state.auth.isLoading || !isValid)
                     .padding(.top, DS.Spacing.sm)
-
-                    if let error = state.auth.error {
-                        ErrorBanner(
-                            error: error,
-                            onRetry: { await register() },
-                            onDismiss: { state.auth.error = nil }
-                        )
-                    }
                 }
                 .padding(DS.Spacing.xl)
+            }
+            .floatingErrorBanner($state.auth.error) {
+                await register()
             }
             .navigationTitle("Create Account")
             .navigationBarTitleDisplayMode(.inline)

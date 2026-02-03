@@ -39,8 +39,8 @@ struct ListDetailView: View {
         } message: {
             Text("Are you sure you want to delete '\(viewModel.list.name)'? This action cannot be undone.")
         }
-        .errorBanner($viewModel.error) {
-            Task { await viewModel.loadTasks() }
+        .floatingErrorBanner($viewModel.error) {
+            await viewModel.loadTasks()
         }
         .overlay(alignment: .bottom) {
             if let message = viewModel.nudgeMessage {

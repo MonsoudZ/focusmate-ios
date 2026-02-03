@@ -87,21 +87,12 @@ struct SignInView: View {
                 }
                 .padding(.top, DS.Spacing.md)
 
-                if let error = state.auth.error {
-                    ErrorBanner(
-                        error: error,
-                        onRetry: {
-                            await state.auth.signIn(email: email, password: password)
-                        },
-                        onDismiss: {
-                            state.auth.error = nil
-                        }
-                    )
-                }
-
                 Spacer(minLength: DS.Spacing.xxxl)
             }
             .padding(.horizontal, DS.Spacing.xl)
+        }
+        .floatingErrorBanner($state.auth.error) {
+            await state.auth.signIn(email: email, password: password)
         }
         .surfaceBackground()
     }

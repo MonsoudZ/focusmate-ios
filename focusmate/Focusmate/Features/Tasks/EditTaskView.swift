@@ -98,7 +98,7 @@ struct EditTaskView: View {
                     .disabled(!viewModel.canSubmit)
                 }
             }
-            .errorBanner($viewModel.error)
+            .floatingErrorBanner($viewModel.error)
             .task {
                 await viewModel.loadTags()
             }

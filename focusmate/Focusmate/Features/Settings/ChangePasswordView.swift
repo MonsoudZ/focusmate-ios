@@ -71,7 +71,7 @@ struct ChangePasswordView: View {
                         .background(Color.black.opacity(0.2))
                 }
             }
-            .errorBanner($viewModel.error)
+            .floatingErrorBanner($viewModel.error)
             .alert("Success", isPresented: $viewModel.showSuccess) {
                 Button("OK") { dismiss() }
             } message: {

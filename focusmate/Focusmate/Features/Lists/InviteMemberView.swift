@@ -67,7 +67,7 @@ struct InviteMemberView: View {
                         .background(Color.black.opacity(0.2))
                 }
             }
-            .errorBanner($viewModel.error)
+            .floatingErrorBanner($viewModel.error)
         }
     }
 }

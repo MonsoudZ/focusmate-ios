@@ -65,7 +65,7 @@ struct DeleteAccountView: View {
                     .buttonStyle(IntentiaToolbarCancelStyle())
                 }
             }
-            .errorBanner($viewModel.error)
+            .floatingErrorBanner($viewModel.error)
             .alert("Are you absolutely sure?", isPresented: $viewModel.showFinalConfirmation) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete Forever", role: .destructive) {

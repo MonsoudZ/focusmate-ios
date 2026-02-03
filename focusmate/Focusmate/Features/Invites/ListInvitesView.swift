@@ -49,7 +49,7 @@ struct ListInvitesView: View {
         .refreshable {
             await viewModel.loadInvites()
         }
-        .errorBanner($viewModel.error)
+        .floatingErrorBanner($viewModel.error)
     }
 
     // MARK: - Sheet Presentation

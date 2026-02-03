@@ -97,7 +97,7 @@ struct TaskRow: View {
                 }
             }
         }
-        .errorBanner($completionError)
+        .floatingErrorBanner($completionError)
     }
 
     // MARK: - Main Task Row

@@ -18,6 +18,9 @@ struct ForgotPasswordView: View {
                 }
                 .padding(DS.Spacing.xl)
             }
+            .floatingErrorBanner($state.auth.error) {
+                await state.auth.forgotPassword(email: email)
+            }
             .navigationTitle("Reset Password")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -74,18 +77,6 @@ struct ForgotPasswordView: View {
             }
             .buttonStyle(IntentiaPrimaryButtonStyle())
             .disabled(state.auth.isLoading || !InputValidation.isValidEmail(email))
-
-            if let error = state.auth.error {
-                ErrorBanner(
-                    error: error,
-                    onRetry: {
-                        await state.auth.forgotPassword(email: email)
-                    },
-                    onDismiss: {
-                        state.auth.error = nil
-                    }
-                )
-            }
 
             Spacer(minLength: DS.Spacing.xxxl)
         }

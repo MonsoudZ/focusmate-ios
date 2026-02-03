@@ -88,8 +88,8 @@ struct ListsView: View {
                 }
             }
         }
-        .errorBanner($viewModel.error) {
-            Task { await viewModel.loadLists() }
+        .floatingErrorBanner($viewModel.error) {
+            await viewModel.loadLists()
         }
         .task {
             await viewModel.loadLists()

@@ -109,8 +109,8 @@ struct ListMembersView: View {
                     Text("Remove \(member.user.name ?? member.user.email ?? "this member") from the list?")
                 }
             }
-            .errorBanner($viewModel.error) {
-                Task { await viewModel.loadMembers() }
+            .floatingErrorBanner($viewModel.error) {
+                await viewModel.loadMembers()
             }
             .task {
                 await viewModel.loadMembers()
