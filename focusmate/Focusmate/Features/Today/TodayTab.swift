@@ -17,6 +17,7 @@ struct TodayTab: View {
                 listService: appState.listService,
                 tagService: appState.tagService,
                 apiClient: appState.auth.api,
+                subtaskManager: appState.subtaskManager,
                 onOverdueCountChange: onOverdueCountChange
             )
             .navigationDestination(for: Route.self) { route in

@@ -6,14 +6,15 @@ struct ListDetailView: View {
 
     @State private var viewModel: ListDetailViewModel
 
-    init(list: ListDTO, taskService: TaskService, listService: ListService, tagService: TagService, inviteService: InviteService, friendService: FriendService) {
+    init(list: ListDTO, taskService: TaskService, listService: ListService, tagService: TagService, inviteService: InviteService, friendService: FriendService, subtaskManager: SubtaskManager) {
         _viewModel = State(initialValue: ListDetailViewModel(
             list: list,
             taskService: taskService,
             listService: listService,
             tagService: tagService,
             inviteService: inviteService,
-            friendService: friendService
+            friendService: friendService,
+            subtaskManager: subtaskManager
         ))
     }
 
@@ -279,9 +280,6 @@ struct ListDetailView: View {
             onSubtaskEdit: { subtask in
                 presentEditSubtask(subtask, parentTask: task)
             },
-            onSubtaskChanged: {
-                await viewModel.loadTasks()
-            },
             onAddSubtask: {
                 presentAddSubtask(for: task)
             }
@@ -302,7 +300,6 @@ struct TaskRowContainer: View {
     let onNudge: () async -> Void
     let onDelete: () async -> Void
     let onSubtaskEdit: (SubtaskDTO) -> Void
-    let onSubtaskChanged: () async -> Void
     let onAddSubtask: () -> Void
 
     var body: some View {
@@ -313,7 +310,6 @@ struct TaskRowContainer: View {
             onTap: onTap,
             onNudge: onNudge,
             onSubtaskEdit: onSubtaskEdit,
-            onSubtaskChanged: onSubtaskChanged,
             onAddSubtask: onAddSubtask,
             showStar: canEdit,
             showNudge: isSharedList

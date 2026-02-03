@@ -9,6 +9,7 @@ struct TodayView: View {
         listService: ListService,
         tagService: TagService,
         apiClient: APIClient,
+        subtaskManager: SubtaskManager,
         escalationService: EscalationService? = nil,
         screenTimeService: ScreenTimeService? = nil,
         onOverdueCountChange: ((Int) -> Void)? = nil
@@ -18,6 +19,7 @@ struct TodayView: View {
             listService: listService,
             tagService: tagService,
             apiClient: apiClient,
+            subtaskManager: subtaskManager,
             escalationService: escalationService,
             screenTimeService: screenTimeService
         )

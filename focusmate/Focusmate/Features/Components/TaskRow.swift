@@ -7,7 +7,6 @@ struct TaskRow: View {
     let onTap: () -> Void
     let onNudge: () async -> Void
     let onSubtaskEdit: (SubtaskDTO) -> Void
-    let onSubtaskChanged: () async -> Void
     let onAddSubtask: () -> Void
     let showStar: Bool
     let showNudge: Bool
@@ -48,7 +47,6 @@ struct TaskRow: View {
         onTap: @escaping () -> Void = {},
         onNudge: @escaping () async -> Void = {},
         onSubtaskEdit: @escaping (SubtaskDTO) -> Void = { _ in },
-        onSubtaskChanged: @escaping () async -> Void = {},
         onAddSubtask: @escaping () -> Void = {},
         showStar: Bool = true,
         showNudge: Bool = false
@@ -59,7 +57,6 @@ struct TaskRow: View {
         self.onTap = onTap
         self.onNudge = onNudge
         self.onSubtaskEdit = onSubtaskEdit
-        self.onSubtaskChanged = onSubtaskChanged
         self.onAddSubtask = onAddSubtask
         self.showStar = showStar
         self.showNudge = showNudge
@@ -348,39 +345,19 @@ struct TaskRow: View {
                             canEdit: canEdit,
                             onComplete: {
                                 do {
-                                    if subtask.isCompleted {
-                                        _ = try await state.taskService.reopenSubtask(
-                                            listId: task.list_id,
-                                            parentTaskId: task.id,
-                                            subtaskId: subtask.id
-                                        )
-                                    } else {
-                                        _ = try await state.taskService.completeSubtask(
-                                            listId: task.list_id,
-                                            parentTaskId: task.id,
-                                            subtaskId: subtask.id
-                                        )
-                                    }
-                                    HapticManager.light()
+                                    _ = try await state.subtaskManager.toggleComplete(subtask: subtask, parentTask: task)
                                 } catch {
                                     Logger.error("Failed to toggle subtask: \(error)", category: .api)
                                     HapticManager.error()
                                 }
-                                await onSubtaskChanged()
                             },
                             onDelete: {
                                 do {
-                                    try await state.taskService.deleteSubtask(
-                                        listId: task.list_id,
-                                        parentTaskId: task.id,
-                                        subtaskId: subtask.id
-                                    )
-                                    HapticManager.medium()
+                                    try await state.subtaskManager.delete(subtask: subtask, parentTask: task)
                                 } catch {
                                     Logger.error("Failed to delete subtask: \(error)", category: .api)
                                     HapticManager.error()
                                 }
-                                await onSubtaskChanged()
                             },
                             onTap: {
                                 onSubtaskEdit(subtask)

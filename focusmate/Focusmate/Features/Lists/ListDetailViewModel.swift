@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SwiftUI
 
@@ -10,6 +11,8 @@ final class ListDetailViewModel {
     let tagService: TagService
     let inviteService: InviteService
     let friendService: FriendService
+    private let subtaskManager: SubtaskManager
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Data
 
@@ -31,13 +34,48 @@ final class ListDetailViewModel {
 
     // MARK: - Init
 
-    init(list: ListDTO, taskService: TaskService, listService: ListService, tagService: TagService, inviteService: InviteService, friendService: FriendService) {
+    init(list: ListDTO, taskService: TaskService, listService: ListService, tagService: TagService, inviteService: InviteService, friendService: FriendService, subtaskManager: SubtaskManager) {
         self.list = list
         self.taskService = taskService
         self.listService = listService
         self.tagService = tagService
         self.inviteService = inviteService
         self.friendService = friendService
+        self.subtaskManager = subtaskManager
+
+        // Subscribe to subtask changes and update local state
+        subtaskManager.changePublisher
+            .receive(on: RunLoop.main)
+            .sink { [weak self] change in
+                self?.handleSubtaskChange(change)
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Subtask Change Handling
+
+    private func handleSubtaskChange(_ change: SubtaskChange) {
+        // Only handle changes for tasks in this list
+        guard change.listId == list.id else { return }
+        guard let taskIdx = tasks.firstIndex(where: { $0.id == change.parentTaskId }) else { return }
+
+        switch change.type {
+        case .completed(let subtask), .reopened(let subtask), .updated(let subtask):
+            if var subs = tasks[taskIdx].subtasks,
+               let subIdx = subs.firstIndex(where: { $0.id == subtask.id }) {
+                subs[subIdx] = subtask
+                tasks[taskIdx].subtasks = subs
+            }
+        case .created(let subtask):
+            var existing = tasks[taskIdx].subtasks ?? []
+            existing.append(subtask)
+            tasks[taskIdx].subtasks = existing
+        case .deleted(let subtaskId):
+            if var subs = tasks[taskIdx].subtasks {
+                subs.removeAll { $0.id == subtaskId }
+                tasks[taskIdx].subtasks = subs
+            }
+        }
     }
 
     // MARK: - Computed: Permissions
@@ -248,17 +286,8 @@ final class ListDetailViewModel {
 
     func createSubtask(parentTask: TaskDTO, title: String) async {
         do {
-            let subtask = try await taskService.createSubtask(
-                listId: parentTask.list_id,
-                parentTaskId: parentTask.id,
-                title: title
-            )
-            HapticManager.success()
-            if let idx = tasks.firstIndex(where: { $0.id == parentTask.id }) {
-                var existing = tasks[idx].subtasks ?? []
-                existing.append(subtask)
-                tasks[idx].subtasks = existing
-            }
+            _ = try await subtaskManager.create(parentTask: parentTask, title: title)
+            // Local state is updated via changePublisher subscription
         } catch {
             Logger.error("Failed to create subtask: \(error)", category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Creating subtask")
@@ -268,19 +297,8 @@ final class ListDetailViewModel {
 
     func updateSubtask(info: SubtaskEditInfo, title: String) async {
         do {
-            let updated = try await taskService.updateSubtask(
-                listId: info.parentTask.list_id,
-                parentTaskId: info.parentTask.id,
-                subtaskId: info.subtask.id,
-                title: title
-            )
-            HapticManager.success()
-            if let taskIdx = tasks.firstIndex(where: { $0.id == info.parentTask.id }),
-               var subs = tasks[taskIdx].subtasks,
-               let subIdx = subs.firstIndex(where: { $0.id == info.subtask.id }) {
-                subs[subIdx] = updated
-                tasks[taskIdx].subtasks = subs
-            }
+            _ = try await subtaskManager.update(subtask: info.subtask, parentTask: info.parentTask, title: title)
+            // Local state is updated via changePublisher subscription
         } catch {
             Logger.error("Failed to update subtask: \(error)", category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Updating subtask")

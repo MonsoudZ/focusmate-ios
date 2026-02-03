@@ -14,7 +14,8 @@ struct RouteDestination: View {
                 listService: appState.listService,
                 tagService: appState.tagService,
                 inviteService: appState.inviteService,
-                friendService: appState.friendService
+                friendService: appState.friendService,
+                subtaskManager: appState.subtaskManager
             )
 
         case .taskDetail(let task, let listName):

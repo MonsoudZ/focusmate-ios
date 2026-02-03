@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 @MainActor
@@ -9,8 +10,10 @@ final class TodayViewModel {
     let escalationService: EscalationService
     let screenTimeService: ScreenTimeService
     private let notificationService: NotificationService
+    private let subtaskManager: SubtaskManager
     private var todayService: TodayService?
     private let apiClient: APIClient
+    private var cancellables = Set<AnyCancellable>()
 
     var todayData: TodayResponse?
     var isLoading = true
@@ -63,6 +66,7 @@ final class TodayViewModel {
         listService: ListService,
         tagService: TagService,
         apiClient: APIClient,
+        subtaskManager: SubtaskManager,
         escalationService: EscalationService? = nil,
         screenTimeService: ScreenTimeService? = nil,
         notificationService: NotificationService? = nil
@@ -71,9 +75,18 @@ final class TodayViewModel {
         self.listService = listService
         self.tagService = tagService
         self.apiClient = apiClient
+        self.subtaskManager = subtaskManager
         self.escalationService = escalationService ?? .shared
         self.screenTimeService = screenTimeService ?? .shared
         self.notificationService = notificationService ?? .shared
+
+        // Subscribe to subtask changes and reload data
+        subtaskManager.changePublisher
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                Task { await self?.loadToday() }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Actions
@@ -136,13 +149,8 @@ final class TodayViewModel {
 
     func createSubtask(parentTask: TaskDTO, title: String) async {
         do {
-            _ = try await taskService.createSubtask(
-                listId: parentTask.list_id,
-                parentTaskId: parentTask.id,
-                title: title
-            )
-            HapticManager.success()
-            await loadToday()
+            _ = try await subtaskManager.create(parentTask: parentTask, title: title)
+            // loadToday() is triggered automatically via changePublisher subscription
         } catch {
             Logger.error("Failed to create subtask", error: error, category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Creating subtask")
@@ -152,14 +160,8 @@ final class TodayViewModel {
 
     func updateSubtask(info: SubtaskEditInfo, title: String) async {
         do {
-            _ = try await taskService.updateSubtask(
-                listId: info.parentTask.list_id,
-                parentTaskId: info.parentTask.id,
-                subtaskId: info.subtask.id,
-                title: title
-            )
-            HapticManager.success()
-            await loadToday()
+            _ = try await subtaskManager.update(subtask: info.subtask, parentTask: info.parentTask, title: title)
+            // loadToday() is triggered automatically via changePublisher subscription
         } catch {
             Logger.error("Failed to update subtask", error: error, category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Updating subtask")
