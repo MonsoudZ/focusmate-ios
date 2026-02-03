@@ -17,6 +17,10 @@ final class ListMembersViewModel {
     let inviteService: InviteService
     let friendService: FriendService
 
+    var isOwner: Bool {
+        list.role == "owner" || list.role == nil
+    }
+
     init(list: ListDTO, apiClient: APIClient, inviteService: InviteService, friendService: FriendService) {
         self.list = list
         self.apiClient = apiClient

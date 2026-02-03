@@ -15,18 +15,26 @@ struct ListMembersView: View {
                 if viewModel.isLoading {
                     ProgressView()
                 } else if viewModel.memberships.isEmpty {
-                    EmptyState(
-                        "No members yet",
-                        message: "Invite people to collaborate on this list",
-                        icon: DS.Icon.share,
-                        actionTitle: "Invite Someone"
-                    ) {
-                        presentInviteMember()
+                    if viewModel.isOwner {
+                        EmptyState(
+                            "No members yet",
+                            message: "Invite people to collaborate on this list",
+                            icon: DS.Icon.share,
+                            actionTitle: "Invite Someone"
+                        ) {
+                            presentInviteMember()
+                        }
+                    } else {
+                        EmptyState(
+                            "No members yet",
+                            message: "Only the list owner can invite members",
+                            icon: DS.Icon.share
+                        )
                     }
                 } else {
                     List {
-                        // Friends section
-                        if !viewModel.availableFriends.isEmpty {
+                        // Friends section (owners only)
+                        if viewModel.isOwner && !viewModel.availableFriends.isEmpty {
                             Section {
                                 ForEach(viewModel.availableFriends) { friend in
                                     FriendRowView(
@@ -44,22 +52,24 @@ struct ListMembersView: View {
                             }
                         }
 
-                        // Invite link section
-                        Section {
-                            Button {
-                                router.push(.listInvites(viewModel.list))
-                            } label: {
-                                HStack {
-                                    Label("Create Invite Link", systemImage: "link.badge.plus")
-                                    Spacer()
-                                    Image(systemName: DS.Icon.chevronRight)
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
+                        // Invite link section (owners only)
+                        if viewModel.isOwner {
+                            Section {
+                                Button {
+                                    router.push(.listInvites(viewModel.list))
+                                } label: {
+                                    HStack {
+                                        Label("Create Invite Link", systemImage: "link.badge.plus")
+                                        Spacer()
+                                        Image(systemName: DS.Icon.chevronRight)
+                                            .font(.caption)
+                                            .foregroundStyle(.tertiary)
+                                    }
                                 }
+                                .foregroundStyle(.primary)
+                            } footer: {
+                                Text("Share a link with anyone to invite them")
                             }
-                            .foregroundStyle(.primary)
-                        } footer: {
-                            Text("Share a link with anyone to invite them")
                         }
 
                         // Existing members section
@@ -89,11 +99,13 @@ struct ListMembersView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        presentInviteMember()
-                    } label: {
-                        Image(systemName: DS.Icon.plus)
+                if viewModel.isOwner {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            presentInviteMember()
+                        } label: {
+                            Image(systemName: DS.Icon.plus)
+                        }
                     }
                 }
             }

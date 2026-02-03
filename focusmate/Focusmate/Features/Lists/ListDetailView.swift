@@ -125,13 +125,15 @@ struct ListDetailView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button {
-                presentInvites()
-            } label: {
-                Image(systemName: "person.badge.plus")
+        if viewModel.isOwner {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    presentInvites()
+                } label: {
+                    Image(systemName: "person.badge.plus")
+                }
+                .accessibilityLabel("Invite to list")
             }
-            .accessibilityLabel("Invite to list")
         }
 
         ToolbarItem(placement: .navigationBarTrailing) {
