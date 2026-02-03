@@ -29,6 +29,7 @@ struct TaskDTO: Codable, Identifiable {
     var completed_at: String?
     let priority: Int?
     var starred: Bool?
+    var hidden: Bool?
     var position: Int?
     let status: String?
     let can_edit: Bool?
@@ -69,6 +70,10 @@ struct TaskDTO: Codable, Identifiable {
 
     var isStarred: Bool {
         starred ?? false
+    }
+
+    var isHidden: Bool {
+        hidden ?? false
     }
 
     var isRecurring: Bool {

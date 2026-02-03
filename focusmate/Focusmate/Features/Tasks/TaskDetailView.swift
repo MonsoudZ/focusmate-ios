@@ -241,6 +241,23 @@ struct TaskDetailView: View {
                 .buttonStyle(.plain)
             }
 
+            // Hide/Show (for shared tasks only)
+            if vm.canHide {
+                Button {
+                    Task { await vm.toggleHidden() }
+                } label: {
+                    VStack(spacing: DS.Spacing.xs) {
+                        Image(systemName: vm.task.isHidden ? "eye" : "eye.slash")
+                            .font(.system(size: 20))
+                            .foregroundStyle(vm.task.isHidden ? DS.Colors.success : DS.Colors.accent)
+                        Text(vm.task.isHidden ? "Show" : "Hide")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+
             // Share
             ShareLink(item: URL(string: "focusmate://task/\(vm.task.id)")!) {
                 VStack(spacing: DS.Spacing.xs) {

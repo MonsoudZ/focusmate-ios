@@ -42,6 +42,10 @@ final class TaskDetailViewModel {
         task.creator != nil
     }
 
+    var canHide: Bool {
+        isSharedTask && canEdit
+    }
+
     var subtaskProgress: Double {
         guard !subtasks.isEmpty else { return 0 }
         let completed = subtasks.filter { $0.isCompleted }.count
@@ -130,6 +134,25 @@ final class TaskDetailViewModel {
             Logger.error("Failed to toggle star", error: error, category: .api)
             HapticManager.error()
             self.error = ErrorHandler.shared.handle(error, context: "Toggling star")
+        }
+    }
+
+    func toggleHidden() async {
+        do {
+            _ = try await taskService.updateTask(
+                listId: listId,
+                taskId: task.id,
+                title: nil,
+                note: nil,
+                dueAt: nil,
+                hidden: !task.isHidden
+            )
+            HapticManager.selection()
+            await onUpdate()
+        } catch {
+            Logger.error("Failed to toggle hidden", error: error, category: .api)
+            HapticManager.error()
+            self.error = ErrorHandler.shared.handle(error, context: "Hiding task")
         }
     }
 

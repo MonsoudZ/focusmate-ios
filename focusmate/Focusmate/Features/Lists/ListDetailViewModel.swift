@@ -201,6 +201,34 @@ final class ListDetailViewModel {
         }
     }
 
+    func toggleHidden(_ task: TaskDTO) async {
+        guard canEdit else { return }
+
+        let originalTasks = tasks
+        if let idx = tasks.firstIndex(where: { $0.id == task.id }) {
+            tasks[idx].hidden = !(tasks[idx].hidden ?? false)
+        }
+
+        do {
+            let updated = try await taskService.updateTask(
+                listId: task.list_id,
+                taskId: task.id,
+                title: nil,
+                note: nil,
+                dueAt: nil,
+                hidden: !task.isHidden
+            )
+            if let idx = tasks.firstIndex(where: { $0.id == updated.id }) {
+                tasks[idx] = updated
+            }
+            HapticManager.selection()
+        } catch {
+            tasks = originalTasks
+            Logger.error("Failed to toggle hidden: \(error)", category: .api)
+            HapticManager.error()
+        }
+    }
+
     func toggleComplete(_ task: TaskDTO, reason: String? = nil) async {
         if task.isCompleted {
             let originalTasks = tasks

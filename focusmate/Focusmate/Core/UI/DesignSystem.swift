@@ -232,6 +232,16 @@ private extension UIColor {
 
 extension View {
 
+    /// Conditionally apply a modifier
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+
     /// Card background with shadow and continuous corners
     func card(padding: CGFloat = DS.Spacing.md) -> some View {
         self

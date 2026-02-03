@@ -278,6 +278,7 @@ struct ListDetailView: View {
             onStar: { await viewModel.toggleStar(task) },
             onTap: { presentTaskDetail(task) },
             onNudge: { await viewModel.nudgeAboutTask(task) },
+            onHide: { await viewModel.toggleHidden(task) },
             onDelete: { await viewModel.deleteTask(task) },
             onSubtaskEdit: { subtask in
                 presentEditSubtask(subtask, parentTask: task)
@@ -300,6 +301,7 @@ struct TaskRowContainer: View {
     let onStar: () async -> Void
     let onTap: () -> Void
     let onNudge: () async -> Void
+    let onHide: () async -> Void
     let onDelete: () async -> Void
     let onSubtaskEdit: (SubtaskDTO) -> Void
     let onAddSubtask: () -> Void
@@ -311,10 +313,12 @@ struct TaskRowContainer: View {
             onStar: onStar,
             onTap: onTap,
             onNudge: onNudge,
+            onHide: onHide,
             onSubtaskEdit: onSubtaskEdit,
             onAddSubtask: onAddSubtask,
             showStar: canEdit,
-            showNudge: isSharedList
+            showNudge: isSharedList,
+            showHide: isSharedList && canEdit
         )
         .listRowInsets(EdgeInsets(top: DS.Spacing.xs, leading: DS.Spacing.lg, bottom: DS.Spacing.xs, trailing: DS.Spacing.lg))
         .listRowSeparator(.hidden)
@@ -328,6 +332,18 @@ struct TaskRowContainer: View {
             }
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            if isSharedList && canEdit {
+                Button {
+                    Task { await onHide() }
+                } label: {
+                    Label(
+                        task.isHidden ? "Show" : "Hide",
+                        systemImage: task.isHidden ? "eye" : "eye.slash"
+                    )
+                }
+                .tint(task.isHidden ? DS.Colors.success : Color(.systemGray))
+            }
+
             if isSharedList {
                 Button {
                     Task { await onNudge() }

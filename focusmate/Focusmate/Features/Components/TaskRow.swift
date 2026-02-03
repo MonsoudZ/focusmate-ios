@@ -6,10 +6,12 @@ struct TaskRow: View {
     let onStar: () async -> Void
     let onTap: () -> Void
     let onNudge: () async -> Void
+    let onHide: () async -> Void
     let onSubtaskEdit: (SubtaskDTO) -> Void
     let onAddSubtask: () -> Void
     let showStar: Bool
     let showNudge: Bool
+    let showHide: Bool
 
     @EnvironmentObject var state: AppState
     @Environment(\.router) private var router
@@ -46,20 +48,24 @@ struct TaskRow: View {
         onStar: @escaping () async -> Void = {},
         onTap: @escaping () -> Void = {},
         onNudge: @escaping () async -> Void = {},
+        onHide: @escaping () async -> Void = {},
         onSubtaskEdit: @escaping (SubtaskDTO) -> Void = { _ in },
         onAddSubtask: @escaping () -> Void = {},
         showStar: Bool = true,
-        showNudge: Bool = false
+        showNudge: Bool = false,
+        showHide: Bool = false
     ) {
         self.task = task
         self.onComplete = onComplete
         self.onStar = onStar
         self.onTap = onTap
         self.onNudge = onNudge
+        self.onHide = onHide
         self.onSubtaskEdit = onSubtaskEdit
         self.onAddSubtask = onAddSubtask
         self.showStar = showStar
         self.showNudge = showNudge
+        self.showHide = showHide
     }
 
     var body: some View {
@@ -98,6 +104,18 @@ struct TaskRow: View {
             }
         }
         .floatingErrorBanner($completionError)
+        .if(showHide) { view in
+            view.contextMenu {
+                Button {
+                    Task { await onHide() }
+                } label: {
+                    Label(
+                        task.isHidden ? "Show to Members" : "Hide from Members",
+                        systemImage: task.isHidden ? "eye" : "eye.slash"
+                    )
+                }
+            }
+        }
     }
 
     // MARK: - Main Task Row
@@ -223,6 +241,17 @@ struct TaskRow: View {
                 Image(systemName: "repeat")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
+            }
+
+            // Hidden indicator
+            if task.isHidden {
+                HStack(spacing: 3) {
+                    Image(systemName: "eye.slash")
+                        .font(.system(size: 11))
+                    Text("Hidden")
+                        .font(.system(size: 12))
+                }
+                .foregroundStyle(.secondary)
             }
 
             // Tags

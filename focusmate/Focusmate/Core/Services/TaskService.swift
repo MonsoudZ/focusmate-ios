@@ -131,7 +131,7 @@ final class TaskService {
         }
     }
 
-    func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil, priority: TaskPriority? = nil, starred: Bool? = nil, tagIds: [Int]? = nil) async throws -> TaskDTO {
+    func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil, priority: TaskPriority? = nil, starred: Bool? = nil, hidden: Bool? = nil, tagIds: [Int]? = nil) async throws -> TaskDTO {
         try validateListId(listId)
         try validateTaskId(taskId)
         if let title, title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -145,6 +145,7 @@ final class TaskService {
                 color: color,
                 priority: priority?.rawValue,
                 starred: starred,
+                hidden: hidden,
                 tag_ids: tagIds
             ))
             let response: SingleTaskResponse = try await apiClient.request(
@@ -408,6 +409,7 @@ private struct UpdateTaskRequest: Encodable {
         let color: String?
         let priority: Int?
         let starred: Bool?
+        let hidden: Bool?
         let tag_ids: [Int]?
     }
 }
