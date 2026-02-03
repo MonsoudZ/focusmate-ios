@@ -341,6 +341,26 @@ final class TaskService {
             throw ErrorHandler.shared.handle(error, context: "\(action.capitalized) subtask")
         }
     }
+
+    // MARK: - Nudge
+
+    func nudgeTask(listId: Int, taskId: Int) async throws {
+        try validateListId(listId)
+        try validateTaskId(taskId)
+        do {
+            let endpoint = API.Lists.taskAction(String(listId), String(taskId), "nudge")
+            let _: NudgeResponse = try await apiClient.request("POST", endpoint, body: nil as String?)
+            Logger.debug("TaskService: Nudged task \(taskId)", category: .api)
+        } catch {
+            throw ErrorHandler.shared.handle(error, context: "Nudging task")
+        }
+    }
+}
+
+// MARK: - Response Models
+
+struct NudgeResponse: Codable {
+    let message: String
 }
 
 // MARK: - Request Models (local to TaskService)

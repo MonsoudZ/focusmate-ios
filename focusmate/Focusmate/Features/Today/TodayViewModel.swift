@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import SwiftUI
 
 @MainActor
 @Observable
@@ -18,6 +19,7 @@ final class TodayViewModel {
     var todayData: TodayResponse?
     var isLoading = true
     var error: FocusmateError?
+    var nudgeMessage: String?
 
     var onOverdueCountChange: ((Int) -> Void)?
 
@@ -160,6 +162,22 @@ final class TodayViewModel {
         } catch {
             Logger.error("Failed to toggle star", error: error, category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Starring task")
+        }
+    }
+
+    func nudgeTask(_ task: TaskDTO) async {
+        do {
+            try await taskService.nudgeTask(listId: task.list_id, taskId: task.id)
+            HapticManager.success()
+            withAnimation {
+                nudgeMessage = "Nudge sent!"
+            }
+        } catch {
+            Logger.error("Failed to nudge: \(error)", category: .api)
+            HapticManager.error()
+            withAnimation {
+                nudgeMessage = "Couldn't send nudge"
+            }
         }
     }
 

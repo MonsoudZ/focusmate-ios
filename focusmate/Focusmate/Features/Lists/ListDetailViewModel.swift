@@ -266,9 +266,7 @@ final class ListDetailViewModel {
 
     func nudgeAboutTask(_ task: TaskDTO) async {
         do {
-            let endpoint = API.Lists.taskAction(String(task.list_id), String(task.id), "nudge")
-            let _: NudgeResponse = try await taskService.apiClient.request("POST", endpoint, body: nil as String?)
-
+            try await taskService.nudgeTask(listId: task.list_id, taskId: task.id)
             HapticManager.success()
             withAnimation {
                 nudgeMessage = "Nudge sent!"

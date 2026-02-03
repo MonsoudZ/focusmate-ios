@@ -52,6 +52,20 @@ struct TodayView: View {
                 }
             }
         }
+        .overlay(alignment: .bottom) {
+            if let message = viewModel.nudgeMessage {
+                NudgeToast(message: message)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            withAnimation {
+                                viewModel.nudgeMessage = nil
+                            }
+                        }
+                    }
+            }
+        }
+        .animation(.easeInOut, value: viewModel.nudgeMessage)
         .task {
             viewModel.initializeServiceIfNeeded()
             await viewModel.loadToday()
@@ -325,12 +339,15 @@ struct TodayView: View {
                     onComplete: { await viewModel.loadToday() },
                     onStar: { await viewModel.toggleStar(task) },
                     onTap: { presentTaskDetail(task) },
+                    onNudge: { await viewModel.nudgeTask(task) },
                     onSubtaskEdit: { subtask in
                         presentEditSubtask(subtask, parentTask: task)
                     },
                     onAddSubtask: {
                         presentAddSubtask(for: task)
-                    }
+                    },
+                    showStar: task.can_edit ?? true,
+                    showNudge: task.creator != nil
                 )
             }
         }
