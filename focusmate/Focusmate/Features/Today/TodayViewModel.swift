@@ -145,6 +145,24 @@ final class TodayViewModel {
         }
     }
 
+    func toggleStar(_ task: TaskDTO) async {
+        do {
+            _ = try await taskService.updateTask(
+                listId: task.list_id,
+                taskId: task.id,
+                title: nil,
+                note: nil,
+                dueAt: nil,
+                starred: !task.isStarred
+            )
+            HapticManager.light()
+            await loadToday()
+        } catch {
+            Logger.error("Failed to toggle star", error: error, category: .api)
+            self.error = ErrorHandler.shared.handle(error, context: "Starring task")
+        }
+    }
+
     // MARK: - Subtask Actions
 
     func createSubtask(parentTask: TaskDTO, title: String) async {

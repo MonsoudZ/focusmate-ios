@@ -323,6 +323,7 @@ struct TodayView: View {
                 TaskRow(
                     task: task,
                     onComplete: { await viewModel.loadToday() },
+                    onStar: { await viewModel.toggleStar(task) },
                     onTap: { presentTaskDetail(task) },
                     onSubtaskEdit: { subtask in
                         presentEditSubtask(subtask, parentTask: task)
