@@ -34,25 +34,48 @@ struct EditTaskView: View {
                 }
 
                 Section("Due Date") {
-                    Toggle("Set due date", isOn: $viewModel.hasDueDate)
+                    if viewModel.originalHadDueDate && viewModel.hasDueDate {
+                        // Read-only display for tasks that originally had a due date
+                        HStack {
+                            Text("Due")
+                            Spacer()
+                            if let dueDate = viewModel.finalDueDate {
+                                Text(dueDate.formatted(date: .abbreviated, time: viewModel.hasSpecificTime ? .shortened : .omitted))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
 
-                    if viewModel.hasDueDate {
-                        DatePicker(
-                            "Date",
-                            selection: $viewModel.dueDate,
-                            in: Calendar.current.startOfDay(for: Date())...,
-                            displayedComponents: [.date]
-                        )
+                        // Remove due date option
+                        Button(role: .destructive) {
+                            viewModel.hasDueDate = false
+                        } label: {
+                            HStack {
+                                Image(systemName: "calendar.badge.minus")
+                                Text("Remove due date")
+                            }
+                        }
+                    } else {
+                        // UI for tasks without due date (or after removal)
+                        Toggle("Set due date", isOn: $viewModel.hasDueDate)
 
-                        Toggle("Specific time", isOn: $viewModel.hasSpecificTime)
-
-                        if viewModel.hasSpecificTime {
+                        if viewModel.hasDueDate {
                             DatePicker(
-                                "Time",
-                                selection: $viewModel.dueTime,
-                                in: viewModel.minimumTime...,
-                                displayedComponents: [.hourAndMinute]
+                                "Date",
+                                selection: $viewModel.dueDate,
+                                in: Calendar.current.startOfDay(for: Date())...,
+                                displayedComponents: [.date]
                             )
+
+                            Toggle("Specific time", isOn: $viewModel.hasSpecificTime)
+
+                            if viewModel.hasSpecificTime {
+                                DatePicker(
+                                    "Time",
+                                    selection: $viewModel.dueTime,
+                                    in: viewModel.minimumTime...,
+                                    displayedComponents: [.hourAndMinute]
+                                )
+                            }
                         }
                     }
                 }

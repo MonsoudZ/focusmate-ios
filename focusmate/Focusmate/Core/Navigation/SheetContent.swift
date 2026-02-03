@@ -122,6 +122,11 @@ struct SheetContent: View {
                 router.sheetCallbacks.onOverdueReasonSubmitted?(reason)
             }
 
+        case .rescheduleTask(let task):
+            RescheduleSheet(task: task) { newDate, reason in
+                await router.sheetCallbacks.onRescheduleSubmitted?(newDate, reason)
+            }
+
         case .taskDeepLink(let taskId):
             TaskDeepLinkView(
                 taskId: taskId,

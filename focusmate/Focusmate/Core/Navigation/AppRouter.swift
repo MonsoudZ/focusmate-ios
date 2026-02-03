@@ -212,6 +212,7 @@ struct SheetCallbacks {
     // Task edit callbacks
     var onTaskSaved: (() -> Void)?
     var onOverdueReasonSubmitted: ((String) -> Void)?
+    var onRescheduleSubmitted: ((Date, String) async -> Void)?
     var onTagCreated: (() async -> Void)?
 
     // Lists tab callbacks

@@ -178,6 +178,24 @@ final class TaskService {
         }
     }
 
+    func rescheduleTask(listId: Int, taskId: Int, newDueAt: String, reason: String) async throws -> TaskDTO {
+        try validateListId(listId)
+        try validateTaskId(taskId)
+
+        do {
+            let request = RescheduleTaskRequest(new_due_at: newDueAt, reason: reason)
+            let response: SingleTaskResponse = try await apiClient.request(
+                "POST",
+                API.Lists.taskAction(String(listId), String(taskId), "reschedule"),
+                body: request
+            )
+            await MainActor.run { sideEffects.taskUpdated(response.task) }
+            return response.task
+        } catch {
+            throw ErrorHandler.shared.handle(error, context: "Rescheduling task")
+        }
+    }
+
     func completeTask(listId: Int, taskId: Int, reason: String? = nil) async throws -> TaskDTO {
         try validateListId(listId)
         try validateTaskId(taskId)
@@ -416,6 +434,11 @@ private struct UpdateTaskRequest: Encodable {
 
 private struct CompleteTaskRequest: Encodable {
     let missed_reason: String
+}
+
+private struct RescheduleTaskRequest: Encodable {
+    let new_due_at: String
+    let reason: String
 }
 
 private struct ReorderTasksRequest: Encodable {

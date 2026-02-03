@@ -21,6 +21,7 @@ enum Sheet: Identifiable {
     case editTask(TaskDTO, listId: Int)
     case createTag
     case overdueReason(TaskDTO)
+    case rescheduleTask(TaskDTO)
     case taskDeepLink(Int)
 
     // MARK: - Invite Sheets
@@ -69,6 +70,8 @@ enum Sheet: Identifiable {
             return "createTag"
         case .overdueReason(let task):
             return "overdueReason-\(task.id)"
+        case .rescheduleTask(let task):
+            return "rescheduleTask-\(task.id)"
         case .taskDeepLink(let taskId):
             return "taskDeepLink-\(taskId)"
         case .inviteMember(let list):

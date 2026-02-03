@@ -37,6 +37,7 @@ struct TaskDTO: Codable, Identifiable {
     let created_at: String?
     let updated_at: String?
     let tags: [TagDTO]?
+    let reschedule_events: [RescheduleEventDTO]?
     let parent_task_id: Int?
     var subtasks: [SubtaskDTO]?
     let creator: TaskCreatorDTO?
@@ -86,6 +87,14 @@ struct TaskDTO: Codable, Identifiable {
 
     var needsReason: Bool {
         isOverdue && (requires_explanation_if_missed ?? false) && missed_reason == nil
+    }
+
+    var hasBeenRescheduled: Bool {
+        !(reschedule_events ?? []).isEmpty
+    }
+
+    var rescheduleCount: Int {
+        reschedule_events?.count ?? 0
     }
 
     var dueDate: Date? {

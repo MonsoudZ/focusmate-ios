@@ -66,6 +66,11 @@ struct TaskDetailView: View {
                         missedReasonCard(missedReason)
                     }
 
+                    // Reschedule History Card
+                    if vm.hasRescheduleHistory {
+                        rescheduleHistoryCard
+                    }
+
                     // Actions
                     actionsSection
                 }
@@ -251,6 +256,23 @@ struct TaskDetailView: View {
                             .font(.system(size: 20))
                             .foregroundStyle(vm.task.isHidden ? DS.Colors.success : DS.Colors.accent)
                         Text(vm.task.isHidden ? "Show" : "Hide")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+
+            // Reschedule (for tasks with due date that can be edited)
+            if vm.canEdit && vm.task.dueDate != nil && !vm.task.isCompleted {
+                Button {
+                    presentReschedule()
+                } label: {
+                    VStack(spacing: DS.Spacing.xs) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 20))
+                            .foregroundStyle(DS.Colors.accent)
+                        Text("Reschedule")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -587,6 +609,75 @@ struct TaskDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
     }
 
+    // MARK: - Reschedule History Card
+
+    private var rescheduleHistoryCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation { vm.isRescheduleHistoryExpanded.toggle() }
+            } label: {
+                HStack {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .foregroundStyle(DS.Colors.warning)
+                    Text("Reschedule History")
+                        .font(.headline)
+                    Text("(\(vm.rescheduleCount))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: vm.isRescheduleHistoryExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(DS.Spacing.md)
+            }
+            .buttonStyle(.plain)
+
+            if vm.isRescheduleHistoryExpanded {
+                Divider().padding(.horizontal, DS.Spacing.md)
+
+                ForEach(vm.rescheduleEvents) { event in
+                    rescheduleEventRow(event)
+                    if event.id != vm.rescheduleEvents.last?.id {
+                        Divider().padding(.leading, 52)
+                    }
+                }
+            }
+        }
+        .card()
+    }
+
+    private func rescheduleEventRow(_ event: RescheduleEventDTO) -> some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+            HStack(spacing: DS.Spacing.xs) {
+                if let oldDate = event.previousDueDate {
+                    Text(oldDate.formatted(date: .abbreviated, time: .omitted))
+                        .foregroundStyle(.secondary)
+                        .strikethrough()
+                }
+                Image(systemName: "arrow.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let newDate = event.newDueDate {
+                    Text(newDate.formatted(date: .abbreviated, time: .omitted))
+                        .foregroundStyle(DS.Colors.accent)
+                }
+            }
+            .font(.subheadline)
+
+            Text(event.reasonLabel)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if let createdAt = event.createdDate {
+                Text(createdAt.formatted(.relative(presentation: .named)))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(DS.Spacing.md)
+    }
+
     // MARK: - Actions Section
 
     private var actionsSection: some View {
@@ -641,6 +732,15 @@ struct TaskDetailView: View {
         router.present(.overdueReason(vm.task))
     }
 
+    private func presentReschedule() {
+        router.sheetCallbacks.onRescheduleSubmitted = { newDate, reason in
+            await vm.rescheduleTask(newDate: newDate, reason: reason)
+            router.dismissSheet()
+            dismiss()
+        }
+        router.present(.rescheduleTask(vm.task))
+    }
+
     // MARK: - Actions
 
     private func handleComplete() {
@@ -649,7 +749,9 @@ struct TaskDetailView: View {
                 await vm.onComplete()
                 dismiss()
             }
-        } else if vm.isOverdue {
+        } else if vm.requiresCompletionReason {
+            // Require reason if task is overdue OR if it was overdue and user edited the due date
+            // This prevents gaming the escalation by pushing the due date forward
             presentOverdueReason()
         } else {
             Task {

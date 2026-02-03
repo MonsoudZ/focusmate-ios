@@ -39,6 +39,7 @@ final class TaskFormViewModel {
     // MARK: - Edit-only Properties
 
     var hasDueDate = true
+    let originalHadDueDate: Bool
 
     // MARK: - Callbacks
 
@@ -56,8 +57,10 @@ final class TaskFormViewModel {
         case .create:
             let calendar = Calendar.current
             dueTime = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
+            originalHadDueDate = false
 
         case .edit(_, let task):
+            originalHadDueDate = task.due_at != nil
             title = task.title
             note = task.note ?? ""
             hasDueDate = task.due_at != nil

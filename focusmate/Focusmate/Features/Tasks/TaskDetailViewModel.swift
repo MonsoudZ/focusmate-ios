@@ -10,6 +10,7 @@ final class TaskDetailViewModel {
     var showingDeleteConfirmation = false
     var error: FocusmateError?
     var isSubtasksExpanded = true
+    var isRescheduleHistoryExpanded = false
     var showNudgeSent = false
     var showCopied = false
     var subtasks: [SubtaskDTO]
@@ -32,6 +33,15 @@ final class TaskDetailViewModel {
 
     var isOverdue: Bool {
         task.isActuallyOverdue
+    }
+
+    var isTrackedForEscalation: Bool {
+        EscalationService.shared.isTaskTracked(task.id)
+    }
+
+    /// Whether completing this task requires a reason (overdue or tracked for escalation)
+    var requiresCompletionReason: Bool {
+        isOverdue || isTrackedForEscalation
     }
 
     var canEdit: Bool {
@@ -59,6 +69,18 @@ final class TaskDetailViewModel {
 
     var hasSubtasks: Bool {
         !subtasks.isEmpty
+    }
+
+    var hasRescheduleHistory: Bool {
+        task.hasBeenRescheduled
+    }
+
+    var rescheduleCount: Int {
+        task.rescheduleCount
+    }
+
+    var rescheduleEvents: [RescheduleEventDTO] {
+        task.reschedule_events ?? []
     }
 
     // MARK: - Init
@@ -182,6 +204,23 @@ final class TaskDetailViewModel {
         Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             showCopied = false
+        }
+    }
+
+    func rescheduleTask(newDate: Date, reason: String) async {
+        do {
+            _ = try await taskService.rescheduleTask(
+                listId: listId,
+                taskId: task.id,
+                newDueAt: newDate.ISO8601Format(),
+                reason: reason
+            )
+            HapticManager.success()
+            await onUpdate()
+        } catch {
+            Logger.error("Failed to reschedule task", error: error, category: .api)
+            HapticManager.error()
+            self.error = ErrorHandler.shared.handle(error, context: "Rescheduling task")
         }
     }
 
