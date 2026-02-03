@@ -170,10 +170,10 @@ struct TaskRow: View {
     private var titleRow: some View {
         HStack(spacing: DS.Spacing.xs) {
             // Priority indicator
-            if task.taskPriority == .urgent {
-                Image(systemName: "flag.fill")
+            if let icon = task.taskPriority.icon {
+                Image(systemName: icon)
                     .font(.system(size: 12))
-                    .foregroundStyle(DS.Colors.error)
+                    .foregroundStyle(task.taskPriority.color)
             }
 
             Text(task.title)
