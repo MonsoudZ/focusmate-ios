@@ -10,4 +10,7 @@ enum Route: Hashable {
     // Settings tab routes
     case notificationSettings
     case appBlockingSettings
+    #if DEBUG
+    case debugNotifications
+    #endif
 }

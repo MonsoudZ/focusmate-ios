@@ -108,6 +108,17 @@ struct SettingsView: View {
                 }
             }
 
+            #if DEBUG
+            // MARK: - Debug
+            Section("Debug") {
+                Button {
+                    router.push(.debugNotifications, in: .settings)
+                } label: {
+                    SettingsRow("Notification Testing", icon: "ant")
+                }
+            }
+            #endif
+
             // MARK: - Sign Out
             Section {
                 Button {

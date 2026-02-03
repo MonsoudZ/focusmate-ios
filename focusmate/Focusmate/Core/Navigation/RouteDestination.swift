@@ -41,6 +41,11 @@ struct RouteDestination: View {
 
         case .appBlockingSettings:
             AppBlockingSettingsView()
+
+        #if DEBUG
+        case .debugNotifications:
+            DebugNotificationView()
+        #endif
         }
     }
 }
