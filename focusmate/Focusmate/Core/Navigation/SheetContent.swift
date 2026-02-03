@@ -35,6 +35,7 @@ struct SheetContent: View {
                 },
                 taskService: appState.taskService,
                 tagService: appState.tagService,
+                subtaskManager: appState.subtaskManager,
                 listId: task.list_id
             )
 
@@ -125,7 +126,8 @@ struct SheetContent: View {
             TaskDeepLinkView(
                 taskId: taskId,
                 taskService: appState.taskService,
-                tagService: appState.tagService
+                tagService: appState.tagService,
+                subtaskManager: appState.subtaskManager
             )
 
         case .inviteMember(let list):

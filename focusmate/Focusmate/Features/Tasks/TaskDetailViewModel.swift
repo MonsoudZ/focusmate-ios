@@ -1,10 +1,20 @@
+import Combine
 import Foundation
+import UIKit
 
 @MainActor
 @Observable
 final class TaskDetailViewModel {
+    // MARK: - State
+
     var showingDeleteConfirmation = false
     var error: FocusmateError?
+    var isSubtasksExpanded = true
+    var showNudgeSent = false
+    var showCopied = false
+    var subtasks: [SubtaskDTO]
+
+    // MARK: - Dependencies
 
     let task: TaskDTO
     let listName: String
@@ -14,6 +24,40 @@ final class TaskDetailViewModel {
     let onUpdate: () async -> Void
     let taskService: TaskService
     let tagService: TagService
+    let subtaskManager: SubtaskManager
+
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Computed Properties
+
+    var isOverdue: Bool {
+        task.isActuallyOverdue
+    }
+
+    var canEdit: Bool {
+        task.can_edit ?? true
+    }
+
+    var isSharedTask: Bool {
+        task.creator != nil
+    }
+
+    var subtaskProgress: Double {
+        guard !subtasks.isEmpty else { return 0 }
+        let completed = subtasks.filter { $0.isCompleted }.count
+        return Double(completed) / Double(subtasks.count)
+    }
+
+    var subtaskProgressText: String {
+        let completed = subtasks.filter { $0.isCompleted }.count
+        return "\(completed)/\(subtasks.count)"
+    }
+
+    var hasSubtasks: Bool {
+        !subtasks.isEmpty
+    }
+
+    // MARK: - Init
 
     init(
         task: TaskDTO,
@@ -21,6 +65,7 @@ final class TaskDetailViewModel {
         listId: Int,
         taskService: TaskService,
         tagService: TagService,
+        subtaskManager: SubtaskManager,
         onComplete: @escaping () async -> Void,
         onDelete: @escaping () async -> Void,
         onUpdate: @escaping () async -> Void
@@ -30,12 +75,127 @@ final class TaskDetailViewModel {
         self.listId = listId
         self.taskService = taskService
         self.tagService = tagService
+        self.subtaskManager = subtaskManager
         self.onComplete = onComplete
         self.onDelete = onDelete
         self.onUpdate = onUpdate
+        self.subtasks = task.subtasks ?? []
+
+        subscribeToSubtaskChanges()
     }
 
-    var isOverdue: Bool {
-        task.isActuallyOverdue
+    // MARK: - Subtask Subscription
+
+    private func subscribeToSubtaskChanges() {
+        subtaskManager.changePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] change in
+                guard let self, change.parentTaskId == self.task.id else { return }
+                self.handleSubtaskChange(change)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleSubtaskChange(_ change: SubtaskChange) {
+        switch change.type {
+        case .completed(let subtask), .reopened(let subtask), .updated(let subtask):
+            if let index = subtasks.firstIndex(where: { $0.id == subtask.id }) {
+                subtasks[index] = subtask
+            }
+        case .created(let subtask):
+            subtasks.append(subtask)
+        case .deleted(let subtaskId):
+            subtasks.removeAll { $0.id == subtaskId }
+        }
+    }
+
+    // MARK: - Actions
+
+    func toggleStar() async {
+        do {
+            _ = try await taskService.updateTask(
+                listId: listId,
+                taskId: task.id,
+                title: nil,
+                note: nil,
+                dueAt: nil,
+                color: nil,
+                priority: nil,
+                starred: !task.isStarred,
+                tagIds: nil
+            )
+            HapticManager.success()
+            await onUpdate()
+        } catch {
+            Logger.error("Failed to toggle star", error: error, category: .api)
+            HapticManager.error()
+            self.error = ErrorHandler.shared.handle(error, context: "Toggling star")
+        }
+    }
+
+    func nudgeTask() async {
+        do {
+            try await taskService.nudgeTask(listId: listId, taskId: task.id)
+            HapticManager.success()
+            showNudgeSent = true
+            // Auto-dismiss after 2 seconds
+            Task {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                showNudgeSent = false
+            }
+        } catch {
+            Logger.error("Failed to nudge task", error: error, category: .api)
+            HapticManager.error()
+            self.error = ErrorHandler.shared.handle(error, context: "Sending nudge")
+        }
+    }
+
+    func copyTaskLink() {
+        let link = "focusmate://task/\(task.id)"
+        UIPasteboard.general.string = link
+        HapticManager.success()
+        showCopied = true
+        // Auto-dismiss after 2 seconds
+        Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            showCopied = false
+        }
+    }
+
+    func createSubtask(title: String) async {
+        do {
+            _ = try await subtaskManager.create(parentTask: task, title: title)
+        } catch {
+            Logger.error("Failed to create subtask", error: error, category: .api)
+            HapticManager.error()
+            self.error = ErrorHandler.shared.handle(error, context: "Creating subtask")
+        }
+    }
+
+    func toggleSubtaskComplete(_ subtask: SubtaskDTO) async {
+        do {
+            _ = try await subtaskManager.toggleComplete(subtask: subtask, parentTask: task)
+        } catch {
+            Logger.error("Failed to toggle subtask", error: error, category: .api)
+            HapticManager.error()
+        }
+    }
+
+    func deleteSubtask(_ subtask: SubtaskDTO) async {
+        do {
+            try await subtaskManager.delete(subtask: subtask, parentTask: task)
+        } catch {
+            Logger.error("Failed to delete subtask", error: error, category: .api)
+            HapticManager.error()
+        }
+    }
+
+    func updateSubtask(_ subtask: SubtaskDTO, title: String) async {
+        do {
+            _ = try await subtaskManager.update(subtask: subtask, parentTask: task, title: title)
+        } catch {
+            Logger.error("Failed to update subtask", error: error, category: .api)
+            HapticManager.error()
+        }
     }
 }
