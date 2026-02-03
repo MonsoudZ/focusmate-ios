@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RegisterView: View {
     @EnvironmentObject var state: AppState
+    @EnvironmentObject var auth: AuthStore
     @Environment(\.dismiss) var dismiss
     @State private var name = ""
     @State private var email = ""
@@ -84,16 +85,16 @@ struct RegisterView: View {
                     Button {
                         Task { await register() }
                     } label: {
-                        Text(state.auth.isLoading ? "Creating Account..." : "Create Account")
+                        Text(auth.isLoading ? "Creating Account..." : "Create Account")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(IntentiaPrimaryButtonStyle())
-                    .disabled(state.auth.isLoading || !isValid)
+                    .disabled(auth.isLoading || !isValid)
                     .padding(.top, DS.Spacing.sm)
                 }
                 .padding(DS.Spacing.xl)
             }
-            .floatingErrorBanner($state.auth.error) {
+            .floatingErrorBanner($auth.error) {
                 await register()
             }
             .navigationTitle("Create Account")
@@ -110,10 +111,10 @@ struct RegisterView: View {
     }
 
     private func register() async {
-        state.auth.error = nil
-        await state.auth.register(email: email, password: password, name: name)
+        auth.error = nil
+        await auth.register(email: email, password: password, name: name)
 
-        if state.auth.jwt != nil {
+        if auth.jwt != nil {
             dismiss()
         }
     }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ForgotPasswordView: View {
     @EnvironmentObject var state: AppState
+    @EnvironmentObject var auth: AuthStore
     @Environment(\.dismiss) var dismiss
     @State private var email = ""
     @State private var submitted = false
@@ -18,8 +19,8 @@ struct ForgotPasswordView: View {
                 }
                 .padding(DS.Spacing.xl)
             }
-            .floatingErrorBanner($state.auth.error) {
-                await state.auth.forgotPassword(email: email)
+            .floatingErrorBanner($auth.error) {
+                await auth.forgotPassword(email: email)
             }
             .navigationTitle("Reset Password")
             .navigationBarTitleDisplayMode(.inline)
@@ -66,17 +67,17 @@ struct ForgotPasswordView: View {
 
             Button {
                 Task {
-                    await state.auth.forgotPassword(email: email)
-                    if state.auth.error == nil {
+                    await auth.forgotPassword(email: email)
+                    if auth.error == nil {
                         submitted = true
                     }
                 }
             } label: {
-                Text(state.auth.isLoading ? "Sending..." : "Send Reset Link")
+                Text(auth.isLoading ? "Sending..." : "Send Reset Link")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(IntentiaPrimaryButtonStyle())
-            .disabled(state.auth.isLoading || !InputValidation.isValidEmail(email))
+            .disabled(auth.isLoading || !InputValidation.isValidEmail(email))
 
             Spacer(minLength: DS.Spacing.xxxl)
         }

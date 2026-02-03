@@ -3,6 +3,7 @@ import AuthenticationServices
 
 struct SignInView: View {
     @EnvironmentObject var state: AppState
+    @EnvironmentObject var auth: AuthStore
     @Environment(\.router) private var router
     @State private var email = ""
     @State private var password = ""
@@ -46,13 +47,13 @@ struct SignInView: View {
 
                 // Sign In button
                 Button {
-                    Task { await state.auth.signIn(email: email, password: password) }
+                    Task { await auth.signIn(email: email, password: password) }
                 } label: {
-                    Text(state.auth.isLoading ? "Signing in..." : "Sign In")
+                    Text(auth.isLoading ? "Signing in..." : "Sign In")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(IntentiaPrimaryButtonStyle())
-                .disabled(state.auth.isLoading || !InputValidation.isValidEmail(email) || password.isEmpty)
+                .disabled(auth.isLoading || !InputValidation.isValidEmail(email) || password.isEmpty)
 
                 // Forgot password link
                 Button("Forgot Password?") {
@@ -67,7 +68,7 @@ struct SignInView: View {
                 SignInWithAppleButton(.signIn) { request in
                     request.requestedScopes = [.email, .fullName]
                 } onCompletion: { result in
-                    state.auth.handleAppleSignIn(result)
+                    auth.handleAppleSignIn(result)
                 }
                 .signInWithAppleButtonStyle(.black)
                 .frame(height: 54)
@@ -91,8 +92,8 @@ struct SignInView: View {
             }
             .padding(.horizontal, DS.Spacing.xl)
         }
-        .floatingErrorBanner($state.auth.error) {
-            await state.auth.signIn(email: email, password: password)
+        .floatingErrorBanner($auth.error) {
+            await auth.signIn(email: email, password: password)
         }
         .surfaceBackground()
     }

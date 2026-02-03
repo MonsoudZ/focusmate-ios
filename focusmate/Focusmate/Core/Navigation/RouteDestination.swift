@@ -27,6 +27,7 @@ struct RouteDestination: View {
                 onUpdate: { },
                 taskService: appState.taskService,
                 tagService: appState.tagService,
+                subtaskManager: appState.subtaskManager,
                 listId: task.list_id
             )
 
