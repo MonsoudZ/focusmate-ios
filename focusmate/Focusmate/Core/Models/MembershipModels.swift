@@ -10,6 +10,10 @@ struct MembershipDTO: Codable, Identifiable {
     var isEditor: Bool {
         role == "editor"
     }
+
+    var isOwner: Bool {
+        role == "owner"
+    }
 }
 
 struct MemberUser: Codable {

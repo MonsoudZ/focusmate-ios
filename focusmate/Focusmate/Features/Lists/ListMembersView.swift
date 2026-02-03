@@ -14,25 +14,38 @@ struct ListMembersView: View {
             Group {
                 if viewModel.isLoading {
                     ProgressView()
-                } else if viewModel.memberships.isEmpty {
-                    if viewModel.isOwner {
-                        EmptyState(
-                            "No members yet",
-                            message: "Invite people to collaborate on this list",
-                            icon: DS.Icon.share,
-                            actionTitle: "Invite Someone"
-                        ) {
-                            presentInviteMember()
-                        }
-                    } else {
-                        EmptyState(
-                            "No members yet",
-                            message: "Only the list owner can invite members",
-                            icon: DS.Icon.share
-                        )
-                    }
+                } else if !viewModel.isOwner && viewModel.memberships.isEmpty {
+                    // Non-owners see empty state when no members loaded
+                    EmptyState(
+                        "No members yet",
+                        message: "Only the list owner can invite members",
+                        icon: DS.Icon.share
+                    )
                 } else {
                     List {
+                        // Current members section (show first)
+                        if !viewModel.memberships.isEmpty {
+                            Section {
+                                ForEach(viewModel.memberships) { membership in
+                                    MemberRowView(membership: membership)
+                                        .swipeActions(edge: .trailing) {
+                                            if viewModel.isOwner && !membership.isOwner {
+                                                Button("Remove", role: .destructive) {
+                                                    viewModel.memberToRemove = membership
+                                                }
+                                            }
+                                        }
+                                }
+                            } header: {
+                                HStack {
+                                    Text("Members")
+                                    Spacer()
+                                    Text("\(viewModel.memberships.count)")
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+
                         // Friends section (owners only)
                         if viewModel.isOwner && !viewModel.availableFriends.isEmpty {
                             Section {
@@ -46,7 +59,7 @@ struct ListMembersView: View {
                                     )
                                 }
                             } header: {
-                                Text("Friends")
+                                Text("Add Friends")
                             } footer: {
                                 Text("Quickly add friends to this list")
                             }
@@ -69,24 +82,6 @@ struct ListMembersView: View {
                                 .foregroundStyle(.primary)
                             } footer: {
                                 Text("Share a link with anyone to invite them")
-                            }
-                        }
-
-                        // Existing members section
-                        if !viewModel.memberships.isEmpty {
-                            Section {
-                                ForEach(viewModel.memberships) { membership in
-                                    MemberRowView(membership: membership)
-                                        .swipeActions(edge: .trailing) {
-                                            Button("Remove", role: .destructive) {
-                                                viewModel.memberToRemove = membership
-                                            }
-                                        }
-                                }
-                            } header: {
-                                Text("Members")
-                            } footer: {
-                                Text("Editors can add and complete tasks. Viewers can only view.")
                             }
                         }
                     }
@@ -149,8 +144,15 @@ struct MemberRowView: View {
             Avatar(membership.user.name ?? membership.user.email, size: 40)
 
             VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
-                Text(membership.user.name ?? "Unknown")
-                    .font(.body)
+                HStack(spacing: DS.Spacing.xs) {
+                    Text(membership.user.name ?? "Unknown")
+                        .font(.body)
+                    if membership.isOwner {
+                        Image(systemName: "crown.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.yellow)
+                    }
+                }
                 Text(membership.user.email ?? "")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -213,13 +215,37 @@ private struct RoleBadge: View {
     let role: String
     let isEditor: Bool
 
+    private var isOwner: Bool {
+        role == "owner"
+    }
+
+    private var backgroundColor: Color {
+        if isOwner {
+            return Color.yellow.opacity(0.15)
+        } else if isEditor {
+            return DS.Colors.accent.opacity(0.1)
+        } else {
+            return Color.gray.opacity(0.1)
+        }
+    }
+
+    private var foregroundColor: Color {
+        if isOwner {
+            return .orange
+        } else if isEditor {
+            return DS.Colors.accent
+        } else {
+            return .gray
+        }
+    }
+
     var body: some View {
         Text(role.capitalized)
             .font(.caption)
             .padding(.horizontal, DS.Spacing.sm)
             .padding(.vertical, DS.Spacing.xs)
-            .background(isEditor ? DS.Colors.accent.opacity(0.1) : Color.gray.opacity(0.1))
-            .foregroundStyle(isEditor ? DS.Colors.accent : .gray)
+            .background(backgroundColor)
+            .foregroundStyle(foregroundColor)
             .clipShape(Capsule())
     }
 }
