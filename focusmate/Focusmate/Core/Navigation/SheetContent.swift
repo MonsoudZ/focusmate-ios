@@ -51,10 +51,10 @@ struct SheetContent: View {
 
         // MARK: - Lists Tab Sheets
         case .createList:
-            CreateListView(listService: appState.listService)
+            CreateListView(listService: appState.listService, tagService: appState.tagService)
 
         case .editList(let list):
-            EditListView(list: list, listService: appState.listService)
+            EditListView(list: list, listService: appState.listService, tagService: appState.tagService)
 
         case .enterInviteCode:
             EnterInviteCodeView(

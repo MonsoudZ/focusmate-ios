@@ -253,23 +253,23 @@ struct TaskRow: View {
     }
 
     private func tagsView(_ tags: [TagDTO]) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: DS.Spacing.xs) {
             ForEach(tags.prefix(2)) { tag in
                 Text(tag.name)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(DS.Typography.caption2.weight(.medium))
                     .foregroundStyle(tag.tagColor)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xxs)
                     .background(tag.tagColor.opacity(0.15))
                     .clipShape(Capsule())
             }
 
             if tags.count > 2 {
                 Text("+\(tags.count - 2)")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(DS.Typography.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xxs)
                     .background(Color(.tertiarySystemFill))
                     .clipShape(Capsule())
             }

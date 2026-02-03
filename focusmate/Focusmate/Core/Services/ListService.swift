@@ -28,15 +28,15 @@ final class ListService {
         return response.list
     }
 
-    func createList(name: String, description: String?, color: String = "blue") async throws -> ListDTO {
-        let request = CreateListRequest(list: .init(name: name, description: description, color: color))
+    func createList(name: String, description: String?, color: String = "blue", tagIds: [Int] = []) async throws -> ListDTO {
+        let request = CreateListRequest(list: .init(name: name, description: description, color: color, tagIds: tagIds))
         let response: ListResponse = try await apiClient.request("POST", API.Lists.root, body: request)
         await cache.invalidate(Self.cacheKey)
         return response.list
     }
 
-    func updateList(id: Int, name: String?, description: String?, color: String? = nil) async throws -> ListDTO {
-        let request = UpdateListRequest(list: .init(name: name, description: description, visibility: nil, color: color))
+    func updateList(id: Int, name: String?, description: String?, color: String? = nil, tagIds: [Int]? = nil) async throws -> ListDTO {
+        let request = UpdateListRequest(list: .init(name: name, description: description, visibility: nil, color: color, tag_ids: tagIds))
         let response: ListResponse = try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
         await cache.invalidate(Self.cacheKey)
         return response.list

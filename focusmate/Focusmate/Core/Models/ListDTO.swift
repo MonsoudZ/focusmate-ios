@@ -13,6 +13,7 @@ struct ListDTO: Codable, Identifiable, Hashable {
     let completed_tasks_count: Int?
     let overdue_tasks_count: Int?
     let members: [ListMemberDTO]?
+    let tags: [TagDTO]?
     let created_at: String?
     let updated_at: String?
 

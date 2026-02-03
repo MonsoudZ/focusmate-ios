@@ -6,18 +6,31 @@ final class EditListViewModel {
     var name: String
     var description: String
     var selectedColor: String
+    var selectedTagIds: Set<Int>
+    var availableTags: [TagDTO] = []
     var isLoading = false
     var error: FocusmateError?
 
     private let list: ListDTO
     private let listService: ListService
+    let tagService: TagService
 
-    init(list: ListDTO, listService: ListService) {
+    init(list: ListDTO, listService: ListService, tagService: TagService) {
         self.list = list
         self.listService = listService
+        self.tagService = tagService
         self.name = list.name
         self.description = list.description ?? ""
         self.selectedColor = list.color ?? "blue"
+        self.selectedTagIds = Set((list.tags ?? []).map { $0.id })
+    }
+
+    func loadTags() async {
+        do {
+            availableTags = try await tagService.fetchTags()
+        } catch {
+            Logger.error("Failed to load tags", error: error, category: .api)
+        }
     }
 
     func updateList() async -> Bool {
@@ -32,7 +45,8 @@ final class EditListViewModel {
                 id: list.id,
                 name: trimmedName,
                 description: description.isEmpty ? nil : description,
-                color: selectedColor
+                color: selectedColor,
+                tagIds: Array(selectedTagIds)
             )
             HapticManager.success()
             return true

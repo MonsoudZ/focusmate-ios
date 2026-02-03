@@ -4,9 +4,10 @@ struct EditListView: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var viewModel: EditListViewModel
+    @State private var showingCreateTag = false
 
-    init(list: ListDTO, listService: ListService) {
-        _viewModel = State(initialValue: EditListViewModel(list: list, listService: listService))
+    init(list: ListDTO, listService: ListService, tagService: TagService) {
+        _viewModel = State(initialValue: EditListViewModel(list: list, listService: listService, tagService: tagService))
     }
 
     var body: some View {
@@ -28,6 +29,14 @@ struct EditListView: View {
                 Section("Color") {
                     ListColorPicker(selected: $viewModel.selectedColor)
                         .padding(.vertical, DS.Spacing.sm)
+                }
+
+                Section("Tags") {
+                    TagPickerView(
+                        selectedTagIds: $viewModel.selectedTagIds,
+                        availableTags: viewModel.availableTags,
+                        onCreateTag: { showingCreateTag = true }
+                    )
                 }
             }
             .surfaceFormBackground()
@@ -54,6 +63,14 @@ struct EditListView: View {
                 }
             }
             .floatingErrorBanner($viewModel.error)
+            .task {
+                await viewModel.loadTags()
+            }
+            .sheet(isPresented: $showingCreateTag) {
+                CreateTagView(tagService: viewModel.tagService) {
+                    Task { await viewModel.loadTags() }
+                }
+            }
         }
     }
 }

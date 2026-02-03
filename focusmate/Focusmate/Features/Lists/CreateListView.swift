@@ -5,9 +5,10 @@ struct CreateListView: View {
     @FocusState private var isNameFocused: Bool
 
     @State private var viewModel: CreateListViewModel
+    @State private var showingCreateTag = false
 
-    init(listService: ListService) {
-        _viewModel = State(initialValue: CreateListViewModel(listService: listService))
+    init(listService: ListService, tagService: TagService) {
+        _viewModel = State(initialValue: CreateListViewModel(listService: listService, tagService: tagService))
     }
 
     var body: some View {
@@ -30,6 +31,14 @@ struct CreateListView: View {
                 Section("Color") {
                     ListColorPicker(selected: $viewModel.selectedColor)
                         .padding(.vertical, DS.Spacing.sm)
+                }
+
+                Section("Tags") {
+                    TagPickerView(
+                        selectedTagIds: $viewModel.selectedTagIds,
+                        availableTags: viewModel.availableTags,
+                        onCreateTag: { showingCreateTag = true }
+                    )
                 }
             }
             .surfaceFormBackground()
@@ -56,9 +65,17 @@ struct CreateListView: View {
                 }
             }
             .floatingErrorBanner($viewModel.error)
+            .task {
+                await viewModel.loadTags()
+            }
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     isNameFocused = true
+                }
+            }
+            .sheet(isPresented: $showingCreateTag) {
+                CreateTagView(tagService: viewModel.tagService) {
+                    Task { await viewModel.loadTags() }
                 }
             }
         }

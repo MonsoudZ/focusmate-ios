@@ -6,13 +6,25 @@ final class CreateListViewModel {
     var name = ""
     var description = ""
     var selectedColor = "blue"
+    var selectedTagIds: Set<Int> = []
+    var availableTags: [TagDTO] = []
     var isLoading = false
     var error: FocusmateError?
 
     private let listService: ListService
+    let tagService: TagService
 
-    init(listService: ListService) {
+    init(listService: ListService, tagService: TagService) {
         self.listService = listService
+        self.tagService = tagService
+    }
+
+    func loadTags() async {
+        do {
+            availableTags = try await tagService.fetchTags()
+        } catch {
+            Logger.error("Failed to load tags", error: error, category: .api)
+        }
     }
 
     func createList() async -> Bool {
@@ -26,7 +38,8 @@ final class CreateListViewModel {
             _ = try await listService.createList(
                 name: trimmedName,
                 description: description.isEmpty ? nil : description,
-                color: selectedColor
+                color: selectedColor,
+                tagIds: Array(selectedTagIds)
             )
             HapticManager.success()
             return true

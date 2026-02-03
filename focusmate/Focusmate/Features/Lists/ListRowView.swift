@@ -51,6 +51,10 @@ struct ListRowView: View {
                             .font(DS.Typography.caption)
                             .foregroundStyle(DS.Colors.accent)
                     }
+
+                    if let tags = list.tags, !tags.isEmpty {
+                        listTagsView(tags)
+                    }
                 }
             }
 
@@ -110,6 +114,32 @@ struct ListRowView: View {
         .padding(.vertical, 2)
         .background(DS.Colors.error)
         .clipShape(Capsule())
+    }
+
+    // MARK: - Tags View
+
+    private func listTagsView(_ tags: [TagDTO]) -> some View {
+        HStack(spacing: DS.Spacing.xs) {
+            ForEach(tags.prefix(2)) { tag in
+                Text(tag.name)
+                    .font(DS.Typography.caption2.weight(.medium))
+                    .foregroundStyle(tag.tagColor)
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xxs)
+                    .background(tag.tagColor.opacity(0.15))
+                    .clipShape(Capsule())
+            }
+
+            if tags.count > 2 {
+                Text("+\(tags.count - 2)")
+                    .font(DS.Typography.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xxs)
+                    .background(Color(.tertiarySystemFill))
+                    .clipShape(Capsule())
+            }
+        }
     }
 
     // MARK: - Member Avatars
