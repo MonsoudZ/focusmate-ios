@@ -252,6 +252,13 @@ final class EscalationService: ObservableObject {
         }
     }
 
+    // MARK: - Task Tracking
+
+    /// Check if a task is being tracked for escalation (was overdue and hasn't been completed)
+    func isTaskTracked(_ taskId: Int) -> Bool {
+        overdueTaskIds.contains(taskId)
+    }
+
     // MARK: - Grace Period Info
 
     var gracePeriodRemaining: TimeInterval? {

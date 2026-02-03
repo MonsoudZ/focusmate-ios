@@ -21,6 +21,7 @@ struct TaskRow: View {
     @State private var completionError: FocusmateError?
 
     private var isOverdue: Bool { task.isActuallyOverdue }
+    private var isTrackedForEscalation: Bool { EscalationService.shared.isTaskTracked(task.id) }
     private var canEdit: Bool { task.can_edit ?? true }
     private var canDelete: Bool { task.can_delete ?? true }
     private var canNudge: Bool { showNudge && !task.isCompleted }
@@ -444,7 +445,9 @@ struct TaskRow: View {
                 defer { isCompleting = false }
                 await onComplete()
             }
-        } else if isOverdue {
+        } else if isOverdue || isTrackedForEscalation {
+            // Require reason if task is overdue OR if it was overdue and user edited the due date
+            // This prevents gaming the escalation by pushing the due date forward
             presentOverdueReasonSheet()
         } else {
             isCompleting = true
