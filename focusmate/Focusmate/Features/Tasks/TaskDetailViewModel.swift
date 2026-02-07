@@ -28,6 +28,11 @@ final class TaskDetailViewModel {
     let subtaskManager: SubtaskManager
 
     private var cancellables = Set<AnyCancellable>()
+    private var nudgeToastDismissTask: Task<Void, Never>?
+    private var copiedToastDismissTask: Task<Void, Never>?
+
+    /// Duration for auto-dismissing toast messages (2 seconds)
+    private static let toastDismissDuration: UInt64 = 2_000_000_000
 
     // MARK: - Computed Properties
 
@@ -183,11 +188,7 @@ final class TaskDetailViewModel {
             try await taskService.nudgeTask(listId: listId, taskId: task.id)
             HapticManager.success()
             showNudgeSent = true
-            // Auto-dismiss after 2 seconds
-            Task {
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                showNudgeSent = false
-            }
+            scheduleNudgeToastDismiss()
         } catch {
             Logger.error("Failed to nudge task", error: error, category: .api)
             HapticManager.error()
@@ -200,9 +201,25 @@ final class TaskDetailViewModel {
         UIPasteboard.general.string = link
         HapticManager.success()
         showCopied = true
-        // Auto-dismiss after 2 seconds
-        Task {
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
+        scheduleCopiedToastDismiss()
+    }
+
+    // MARK: - Toast Dismiss Helpers
+
+    private func scheduleNudgeToastDismiss() {
+        nudgeToastDismissTask?.cancel()
+        nudgeToastDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: Self.toastDismissDuration)
+            guard !Task.isCancelled else { return }
+            showNudgeSent = false
+        }
+    }
+
+    private func scheduleCopiedToastDismiss() {
+        copiedToastDismissTask?.cancel()
+        copiedToastDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: Self.toastDismissDuration)
+            guard !Task.isCancelled else { return }
             showCopied = false
         }
     }

@@ -80,15 +80,12 @@ final class ListManagementTests: XCTestCase {
         // Given: User has no lists
         // When: User navigates to Lists tab
         // Then: Empty state should be displayed
-        
+
         navigateToListsTab()
-        
-        // Wait a moment for empty state to appear
-        sleep(2)
-        
+
         // Check for empty state message (adjust based on actual implementation)
         let emptyStateText = app.staticTexts["No lists yet"]
-        if emptyStateText.waitForExistence(timeout: 3.0) {
+        if emptyStateText.waitForExistence(timeout: 5.0) {
             XCTAssertTrue(emptyStateText.exists, "Empty state should be displayed")
         }
     }
@@ -204,11 +201,8 @@ final class ListManagementTests: XCTestCase {
         let createButton = app.buttons["Create"]
         if createButton.waitForExistence(timeout: 5.0) {
             createButton.tap()
-            
-            // Wait for sheet to dismiss
-            sleep(2)
-            
-            // Verify back on lists view
+
+            // Wait for sheet to dismiss and return to lists view
             let listsNavigation = app.navigationBars["Lists"]
             XCTAssertTrue(listsNavigation.waitForExistence(timeout: 5.0), "Should return to lists view")
         }
@@ -247,54 +241,51 @@ final class ListManagementTests: XCTestCase {
         // Given: User has created a list
         // When: User views Lists tab
         // Then: Created list should be displayed
-        
+
         navigateToListsTab()
-        
+
         // Create a list first
         let navigationBar = app.navigationBars["Lists"]
         let buttons = navigationBar.buttons
         if buttons.count > 0 {
             buttons.element(boundBy: buttons.count - 1).tap()
-            
+
             let listNameField = app.textFields["List Name"]
             listNameField.tap()
             listNameField.typeText("Test List \(Date().timeIntervalSince1970)")
-            
+
             let createButton = app.buttons["Create"]
             if createButton.waitForExistence(timeout: 5.0) {
                 createButton.tap()
-                sleep(2)
+                // Wait for sheet to dismiss
+                _ = app.navigationBars["Lists"].waitForExistence(timeout: 5.0)
             }
         }
-        
-        // Verify list appears (this might need adjustment based on actual UI)
-        // Lists might be displayed as cells or rows
-        sleep(2)
-        XCTAssertTrue(app.exists, "App should still be running")
+
+        // Verify we're back on the lists view
+        let listsNav = app.navigationBars["Lists"]
+        XCTAssertTrue(listsNav.waitForExistence(timeout: 5.0), "Should be on lists view")
     }
-    
+
     @MainActor
     func testPullToRefresh() throws {
         // Given: User is on Lists view
         // When: User pulls down to refresh
         // Then: Lists should reload
-        
+
         navigateToListsTab()
-        
+
         // Find scrollable area and pull down
         let listsView = app.scrollViews.firstMatch
         if listsView.exists {
             let start = listsView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1))
             let end = listsView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
             start.press(forDuration: 0.1, thenDragTo: end)
-            
-            // Wait for refresh to complete
-            sleep(2)
         }
-        
-        // Verify view is still visible
+
+        // Verify view is still visible (navigation bar persists through refresh)
         let listsNavigation = app.navigationBars["Lists"]
-        XCTAssertTrue(listsNavigation.exists, "Lists view should still be visible after refresh")
+        XCTAssertTrue(listsNavigation.waitForExistence(timeout: 5.0), "Lists view should still be visible after refresh")
     }
 }
 

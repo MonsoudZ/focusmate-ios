@@ -4,11 +4,14 @@ import Combine
 
 final class InternalNetworkingTests: XCTestCase {
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         MockURLProtocol.stub = nil
         MockURLProtocol.error = nil
-        Thread.sleep(forTimeInterval: 1.1) // avoid unauthorized throttle interference
+        // Reset throttle state to prevent interference between tests
+        await MainActor.run {
+            AuthEventBus.shared._resetThrottleForTests()
+        }
     }
 
     private func makeNetworking(token: String? = nil) -> InternalNetworking {

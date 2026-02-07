@@ -36,12 +36,14 @@ final class focusmateUITests: XCTestCase {
   func testAppLaunches() throws {
     // Basic smoke test: verify app launches successfully
     app.launch()
-    
+
     // Verify app is running
     XCTAssertTrue(app.exists, "App should launch successfully")
-    
-    // Verify initial state (should show sign in if not authenticated)
-    sleep(2)
-    XCTAssertTrue(app.exists, "App should be running after launch")
+
+    // Wait for initial UI to load (sign in or main app)
+    let signInButton = app.buttons["Sign In"]
+    let todayTab = app.tabBars.buttons["Today"]
+    let initialUILoaded = signInButton.waitForExistence(timeout: 5.0) || todayTab.waitForExistence(timeout: 5.0)
+    XCTAssertTrue(initialUILoaded || app.exists, "App should be running after launch")
   }
 }

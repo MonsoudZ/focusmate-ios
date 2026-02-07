@@ -56,14 +56,21 @@ enum API {
 
         /// All environment URLs validated once at first access.
         /// Uses static let for thread-safe lazy initialization.
-        /// Fails fast with preconditionFailure if any hardcoded URL is invalid.
+        /// Logs error and uses fallback URL if validation fails (should never happen with hardcoded URLs).
         private static let validated: ValidatedURLs = {
+            // Fallback URL for catastrophic failure (should never be reached)
+            let fallbackURL = URL(string: "https://example.com")!
+
             func validate(_ env: Environment) -> URLs {
                 guard let base = URL(string: env.baseURLString) else {
-                    preconditionFailure("Invalid base URL for \(env): \(env.baseURLString)")
+                    assertionFailure("Invalid base URL for \(env): \(env.baseURLString)")
+                    Logger.error("Invalid base URL for \(env): \(env.baseURLString)", category: .api)
+                    return URLs(base: fallbackURL, webSocket: fallbackURL)
                 }
                 guard let webSocket = URL(string: env.webSocketURLString) else {
-                    preconditionFailure("Invalid WebSocket URL for \(env): \(env.webSocketURLString)")
+                    assertionFailure("Invalid WebSocket URL for \(env): \(env.webSocketURLString)")
+                    Logger.error("Invalid WebSocket URL for \(env): \(env.webSocketURLString)", category: .api)
+                    return URLs(base: base, webSocket: fallbackURL)
                 }
                 return URLs(base: base, webSocket: webSocket)
             }
