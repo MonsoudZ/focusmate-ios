@@ -11,6 +11,7 @@ final class ListDetailViewModelTests: XCTestCase {
     private var tagService: TagService!
     private var inviteService: InviteService!
     private var friendService: FriendService!
+    private var subtaskManager: SubtaskManager!
 
     override func setUp() async throws {
         try await super.setUp()
@@ -22,6 +23,7 @@ final class ListDetailViewModelTests: XCTestCase {
         tagService = TagService(apiClient: apiClient)
         inviteService = InviteService(apiClient: apiClient)
         friendService = FriendService(apiClient: apiClient)
+        subtaskManager = SubtaskManager(taskService: taskService)
     }
 
     override func tearDown() async throws {
@@ -45,12 +47,13 @@ final class ListDetailViewModelTests: XCTestCase {
             listService: listService,
             tagService: tagService,
             inviteService: inviteService,
-            friendService: friendService
+            friendService: friendService,
+            subtaskManager: subtaskManager
         )
     }
 
     private func stubTasksResponse(_ tasks: [TaskDTO]) {
-        let response = TasksResponse(tasks: tasks)
+        let response = TasksResponse(tasks: tasks, tombstones: nil)
         mockNetworking.stubJSON(response)
     }
 

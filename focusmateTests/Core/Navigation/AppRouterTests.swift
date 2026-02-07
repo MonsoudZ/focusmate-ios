@@ -8,7 +8,13 @@ final class AppRouterTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        router = AppRouter()
+        router = AppRouter.shared
+        // Reset router state for clean test
+        router.selectedTab = .today
+        router.todayPath = []
+        router.listsPath = []
+        router.settingsPath = []
+        router.activeSheet = nil
     }
 
     // MARK: - Initial State Tests

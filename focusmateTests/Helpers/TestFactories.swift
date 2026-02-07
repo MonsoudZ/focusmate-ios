@@ -97,6 +97,7 @@ enum TestFactories {
         completedTasksCount: Int? = nil,
         overdueTasksCount: Int? = nil,
         members: [ListMemberDTO]? = nil,
+        tags: [TagDTO]? = nil,
         createdAt: String? = nil,
         updatedAt: String? = nil
     ) -> ListDTO {
@@ -112,6 +113,7 @@ enum TestFactories {
             completed_tasks_count: completedTasksCount,
             overdue_tasks_count: overdueTasksCount,
             members: members,
+            tags: tags,
             created_at: createdAt,
             updated_at: updatedAt
         )

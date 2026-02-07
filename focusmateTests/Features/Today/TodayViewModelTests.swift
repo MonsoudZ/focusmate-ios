@@ -9,6 +9,7 @@ final class TodayViewModelTests: XCTestCase {
     private var taskService: TaskService!
     private var listService: ListService!
     private var tagService: TagService!
+    private var subtaskManager: SubtaskManager!
 
     override func setUp() async throws {
         try await super.setUp()
@@ -19,6 +20,7 @@ final class TodayViewModelTests: XCTestCase {
         taskService = TaskService(apiClient: apiClient, sideEffects: NoOpSideEffects())
         listService = ListService(apiClient: apiClient)
         tagService = TagService(apiClient: apiClient)
+        subtaskManager = SubtaskManager(taskService: taskService)
     }
 
     override func tearDown() async throws {
@@ -40,7 +42,8 @@ final class TodayViewModelTests: XCTestCase {
             taskService: taskService,
             listService: listService,
             tagService: tagService,
-            apiClient: apiClient
+            apiClient: apiClient,
+            subtaskManager: subtaskManager
         )
         vm.initializeServiceIfNeeded()
         return vm

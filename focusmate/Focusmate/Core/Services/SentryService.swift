@@ -215,7 +215,7 @@ final class SentryService: @unchecked Sendable {
     addBreadcrumb(
       message: "\(method) \(endpoint)",
       category: "api",
-      level: statusCode != nil && statusCode! >= 400 ? .warning : .info,
+      level: (statusCode ?? 0) >= 400 ? .warning : .info,
       data: data
     )
   }
