@@ -77,8 +77,10 @@ struct NotificationSettingsView: View {
     private func checkNotificationStatus() {
         Task {
             let settings = await UNUserNotificationCenter.current().notificationSettings()
-            notificationsEnabled = settings.authorizationStatus == .authorized
-            isLoading = false
+            await MainActor.run {
+                notificationsEnabled = settings.authorizationStatus == .authorized
+                isLoading = false
+            }
         }
     }
     

@@ -26,6 +26,7 @@ final class TaskDetailViewModel {
     let taskService: TaskService
     let tagService: TagService
     let subtaskManager: SubtaskManager
+    private let escalationService: EscalationService
 
     private var cancellables = Set<AnyCancellable>()
     private var nudgeToastDismissTask: Task<Void, Never>?
@@ -41,7 +42,7 @@ final class TaskDetailViewModel {
     }
 
     var isTrackedForEscalation: Bool {
-        EscalationService.shared.isTaskTracked(task.id)
+        escalationService.isTaskTracked(task.id)
     }
 
     /// Whether completing this task requires a reason (overdue or tracked for escalation)
@@ -97,6 +98,7 @@ final class TaskDetailViewModel {
         taskService: TaskService,
         tagService: TagService,
         subtaskManager: SubtaskManager,
+        escalationService: EscalationService = .shared,
         onComplete: @escaping () async -> Void,
         onDelete: @escaping () async -> Void,
         onUpdate: @escaping () async -> Void
@@ -107,6 +109,7 @@ final class TaskDetailViewModel {
         self.taskService = taskService
         self.tagService = tagService
         self.subtaskManager = subtaskManager
+        self.escalationService = escalationService
         self.onComplete = onComplete
         self.onDelete = onDelete
         self.onUpdate = onUpdate
@@ -209,18 +212,24 @@ final class TaskDetailViewModel {
     private func scheduleNudgeToastDismiss() {
         nudgeToastDismissTask?.cancel()
         nudgeToastDismissTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: Self.toastDismissDuration)
-            guard !Task.isCancelled else { return }
-            showNudgeSent = false
+            do {
+                try await Task.sleep(nanoseconds: Self.toastDismissDuration)
+                showNudgeSent = false
+            } catch {
+                // Task was cancelled, don't update state
+            }
         }
     }
 
     private func scheduleCopiedToastDismiss() {
         copiedToastDismissTask?.cancel()
         copiedToastDismissTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: Self.toastDismissDuration)
-            guard !Task.isCancelled else { return }
-            showCopied = false
+            do {
+                try await Task.sleep(nanoseconds: Self.toastDismissDuration)
+                showCopied = false
+            } catch {
+                // Task was cancelled, don't update state
+            }
         }
     }
 

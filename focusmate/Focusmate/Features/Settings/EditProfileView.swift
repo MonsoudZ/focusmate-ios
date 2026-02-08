@@ -50,7 +50,12 @@ struct EditProfileView: View {
                         Task {
                             if let updatedUser = await viewModel.updateProfile() {
                                 appState.auth.currentUser = updatedUser
-                                try? await Task.sleep(nanoseconds: 100_000_000)
+                                // Brief delay to allow UI state to propagate before dismissing
+                                do {
+                                    try await Task.sleep(nanoseconds: 100_000_000)
+                                } catch {
+                                    // Task cancelled, still dismiss
+                                }
                                 dismiss()
                             }
                         }
