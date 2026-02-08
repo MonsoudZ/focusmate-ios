@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TaskRow: View {
     let task: TaskDTO
+    let escalationService: EscalationService
     let onComplete: () async -> Void
     let onStar: () async -> Void
     let onTap: () -> Void
@@ -21,30 +22,14 @@ struct TaskRow: View {
     @State private var completionError: FocusmateError?
 
     private var isOverdue: Bool { task.isActuallyOverdue }
-    private var isTrackedForEscalation: Bool { EscalationService.shared.isTaskTracked(task.id) }
+    private var isTrackedForEscalation: Bool { escalationService.isTaskTracked(task.id) }
     private var canEdit: Bool { task.can_edit ?? true }
     private var canDelete: Bool { task.can_delete ?? true }
     private var canNudge: Bool { showNudge && !task.isCompleted }
-    private var isSharedTask: Bool { task.creator != nil }
-
-    private static let timeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f
-    }()
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d"
-        return f
-    }()
-    private static let dateTimeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d, h:mm a"
-        return f
-    }()
 
     init(
         task: TaskDTO,
+        escalationService: EscalationService = .shared,
         onComplete: @escaping () async -> Void,
         onStar: @escaping () async -> Void = {},
         onTap: @escaping () -> Void = {},
@@ -57,6 +42,7 @@ struct TaskRow: View {
         showHide: Bool = false
     ) {
         self.task = task
+        self.escalationService = escalationService
         self.onComplete = onComplete
         self.onStar = onStar
         self.onTap = onTap
@@ -100,7 +86,7 @@ struct TaskRow: View {
         .onAppear {
             if isOverdue && !task.isCompleted {
                 Task { @MainActor in
-                    EscalationService.shared.taskBecameOverdue(task)
+                    escalationService.taskBecameOverdue(task)
                 }
             }
         }
@@ -123,15 +109,29 @@ struct TaskRow: View {
 
     private var mainTaskRow: some View {
         HStack(alignment: .top, spacing: DS.Spacing.sm) {
-            completeButton
-                .padding(.top, 2)
+            TaskRowCheckbox(
+                task: task,
+                canEdit: canEdit,
+                isCompleting: isCompleting,
+                isOverdue: isOverdue,
+                onTap: handleCompleteTap
+            )
+            .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-                // Title row with priority
-                titleRow
+                TaskRowTitle(task: task, canEdit: canEdit, isOverdue: isOverdue)
 
-                // Metadata row - due date, subtasks, visibility
-                metadataRow
+                TaskRowMetadata(
+                    task: task,
+                    isOverdue: isOverdue,
+                    isExpanded: isExpanded,
+                    onExpandToggle: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExpanded.toggle()
+                        }
+                        HapticManager.selection()
+                    }
+                )
             }
             .contentShape(Rectangle())
             .onTapGesture {
@@ -141,223 +141,23 @@ struct TaskRow: View {
 
             Spacer(minLength: DS.Spacing.sm)
 
-            // Right side - avatar, star, indicators
-            rightSection
-        }
-        .padding(DS.Spacing.md)
-    }
-
-    private var completeButton: some View {
-        Group {
-            if canEdit {
-                Button {
-                    handleCompleteTap()
-                } label: {
-                    if isCompleting {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                            .frame(width: 22, height: 22)
-                    } else {
-                        checkboxIcon
+            TaskRowActions(
+                task: task,
+                showStar: showStar,
+                canEdit: canEdit,
+                canNudge: canNudge,
+                isNudging: isNudging,
+                onStar: onStar,
+                onNudge: {
+                    Task {
+                        isNudging = true
+                        await onNudge()
+                        isNudging = false
                     }
                 }
-                .buttonStyle(.plain)
-                .disabled(isCompleting)
-            } else {
-                checkboxIcon
-                    .opacity(0.5)
-            }
+            )
         }
-    }
-
-    private var checkboxIcon: some View {
-        Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 22, weight: .light))
-            .foregroundStyle(checkboxColor)
-    }
-
-    private var checkboxColor: Color {
-        if task.isCompleted {
-            return DS.Colors.success
-        } else if isOverdue {
-            return DS.Colors.error
-        } else {
-            return Color(.tertiaryLabel)
-        }
-    }
-
-    private var titleRow: some View {
-        HStack(spacing: DS.Spacing.xs) {
-            // Priority indicator
-            if let icon = task.taskPriority.icon {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundStyle(task.taskPriority.color)
-            }
-
-            Text(task.title)
-                .font(.system(size: 16, weight: task.isCompleted ? .regular : .medium))
-                .strikethrough(task.isCompleted)
-                .foregroundStyle(titleColor)
-                .lineLimit(2)
-
-            if !canEdit {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
-            }
-        }
-    }
-
-    private var titleColor: Color {
-        if task.isCompleted {
-            return .secondary
-        } else if isOverdue {
-            return DS.Colors.error
-        } else {
-            return .primary
-        }
-    }
-
-    private var metadataRow: some View {
-        HStack(spacing: DS.Spacing.sm) {
-            // Due date
-            if let dueDate = task.dueDate {
-                HStack(spacing: 4) {
-                    Image(systemName: isOverdue ? "clock.badge.exclamationmark.fill" : "clock")
-                        .font(.system(size: 11))
-                    Text(formatDueDate(dueDate))
-                        .font(.system(size: 12))
-                }
-                .foregroundStyle(isOverdue ? DS.Colors.error : .secondary)
-            }
-
-            // Subtasks count (if any) - tappable to expand
-            if task.hasSubtasks {
-                subtaskBadge
-            }
-
-            // Recurring
-            if task.isRecurring || task.isRecurringInstance {
-                Image(systemName: "repeat")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
-
-            // Hidden indicator
-            if task.isHidden {
-                HStack(spacing: 3) {
-                    Image(systemName: "eye.slash")
-                        .font(.system(size: 11))
-                    Text("Hidden")
-                        .font(.system(size: 12))
-                }
-                .foregroundStyle(.secondary)
-            }
-
-            // Tags
-            if let tags = task.tags, !tags.isEmpty {
-                tagsView(tags)
-            }
-        }
-    }
-
-    private var subtaskBadge: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isExpanded.toggle()
-            }
-            HapticManager.selection()
-        } label: {
-            HStack(spacing: 3) {
-                Image(systemName: "checklist")
-                    .font(.system(size: 11))
-                Text(task.subtaskProgress)
-                    .font(.system(size: 12, weight: .medium))
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
-            }
-            .foregroundStyle(DS.Colors.accent)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func tagsView(_ tags: [TagDTO]) -> some View {
-        HStack(spacing: DS.Spacing.xs) {
-            ForEach(tags.prefix(2)) { tag in
-                Text(tag.name)
-                    .font(DS.Typography.caption2.weight(.medium))
-                    .foregroundStyle(tag.tagColor)
-                    .padding(.horizontal, DS.Spacing.sm)
-                    .padding(.vertical, DS.Spacing.xxs)
-                    .background(tag.tagColor.opacity(0.15))
-                    .clipShape(Capsule())
-            }
-
-            if tags.count > 2 {
-                Text("+\(tags.count - 2)")
-                    .font(DS.Typography.caption2.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, DS.Spacing.sm)
-                    .padding(.vertical, DS.Spacing.xxs)
-                    .background(Color(.tertiarySystemFill))
-                    .clipShape(Capsule())
-            }
-        }
-    }
-
-    private var rightSection: some View {
-        HStack(spacing: DS.Spacing.sm) {
-            // Creator avatar for shared lists
-            if isSharedTask, let creator = task.creator {
-                Avatar(creator.name ?? creator.email, size: 24)
-            }
-
-            // Star (only show if starred or can edit)
-            if task.isStarred {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.yellow)
-            } else if showStar && canEdit {
-                Button {
-                    HapticManager.selection()
-                    Task { await onStar() }
-                } label: {
-                    Image(systemName: "star")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color(.quaternaryLabel))
-                }
-                .buttonStyle(.plain)
-            }
-
-            // Nudge button for shared lists
-            if canNudge {
-                nudgeButton
-            }
-        }
-    }
-
-    private var nudgeButton: some View {
-        Button {
-            HapticManager.selection()
-            Task {
-                isNudging = true
-                await onNudge()
-                isNudging = false
-            }
-        } label: {
-            if isNudging {
-                ProgressView()
-                    .scaleEffect(0.6)
-                    .frame(width: 24, height: 24)
-            } else {
-                Image(systemName: "hand.point.right.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(DS.Colors.accent)
-            }
-        }
-        .buttonStyle(.plain)
-        .disabled(isNudging)
+        .padding(DS.Spacing.md)
     }
 
     // MARK: - Subtasks List
@@ -477,7 +277,7 @@ struct TaskRow: View {
             )
 
             await MainActor.run {
-                EscalationService.shared.taskCompleted(task.id)
+                escalationService.taskCompleted(task.id)
             }
 
             HapticManager.success()
@@ -488,35 +288,4 @@ struct TaskRow: View {
             completionError = ErrorHandler.shared.handle(error, context: "Completing task")
         }
     }
-
-    // MARK: - Formatting
-
-    private func formatDueDate(_ date: Date) -> String {
-        let calendar = Calendar.current
-
-        if task.isAnytime {
-            if calendar.isDateInToday(date) { return "Today" }
-            if calendar.isDateInTomorrow(date) { return "Tomorrow" }
-            if calendar.isDateInYesterday(date) { return "Yesterday" }
-            return Self.dateFormatter.string(from: date)
-        }
-
-        if calendar.isDateInToday(date) {
-            return "Today \(Self.timeFormatter.string(from: date))"
-        }
-        if calendar.isDateInTomorrow(date) {
-            return "Tomorrow \(Self.timeFormatter.string(from: date))"
-        }
-        if calendar.isDateInYesterday(date) {
-            return "Yesterday"
-        }
-        return Self.dateTimeFormatter.string(from: date)
-    }
-
-    private func formatOverdue(_ minutes: Int) -> String {
-        if minutes < 60 { return "\(minutes)m overdue" }
-        if minutes < 1440 { return "\(minutes / 60)h overdue" }
-        return "\(minutes / 1440)d overdue"
-    }
 }
-

@@ -58,7 +58,9 @@ enum API {
         /// Uses static let for thread-safe lazy initialization.
         /// Logs error and uses fallback URL if validation fails (should never happen with hardcoded URLs).
         private static let validated: ValidatedURLs = {
-            // Fallback URL for catastrophic failure (should never be reached)
+            // Fallback URL for catastrophic failure (should never be reached).
+            // Force unwrap is safe here - "https://example.com" is a valid URL constant.
+            // swiftlint:disable:next force_unwrapping
             let fallbackURL = URL(string: "https://example.com")!
 
             func validate(_ env: Environment) -> URLs {

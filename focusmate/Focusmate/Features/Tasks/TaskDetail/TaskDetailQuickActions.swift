@@ -48,17 +48,19 @@ struct TaskDetailQuickActions: View {
             }
 
             // Share
-            ShareLink(item: URL(string: "focusmate://task/\(task.id)")!) {
-                VStack(spacing: DS.Spacing.xs) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 20))
-                        .foregroundStyle(DS.Colors.accent)
-                    Text("Share")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+            if let shareURL = URL(string: "focusmate://task/\(task.id)") {
+                ShareLink(item: shareURL) {
+                    VStack(spacing: DS.Spacing.xs) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 20))
+                            .foregroundStyle(DS.Colors.accent)
+                        Text("Share")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             // Copy Link
             QuickActionButton(
