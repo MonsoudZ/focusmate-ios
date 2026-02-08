@@ -93,18 +93,20 @@ final class EscalationService: ObservableObject {
         Logger.info("Grace period started. Ends at \(endTime)", category: .general)
     }
 
+    /// Schedules a timer for the grace period.
+    ///
+    /// Design: Since EscalationService is @MainActor, the timer callback runs on main thread.
+    /// We use weak self to avoid retain cycles, then guard before calling the method.
     private func scheduleGracePeriodTimer(interval: TimeInterval) {
         gracePeriodTimer?.invalidate()
         gracePeriodTimer = Timer.scheduledTimer(
             withTimeInterval: interval,
             repeats: false
         ) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
-                // Guard against timer firing after reset
-                guard self.gracePeriodTimer != nil else { return }
-                self.gracePeriodEnded()
-            }
+            // Timer callbacks run on main thread since service is @MainActor.
+            // Guard against timer firing after service deallocation or reset.
+            guard let self, self.gracePeriodTimer != nil else { return }
+            self.gracePeriodEnded()
         }
     }
 
@@ -209,12 +211,14 @@ final class EscalationService: ObservableObject {
 
     // MARK: - Periodic Check
 
+    /// Starts periodic status checks for grace period restoration after app relaunch.
+    ///
+    /// Design: Timer callbacks run on main thread since service is @MainActor.
+    /// No Task wrapper needed - direct method call is safe.
     private func startPeriodicCheck() {
         checkTimer = Timer.scheduledTimer(withTimeInterval: AppConfiguration.Escalation.statusCheckIntervalSeconds, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { @MainActor in
-                self.checkGracePeriodStatus()
-            }
+            self.checkGracePeriodStatus()
         }
     }
 

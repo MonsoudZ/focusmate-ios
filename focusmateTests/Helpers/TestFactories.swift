@@ -156,14 +156,19 @@ enum TestFactories {
     }()
 
     /// Returns an ISO8601 string for a date relative to now.
+    ///
+    /// - Note: Uses preconditionFailure for invalid dates since these are test utilities
+    ///   with hardcoded valid inputs. A failure here indicates a programming error.
     static func isoString(daysFromNow days: Int, hour: Int = 12, minute: Int = 0) -> String {
         let calendar = Calendar.current
         var components = calendar.dateComponents([.year, .month, .day], from: Date())
-        components.day! += days
+        components.day = (components.day ?? 0) + days
         components.hour = hour
         components.minute = minute
         components.second = 0
-        let date = calendar.date(from: components)!
+        guard let date = calendar.date(from: components) else {
+            preconditionFailure("Failed to create date from components: \(components)")
+        }
         return isoFormatter.string(from: date)
     }
 
@@ -171,7 +176,9 @@ enum TestFactories {
     static func midnightISOString(daysFromNow days: Int) -> String {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let target = calendar.date(byAdding: .day, value: days, to: today)!
+        guard let target = calendar.date(byAdding: .day, value: days, to: today) else {
+            preconditionFailure("Failed to add \(days) days to \(today)")
+        }
         return isoFormatter.string(from: target)
     }
 }

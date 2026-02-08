@@ -83,10 +83,12 @@ final class TodayViewModel {
         self.notificationService = notificationService ?? .shared
 
         // Subscribe to subtask changes and reload data
+        // Guard ensures self is still alive before spawning the Task
         subtaskManager.changePublisher
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                Task { await self?.loadToday() }
+                guard let self else { return }
+                Task { await self.loadToday() }
             }
             .store(in: &cancellables)
     }

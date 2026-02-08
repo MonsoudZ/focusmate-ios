@@ -79,9 +79,12 @@ final class InputValidationTests: XCTestCase {
 
     func testPasswordErrorMessageWhenTooShort() {
         let error = InputValidation.passwordError("short")
-        XCTAssertNotNil(error)
-        XCTAssertTrue(error!.contains("at least"))
-        XCTAssertTrue(error!.contains("\(InputValidation.minimumPasswordLength)"))
+        guard let error else {
+            XCTFail("Expected validation error for short password but got nil")
+            return
+        }
+        XCTAssertTrue(error.contains("at least"), "Error should mention 'at least'")
+        XCTAssertTrue(error.contains("\(InputValidation.minimumPasswordLength)"), "Error should mention minimum length")
     }
 
     func testPasswordErrorNilAtExactMinimum() {

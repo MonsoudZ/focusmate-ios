@@ -21,14 +21,21 @@ final class MockURLProtocol: URLProtocol {
         }
 
         let stub = Self.stub ?? Stub(statusCode: 200, headers: [:], body: Data())
-        let url = request.url ?? URL(string: "https://example.com")!
 
-        let response = HTTPURLResponse(
+        // Use request URL or a valid fallback - precondition since this is test infrastructure
+        guard let url = request.url else {
+            preconditionFailure("MockURLProtocol received request without URL")
+        }
+
+        // HTTPURLResponse init can fail if URL scheme is invalid, but we control the URLs in tests
+        guard let response = HTTPURLResponse(
             url: url,
             statusCode: stub.statusCode,
             httpVersion: "HTTP/1.1",
             headerFields: stub.headers
-        )!
+        ) else {
+            preconditionFailure("Failed to create HTTPURLResponse for URL: \(url)")
+        }
 
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         if !stub.body.isEmpty {

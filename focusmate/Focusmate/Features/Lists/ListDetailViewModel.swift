@@ -44,10 +44,12 @@ final class ListDetailViewModel {
         self.subtaskManager = subtaskManager
 
         // Subscribe to subtask changes and update local state
+        // Guard ensures self is still alive before handling the change
         subtaskManager.changePublisher
             .receive(on: RunLoop.main)
             .sink { [weak self] change in
-                self?.handleSubtaskChange(change)
+                guard let self else { return }
+                self.handleSubtaskChange(change)
             }
             .store(in: &cancellables)
     }
