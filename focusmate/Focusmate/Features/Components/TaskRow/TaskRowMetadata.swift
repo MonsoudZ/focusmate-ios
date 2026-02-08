@@ -65,6 +65,8 @@ struct TaskRowMetadata: View {
             .foregroundStyle(DS.Colors.accent)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Subtasks \(task.subtaskProgress)")
+        .accessibilityHint(isExpanded ? "Double tap to collapse" : "Double tap to expand")
     }
 
     private var hiddenIndicator: some View {

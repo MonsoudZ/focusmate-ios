@@ -37,6 +37,7 @@ struct TaskRowActions: View {
             Image(systemName: "star.fill")
                 .font(.system(size: 14))
                 .foregroundStyle(.yellow)
+                .accessibilityLabel("Starred")
         } else if showStar && canEdit {
             Button {
                 HapticManager.selection()
@@ -47,6 +48,8 @@ struct TaskRowActions: View {
                     .foregroundStyle(Color(.quaternaryLabel))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Star task")
+            .accessibilityHint("Double tap to mark as important")
         }
     }
 
@@ -67,6 +70,8 @@ struct TaskRowActions: View {
         }
         .buttonStyle(.plain)
         .disabled(isNudging)
+        .accessibilityLabel(isNudging ? "Sending nudge" : "Nudge")
+        .accessibilityHint("Double tap to send a reminder to the task owner")
     }
 }
 
@@ -86,6 +91,8 @@ struct TaskRowCheckbox: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isCompleting)
+                .accessibilityLabel(task.isCompleted ? "Mark incomplete" : "Mark complete")
+                .accessibilityHint(task.isCompleted ? "Double tap to reopen task" : "Double tap to complete task")
             } else {
                 checkboxIcon
                     .opacity(0.5)
@@ -108,6 +115,7 @@ struct TaskRowCheckbox: View {
         Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
             .font(.system(size: 22, weight: .light))
             .foregroundStyle(checkboxColor)
+            .accessibilityLabel(task.isCompleted ? "Completed" : "Not completed")
     }
 
     private var checkboxColor: Color {

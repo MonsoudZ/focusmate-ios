@@ -27,9 +27,13 @@ final class AuthStoreUnauthorizedTests: XCTestCase {
         super.tearDown()
     }
 
-    func testUnauthorizedEventClearsLocalSession() async {
+    func testUnauthorizedEventClearsLocalSession() async throws {
         let eventBus = AuthEventBus()
-        (testKeychain as! FakeKeychain).token = "jwt-123"
+        guard let fakeKeychain = testKeychain as? FakeKeychain else {
+            XCTFail("testKeychain must be FakeKeychain")
+            return
+        }
+        fakeKeychain.token = "jwt-123"
 
         let store = AuthStore(
             keychain: testKeychain,
@@ -45,7 +49,7 @@ final class AuthStoreUnauthorizedTests: XCTestCase {
         eventBus.send(.unauthorized)
 
         // Allow async Task in the event sink to execute
-        try? await Task.sleep(nanoseconds: 300_000_000)
+        try await Task.sleep(nanoseconds: 300_000_000)
 
         // Assert
         XCTAssertNil(store.jwt)

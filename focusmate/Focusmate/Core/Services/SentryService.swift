@@ -4,7 +4,13 @@ import Sentry
 #endif
 
 /// Service for managing Sentry error tracking and monitoring
-final class SentryService: @unchecked Sendable {
+///
+/// Thread Safety: Uses @MainActor to ensure all mutable state (`isInitialized`)
+/// is accessed from a single thread. Without this, concurrent calls to `initialize()`
+/// could race - both seeing `isInitialized == false` and double-initializing the SDK.
+/// Tradeoff: Callers must await or be on main thread, adding slight dispatch overhead.
+@MainActor
+final class SentryService {
   static let shared = SentryService()
 
   private var isInitialized = false
