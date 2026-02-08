@@ -248,7 +248,12 @@ final class NotificationTestHelper: ObservableObject {
         }
 
         Task {
-            try? await Task.sleep(nanoseconds: 500_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 500_000_000)
+            } catch {
+                // Task cancelled, skip refresh
+                return
+            }
             await refreshScheduledNotifications()
         }
     }

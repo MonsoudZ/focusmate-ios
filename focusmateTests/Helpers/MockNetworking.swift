@@ -64,7 +64,10 @@ final class MockNetworking: NetworkingProtocol {
         }
 
         if T.self == EmptyResponse.self {
-            return EmptyResponse() as! T
+            guard let empty = EmptyResponse() as? T else {
+                preconditionFailure("EmptyResponse could not be cast to \(T.self)")
+            }
+            return empty
         }
 
         return try APIClient.decoder.decode(T.self, from: stubbedData)

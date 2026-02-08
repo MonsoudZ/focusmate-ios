@@ -334,34 +334,39 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
     private func parseErrorResponse(data: Data, statusCode: Int) -> ErrorResponse? {
         guard !data.isEmpty, statusCode >= 400 else { return nil }
 
-        if let errorResponse = try? APIClient.decoder.decode(ErrorResponse.self, from: data) {
-            return errorResponse
+        // Try structured ErrorResponse first
+        do {
+            return try APIClient.decoder.decode(ErrorResponse.self, from: data)
+        } catch {
+            Logger.debug("ErrorResponse decode failed, trying fallback: \(error.localizedDescription)", category: .api)
         }
 
-        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            if let errorObj = json["error"] as? [String: Any] {
-                let details = errorObj["details"] as? [String: [String]]
-                return ErrorResponse(
-                    code: errorObj["code"] as? String ?? "HTTP_\(statusCode)",
-                    message: errorObj["message"] as? String ?? "HTTP \(statusCode) error",
-                    details: details,
-                    timestamp: errorObj["timestamp"] as? String,
-                    status: statusCode,
-                    requestId: json["request_id"] as? String
-                )
-            }
+        // Fallback to manual JSON parsing
+        guard let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            Logger.debug("Failed to parse error response as JSON", category: .api)
+            return nil
+        }
 
+        if let errorObj = json["error"] as? [String: Any] {
+            let details = errorObj["details"] as? [String: [String]]
             return ErrorResponse(
-                code: json["code"] as? String ?? "HTTP_\(statusCode)",
-                message: json["message"] as? String ?? json["error"] as? String ?? "HTTP \(statusCode) error",
-                details: json["details"] as? [String: [String]],
-                timestamp: json["timestamp"] as? String,
+                code: errorObj["code"] as? String ?? "HTTP_\(statusCode)",
+                message: errorObj["message"] as? String ?? "HTTP \(statusCode) error",
+                details: details,
+                timestamp: errorObj["timestamp"] as? String,
                 status: statusCode,
                 requestId: json["request_id"] as? String
             )
         }
 
-        return nil
+        return ErrorResponse(
+            code: json["code"] as? String ?? "HTTP_\(statusCode)",
+            message: json["message"] as? String ?? json["error"] as? String ?? "HTTP \(statusCode) error",
+            details: json["details"] as? [String: [String]],
+            timestamp: json["timestamp"] as? String,
+            status: statusCode,
+            requestId: json["request_id"] as? String
+        )
     }
 
     private func extractRetryAfter(from headers: [AnyHashable: Any]) -> Int {

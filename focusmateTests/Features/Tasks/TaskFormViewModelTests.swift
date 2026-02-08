@@ -333,7 +333,11 @@ final class TaskFormViewModelTests: XCTestCase {
 
         // Test setting due date to next week
         vm.setDueDate(daysFromNow: 7)
-        let nextWeek = Calendar.current.date(byAdding: .day, value: 7, to: Calendar.current.startOfDay(for: Date()))!
+        let today = Calendar.current.startOfDay(for: Date())
+        guard let nextWeek = Calendar.current.date(byAdding: .day, value: 7, to: today) else {
+            XCTFail("Failed to create next week date")
+            return
+        }
         XCTAssertTrue(Calendar.current.isDate(vm.dueDate, inSameDayAs: nextWeek))
     }
 

@@ -138,6 +138,10 @@ struct TaskRow: View {
                 HapticManager.selection()
                 onTap()
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Task: \(task.title)")
+            .accessibilityHint("Double tap to view details")
+            .accessibilityAddTraits(.isButton)
 
             Spacer(minLength: DS.Spacing.sm)
 

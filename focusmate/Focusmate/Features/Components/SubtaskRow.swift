@@ -41,6 +41,9 @@ struct SubtaskRow: View {
                         isCompleting = false
                     }
                 }
+                .accessibilityLabel(subtask.isCompleted ? "Completed" : "Not completed")
+                .accessibilityHint("Double tap to toggle completion")
+                .accessibilityAddTraits(.isButton)
 
             // Title
             Text(subtask.title)
@@ -54,6 +57,9 @@ struct SubtaskRow: View {
                     HapticManager.selection()
                     onTap()
                 }
+                .accessibilityLabel("Subtask: \(subtask.title)")
+                .accessibilityHint(canEdit ? "Double tap to edit" : "")
+                .accessibilityAddTraits(.isButton)
 
             // Delete
             if canEdit {
@@ -103,5 +109,8 @@ struct SubtaskRow: View {
                 isDeleting = false
             }
         }
+        .accessibilityLabel("Delete subtask")
+        .accessibilityHint("Double tap to delete \(subtask.title)")
+        .accessibilityAddTraits(.isButton)
     }
 }
