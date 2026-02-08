@@ -19,10 +19,20 @@ final class AdvancedErrorHandler: ObservableObject {
     // MARK: - Error Processing
 
     /// Maps any error to a FocusmateError with logging.
+    ///
+    /// ## Thread Safety
+    /// This method is `nonisolated` to allow calling from any context (background
+    /// network callbacks, etc.) without requiring MainActor dispatch at call site.
+    ///
+    /// Previous implementation spawned a Task to log on MainActor, but that task
+    /// executed asynchronously after the function returned, causing:
+    /// - Log messages appearing out of order (confusing during debugging)
+    /// - Potential future data races if Logger accessed mutable state
+    ///
+    /// ## Current Approach
+    /// ErrorMapper.map() is pure (no side effects) and thread-safe.
+    /// Logging is removed from this hot path; callers can log if needed.
     nonisolated func handle(_ error: Error, context: String = "") -> FocusmateError {
-        Task { @MainActor in
-            Logger.debug("AdvancedErrorHandler: Processing error in context '\(context)': \(error)", category: .general)
-        }
         return ErrorMapper.map(error)
     }
 

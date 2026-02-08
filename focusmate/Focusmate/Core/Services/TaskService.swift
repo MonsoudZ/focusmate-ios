@@ -172,18 +172,33 @@ final class TaskService {
         }
     }
 
+    /// Deletes a task from the server, then updates local state on success.
+    ///
+    /// ## Consistency Guarantee
+    /// The API call executes BEFORE updating local state. This ensures:
+    /// - If network fails, UI remains unchanged (task still visible)
+    /// - User can retry the delete without confusion
+    /// - Server and client state stay synchronized
+    ///
+    /// ## Tradeoff
+    /// Slightly slower perceived response (network round-trip before UI update).
+    /// Previous "optimistic" approach updated UI first, but had no rollback on
+    /// failure, causing tasks to disappear from UI while still existing on server.
     func deleteTask(listId: Int, taskId: Int) async throws {
         try validateListId(listId)
         try validateTaskId(taskId)
         do {
-            await MainActor.run { sideEffects.taskDeleted(taskId: taskId) }
-
+            // API call FIRST - ensure server accepts the delete
             _ = try await apiClient.request(
                 "DELETE",
                 API.Lists.task(String(listId), String(taskId)),
                 body: nil as String?
             ) as EmptyResponse
+
+            // Only update local state after confirmed server deletion
+            await MainActor.run { sideEffects.taskDeleted(taskId: taskId) }
         } catch {
+            // Task still exists on server - don't update UI
             throw ErrorHandler.shared.handle(error, context: "Deleting task")
         }
     }
