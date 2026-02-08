@@ -119,9 +119,12 @@ final class NotificationService: @unchecked Sendable {
         
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
         
+        // Completion handler runs on background thread; dispatch to main for thread-safe logging
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                Logger.error("Failed to schedule escalation notification: \(id)", error: error, category: .general)
+                Task { @MainActor in
+                    Logger.error("Failed to schedule escalation notification: \(id)", error: error, category: .general)
+                }
             }
         }
     }

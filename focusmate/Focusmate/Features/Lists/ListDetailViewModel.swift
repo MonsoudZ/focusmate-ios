@@ -16,7 +16,9 @@ final class ListDetailViewModel {
 
     // MARK: - Data
 
-    var tasks: [TaskDTO] = []
+    var tasks: [TaskDTO] = [] {
+        didSet { invalidateTaskGroupsCache() }
+    }
     var isLoading = false
     var error: FocusmateError?
 
@@ -130,26 +132,80 @@ final class ListDetailViewModel {
     }
 
     // MARK: - Computed: Task Groups
+    //
+    // Performance: Groups are computed in a single O(n) pass and cached.
+    // Without caching, each computed property (urgent, starred, normal, completed)
+    // would do its own filter+sort, causing O(4n log n) work per view render.
+    // With 100 tasks at 60fps, that's 24,000 filter operations/second.
+    //
+    // Tradeoff: Manual cache invalidation required when `tasks` changes.
+    // The cache key uses tasks.count as a simple change detector. For more
+    // robust invalidation, we'd need to hash task IDs, but count is sufficient
+    // for typical add/remove/complete operations.
 
-    var urgentTasks: [TaskDTO] {
-        tasks.filter { !$0.isCompleted && $0.taskPriority == .urgent && !$0.isSubtask }
-            .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
+    private var cachedGroups: TaskGroups?
+    private var cacheVersion: Int = 0
+    private var cachedVersion: Int = -1
+
+    /// Call this after any modification to tasks array to invalidate the cache
+    private func invalidateTaskGroupsCache() {
+        cacheVersion += 1
     }
 
-    var starredTasks: [TaskDTO] {
-        tasks.filter { !$0.isCompleted && $0.taskPriority != .urgent && $0.isStarred && !$0.isSubtask }
-            .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
+    private struct TaskGroups {
+        var urgent: [TaskDTO]
+        var starred: [TaskDTO]
+        var normal: [TaskDTO]
+        var completed: [TaskDTO]
     }
 
-    var normalTasks: [TaskDTO] {
-        tasks.filter { !$0.isCompleted && $0.taskPriority != .urgent && !$0.isStarred && !$0.isSubtask }
-            .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
+    private var taskGroups: TaskGroups {
+        // Return cached if version hasn't changed
+        if cachedVersion == cacheVersion, let cached = cachedGroups {
+            return cached
+        }
+
+        // Single-pass grouping: O(n) instead of O(4n)
+        var urgent: [TaskDTO] = []
+        var starred: [TaskDTO] = []
+        var normal: [TaskDTO] = []
+        var completed: [TaskDTO] = []
+
+        for task in tasks {
+            guard !task.isSubtask else { continue }
+
+            if task.isCompleted {
+                completed.append(task)
+            } else if task.taskPriority == .urgent {
+                urgent.append(task)
+            } else if task.isStarred {
+                starred.append(task)
+            } else {
+                normal.append(task)
+            }
+        }
+
+        // Sort each group by position: O(k log k) where k << n
+        let sortByPosition: (TaskDTO, TaskDTO) -> Bool = {
+            ($0.position ?? Int.max) < ($1.position ?? Int.max)
+        }
+
+        let groups = TaskGroups(
+            urgent: urgent.sorted(by: sortByPosition),
+            starred: starred.sorted(by: sortByPosition),
+            normal: normal.sorted(by: sortByPosition),
+            completed: completed.sorted(by: sortByPosition)
+        )
+
+        cachedGroups = groups
+        cachedVersion = cacheVersion
+        return groups
     }
 
-    var completedTasks: [TaskDTO] {
-        tasks.filter { $0.isCompleted && !$0.isSubtask }
-            .sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
-    }
+    var urgentTasks: [TaskDTO] { taskGroups.urgent }
+    var starredTasks: [TaskDTO] { taskGroups.starred }
+    var normalTasks: [TaskDTO] { taskGroups.normal }
+    var completedTasks: [TaskDTO] { taskGroups.completed }
 
     // MARK: - Task Group Enum
 
