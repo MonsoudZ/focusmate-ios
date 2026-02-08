@@ -1,5 +1,15 @@
 import Foundation
 
+/// Service for task and subtask CRUD operations
+///
+/// Design concept: This is a **Repository pattern** implementation - it abstracts
+/// the data access layer (API) from the domain logic. All API calls go through
+/// this service, which handles validation, error transformation, and side effects.
+///
+/// The service uses **optimistic side effects** - it notifies observers immediately
+/// on success rather than waiting for a round-trip confirmation. This provides
+/// snappier UI updates at the cost of potential consistency issues if the operation
+/// fails after notification.
 final class TaskService {
     let apiClient: APIClient
     private let sideEffects: TaskSideEffectHandling
@@ -248,7 +258,7 @@ final class TaskService {
             throw ErrorHandler.shared.handle(error, context: "Reordering tasks")
         }
     }
-    
+
     func searchTasks(query: String) async throws -> [TaskDTO] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else {
@@ -266,7 +276,7 @@ final class TaskService {
             throw ErrorHandler.shared.handle(error, context: "Searching tasks")
         }
     }
-    
+
     // MARK: - Subtask Methods
 
     /// Create a subtask under a parent task
@@ -374,78 +384,4 @@ final class TaskService {
             throw ErrorHandler.shared.handle(error, context: "Nudging task")
         }
     }
-}
-
-// MARK: - Response Models
-
-struct NudgeResponse: Codable {
-    let message: String
-}
-
-// MARK: - Request Models (local to TaskService)
-
-private struct CreateTaskRequest: Encodable {
-    let task: TaskData
-    struct TaskData: Encodable {
-        let title: String
-        let note: String?
-        let due_at: String?
-        let color: String?
-        let priority: Int
-        let starred: Bool
-        let tag_ids: [Int]?
-        let is_recurring: Bool?
-        let recurrence_pattern: String?
-        let recurrence_interval: Int?
-        let recurrence_days: [Int]?
-        let recurrence_end_date: String?
-        let recurrence_count: Int?
-        let parent_task_id: Int?
-    }
-}
-
-private struct CreateSubtaskRequest: Encodable {
-    let subtask: SubtaskData
-    struct SubtaskData: Encodable {
-        let title: String
-    }
-}
-
-private struct UpdateSubtaskRequest: Encodable {
-    let subtask: SubtaskData
-    struct SubtaskData: Encodable {
-        let title: String
-    }
-}
-
-private struct UpdateTaskRequest: Encodable {
-    let task: TaskData
-    struct TaskData: Encodable {
-        let title: String?
-        let note: String?
-        let due_at: String?
-        let color: String?
-        let priority: Int?
-        let starred: Bool?
-        let hidden: Bool?
-        let tag_ids: [Int]?
-    }
-}
-
-private struct CompleteTaskRequest: Encodable {
-    let missed_reason: String
-}
-
-private struct RescheduleTaskRequest: Encodable {
-    let new_due_at: String
-    let reason: String
-}
-
-private struct ReorderTasksRequest: Encodable {
-    let tasks: [ReorderTask]
-}
-
-private struct ReorderTask: Encodable {
-    let id: Int
-    let position: Int
 }
