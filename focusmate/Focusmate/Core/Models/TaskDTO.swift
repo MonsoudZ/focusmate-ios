@@ -223,6 +223,13 @@ struct SingleTaskResponse: Codable {
 extension TaskDTO: Hashable {
     static func == (lhs: TaskDTO, rhs: TaskDTO) -> Bool {
         lhs.id == rhs.id
+            && lhs.completed_at == rhs.completed_at
+            && lhs.starred == rhs.starred
+            && lhs.hidden == rhs.hidden
+            && lhs.position == rhs.position
+            && lhs.title == rhs.title
+            && lhs.updated_at == rhs.updated_at
+            && lhs.subtasks == rhs.subtasks
     }
 
     func hash(into hasher: inout Hasher) {

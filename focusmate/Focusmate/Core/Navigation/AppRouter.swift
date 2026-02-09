@@ -19,7 +19,13 @@ final class AppRouter {
 
     // MARK: - Sheet State
 
-    var activeSheet: Sheet?
+    var activeSheet: Sheet? {
+        didSet {
+            if activeSheet == nil {
+                sheetCallbacks = SheetCallbacks()
+            }
+        }
+    }
 
     // MARK: - Sheet Callbacks
 

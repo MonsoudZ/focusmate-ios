@@ -153,7 +153,9 @@ final class AuthStore: ObservableObject {
         } catch {
             Logger.error("Sign in failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Sign In")
-            await clearLocalSession()
+            if isCredentialError(error) {
+                await clearLocalSession()
+            }
         }
     }
 
@@ -170,7 +172,9 @@ final class AuthStore: ObservableObject {
         } catch {
             Logger.error("Registration failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Registration")
-            await clearLocalSession()
+            if isCredentialError(error) {
+                await clearLocalSession()
+            }
         }
     }
 
@@ -247,7 +251,9 @@ final class AuthStore: ObservableObject {
         } catch {
             Logger.error("Apple Sign In failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Apple Sign In")
-            await clearLocalSession()
+            if isCredentialError(error) {
+                await clearLocalSession()
+            }
         }
     }
 
@@ -285,6 +291,7 @@ final class AuthStore: ObservableObject {
             escalationService.resetAll()
             _ = await errorHandler.handleUnauthorized()
             await clearLocalSession()
+            await ResponseCache.shared.invalidateAll()
             eventBus.send(.signedOut)
         }
     }
@@ -315,6 +322,32 @@ final class AuthStore: ObservableObject {
             keychain.save(refreshToken: newRefreshToken)
             await authSession.setRefreshToken(newRefreshToken)
         }
+    }
+
+    /// Returns true for errors that indicate the credentials are invalid (not transient).
+    /// Network errors, timeouts, and server errors should NOT destroy an existing session.
+    private func isCredentialError(_ error: Error) -> Bool {
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .unauthorized:
+                return true
+            case .badStatus(let status, _, _) where status == 401 || status == 403 || status == 422:
+                return true
+            case .validation:
+                return true
+            default:
+                return false
+            }
+        }
+        if let focusmateError = error as? FocusmateError {
+            switch focusmateError {
+            case .unauthorized, .badRequest, .validation:
+                return true
+            default:
+                return false
+            }
+        }
+        return false
     }
 
     private func clearLocalSession() async {

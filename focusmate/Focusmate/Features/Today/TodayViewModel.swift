@@ -22,6 +22,7 @@ final class TodayViewModel {
     var nudgeMessage: String?
 
     var onOverdueCountChange: ((Int) -> Void)?
+    private var inFlightTaskIds = Set<Int>()
 
     // MARK: - Computed Properties
 
@@ -120,6 +121,9 @@ final class TodayViewModel {
     }
 
     func toggleComplete(_ task: TaskDTO, reason: String? = nil) async {
+        guard inFlightTaskIds.insert(task.id).inserted else { return }
+        defer { inFlightTaskIds.remove(task.id) }
+
         if task.isCompleted {
             do {
                 _ = try await taskService.reopenTask(listId: task.list_id, taskId: task.id)
@@ -141,15 +145,22 @@ final class TodayViewModel {
     }
 
     func deleteTask(_ task: TaskDTO) async {
+        guard inFlightTaskIds.insert(task.id).inserted else { return }
+        defer { inFlightTaskIds.remove(task.id) }
+
         do {
             try await taskService.deleteTask(listId: task.list_id, taskId: task.id)
             await loadToday()
         } catch {
             Logger.error("Failed to delete task", error: error, category: .api)
+            self.error = ErrorHandler.shared.handle(error, context: "Deleting task")
         }
     }
 
     func toggleStar(_ task: TaskDTO) async {
+        guard inFlightTaskIds.insert(task.id).inserted else { return }
+        defer { inFlightTaskIds.remove(task.id) }
+
         do {
             _ = try await taskService.updateTask(
                 listId: task.list_id,

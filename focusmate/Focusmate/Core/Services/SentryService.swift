@@ -132,19 +132,17 @@ final class SentryService {
 
   // MARK: - Error Tracking
 
-  /// Capture an error with additional context
+  /// Capture an error with additional context.
+  /// Uses a local scope so tags don't leak between errors.
   func captureError(_ error: Error, context: [String: Any]? = nil) {
     #if canImport(Sentry)
-    // Add context as tags
-    if let context = context {
-      SentrySDK.configureScope { scope in
+    SentrySDK.capture(error: error) { scope in
+      if let context = context {
         for (key, value) in context {
           scope.setTag(value: String(describing: value), key: key)
         }
       }
     }
-
-    SentrySDK.capture(error: error)
     Logger.debug("SentryService: Captured error - \(error)", category: .general)
     #else
     Logger.debug("SentryService: Would capture error - \(error)", category: .general)

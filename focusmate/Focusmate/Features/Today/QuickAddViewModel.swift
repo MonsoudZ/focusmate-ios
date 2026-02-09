@@ -33,6 +33,7 @@ final class QuickAddViewModel {
             selectedList = lists.first
         } catch {
             Logger.error("Failed to load lists", error: error, category: .api)
+            self.error = ErrorHandler.shared.handle(error, context: "Loading lists")
         }
         isLoadingLists = false
     }

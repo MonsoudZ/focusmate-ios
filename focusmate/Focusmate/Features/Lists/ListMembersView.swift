@@ -104,7 +104,10 @@ struct ListMembersView: View {
                     }
                 }
             }
-            .alert("Remove Member", isPresented: .constant(viewModel.memberToRemove != nil)) {
+            .alert("Remove Member", isPresented: Binding(
+                get: { viewModel.memberToRemove != nil },
+                set: { if !$0 { viewModel.memberToRemove = nil } }
+            )) {
                 Button("Cancel", role: .cancel) { viewModel.memberToRemove = nil }
                 Button("Remove", role: .destructive) {
                     if let member = viewModel.memberToRemove {

@@ -169,6 +169,7 @@ final class CalendarService {
         
         do {
             try eventStore.save(event, span: .thisEvent)
+            invalidateEventsCache()
             Logger.debug("Successfully added task to calendar: \(task.title)", category: .general)
         } catch {
             Logger.error("Failed to add task to calendar", error: error, category: .general)

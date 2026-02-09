@@ -178,16 +178,20 @@ final class Logger {
         (path as NSString).lastPathComponent
     }
 
-    /// Cached DateFormatter for thread-safe timestamp generation.
-    /// DateFormatter is expensive to create, so we cache a static instance.
+    /// Thread-safe timestamp generation.
+    /// Uses NSLock to protect the cached DateFormatter since DateFormatter
+    /// is not thread-safe (its internal ICU state can corrupt under concurrent access).
     private static let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss.SSS"
         return formatter
     }()
+    private static let timestampLock = NSLock()
 
     private static func timestampString() -> String {
-        timestampFormatter.string(from: Date())
+        timestampLock.lock()
+        defer { timestampLock.unlock() }
+        return timestampFormatter.string(from: Date())
     }
 }
 
