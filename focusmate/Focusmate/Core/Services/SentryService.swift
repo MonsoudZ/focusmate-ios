@@ -114,9 +114,9 @@ final class SentryService {
     user.username = name
 
     SentrySDK.setUser(user)
-    Logger.info("SentryService: User context set - ID: \(id), Email: \(email)", category: .general)
+    Logger.info("SentryService: User context set - ID: \(id), Email: \(Logger.sanitizeEmail(email))", category: .general)
     #else
-    Logger.debug("SentryService: Would set user - ID: \(id), Email: \(email)", category: .general)
+    Logger.debug("SentryService: Would set user - ID: \(id), Email: \(Logger.sanitizeEmail(email))", category: .general)
     #endif
   }
 

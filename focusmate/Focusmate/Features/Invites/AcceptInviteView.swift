@@ -21,10 +21,10 @@ struct AcceptInviteView: View {
                     loadingView
                 } else if let acceptedList {
                     successView(list: acceptedList)
-                } else if let preview {
-                    invitePreview(preview)
                 } else if let error {
                     errorView(error)
+                } else if let preview {
+                    invitePreview(preview)
                 }
             }
             .navigationTitle("List Invitation")
@@ -209,6 +209,7 @@ struct AcceptInviteView: View {
 
     private func acceptInvite() async {
         isAccepting = true
+        error = nil
 
         do {
             let response = try await inviteService.acceptInvite(code: code)

@@ -28,6 +28,7 @@ final class DeleteAccountViewModel {
     }
 
     func deleteAccount() async {
+        guard !isLoading else { return }
         isLoading = true
         error = nil
 

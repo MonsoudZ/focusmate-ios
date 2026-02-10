@@ -163,6 +163,31 @@ enum FocusmateError: LocalizedError, Equatable {
     // MARK: - Equatable
 
     static func == (lhs: FocusmateError, rhs: FocusmateError) -> Bool {
-        return lhs.code == rhs.code
+        switch (lhs, rhs) {
+        case let (.network(l), .network(r)):
+            return l.localizedDescription == r.localizedDescription
+        case let (.unauthorized(l), .unauthorized(r)):
+            return l == r
+        case let (.badRequest(lMsg, lCtx), .badRequest(rMsg, rCtx)):
+            return lMsg == rMsg && lCtx == rCtx
+        case let (.notFound(l), .notFound(r)):
+            return l == r
+        case let (.serverError(lCode, lMsg, lCtx), .serverError(rCode, rMsg, rCtx)):
+            return lCode == rCode && lMsg == rMsg && lCtx == rCtx
+        case let (.decoding(l), .decoding(r)):
+            return l == r
+        case let (.validation(lFields, lMsg), .validation(rFields, rMsg)):
+            return lFields == rFields && lMsg == rMsg
+        case let (.rateLimited(lSec, lMsg), .rateLimited(rSec, rMsg)):
+            return lSec == rSec && lMsg == rMsg
+        case (.timeout, .timeout):
+            return true
+        case (.noInternetConnection, .noInternetConnection):
+            return true
+        case let (.custom(lCode, lMsg), .custom(rCode, rMsg)):
+            return lCode == rCode && lMsg == rMsg
+        default:
+            return false
+        }
     }
 }

@@ -40,6 +40,7 @@ struct SkeletonView: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .onAppear {
+                guard !UIAccessibility.isReduceMotionEnabled else { return }
                 withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
                     isAnimating = true
                 }

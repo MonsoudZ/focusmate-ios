@@ -17,7 +17,7 @@ final class TaskDetailViewModel {
 
     // MARK: - Dependencies
 
-    let task: TaskDTO
+    private(set) var task: TaskDTO
     let listName: String
     let listId: Int
     let onComplete: () async -> Void
@@ -147,7 +147,7 @@ final class TaskDetailViewModel {
 
     func toggleStar() async {
         do {
-            _ = try await taskService.updateTask(
+            let updated = try await taskService.updateTask(
                 listId: listId,
                 taskId: task.id,
                 title: nil,
@@ -158,6 +158,7 @@ final class TaskDetailViewModel {
                 starred: !task.isStarred,
                 tagIds: nil
             )
+            task = updated
             HapticManager.success()
             await onUpdate()
         } catch {
@@ -169,7 +170,7 @@ final class TaskDetailViewModel {
 
     func toggleHidden() async {
         do {
-            _ = try await taskService.updateTask(
+            let updated = try await taskService.updateTask(
                 listId: listId,
                 taskId: task.id,
                 title: nil,
@@ -177,6 +178,7 @@ final class TaskDetailViewModel {
                 dueAt: nil,
                 hidden: !task.isHidden
             )
+            task = updated
             HapticManager.selection()
             await onUpdate()
         } catch {
@@ -235,12 +237,13 @@ final class TaskDetailViewModel {
 
     func rescheduleTask(newDate: Date, reason: String) async {
         do {
-            _ = try await taskService.rescheduleTask(
+            let updated = try await taskService.rescheduleTask(
                 listId: listId,
                 taskId: task.id,
                 newDueAt: newDate.ISO8601Format(),
                 reason: reason
             )
+            task = updated
             HapticManager.success()
             await onUpdate()
         } catch {

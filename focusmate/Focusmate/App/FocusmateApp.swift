@@ -1,10 +1,6 @@
 import SwiftUI
 import UIKit
 
-extension String: @retroactive Identifiable {
-    public var id: String { self }
-}
-
 @MainActor
 struct FocusmateApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate

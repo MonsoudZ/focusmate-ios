@@ -83,10 +83,12 @@ final class TodayViewModel {
         self.screenTimeService = screenTimeService ?? .shared
         self.notificationService = notificationService ?? .shared
 
-        // Subscribe to subtask changes and reload data
-        // Guard ensures self is still alive before spawning the Task
+        // Subscribe to subtask changes and reload data.
+        // Debounce coalesces rapid-fire subtask mutations (e.g. toggling several
+        // checkboxes quickly) into a single API reload, preventing redundant
+        // concurrent fetches that could race and show stale data.
         subtaskManager.changePublisher
-            .receive(on: RunLoop.main)
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self else { return }
                 Task { await self.loadToday() }
@@ -103,11 +105,13 @@ final class TodayViewModel {
     }
 
     func loadToday() async {
+        guard let todayService else { return }
+
         isLoading = todayData == nil
         error = nil
+        defer { isLoading = false }
 
         do {
-            guard let todayService else { return }
             todayData = try await todayService.fetchToday()
             onOverdueCountChange?(todayData?.stats?.overdue_count ?? 0)
 
@@ -116,8 +120,6 @@ final class TodayViewModel {
         } catch {
             self.error = ErrorHandler.shared.handle(error, context: "Loading Today")
         }
-
-        isLoading = false
     }
 
     func toggleComplete(_ task: TaskDTO, reason: String? = nil) async {

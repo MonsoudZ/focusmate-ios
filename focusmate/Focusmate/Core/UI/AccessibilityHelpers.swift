@@ -146,11 +146,12 @@ extension View {
 // MARK: - Reduce Motion Support
 
 extension View {
+    @ViewBuilder
     func animateIfAllowed<V: Equatable>(_ animation: Animation?, value: V) -> some View {
         if UIAccessibility.isReduceMotionEnabled {
-            return AnyView(self)
+            self
         } else {
-            return AnyView(self.animation(animation, value: value))
+            self.animation(animation, value: value)
         }
     }
 }
