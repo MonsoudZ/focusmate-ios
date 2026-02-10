@@ -1,5 +1,7 @@
 import Foundation
 
+private let _inviteISO8601Formatter = ISO8601DateFormatter()
+
 // MARK: - Invite DTO
 
 struct InviteDTO: Codable, Identifiable {
@@ -14,13 +16,13 @@ struct InviteDTO: Codable, Identifiable {
 
     var isExpired: Bool {
         guard let expires_at else { return false }
-        guard let date = ISO8601DateFormatter().date(from: expires_at) else { return false }
+        guard let date = _inviteISO8601Formatter.date(from: expires_at) else { return false }
         return date < Date()
     }
 
     var expiresDate: Date? {
         guard let expires_at else { return nil }
-        return ISO8601DateFormatter().date(from: expires_at)
+        return _inviteISO8601Formatter.date(from: expires_at)
     }
 
     var roleDisplayName: String {

@@ -2,6 +2,8 @@ import Combine
 import Foundation
 import SwiftUI
 
+private let _listDetailISO8601Formatter = ISO8601DateFormatter()
+
 @MainActor
 @Observable
 final class ListDetailViewModel {
@@ -309,7 +311,7 @@ final class ListDetailViewModel {
             // Optimistic UI update
             let originalTasks = tasks
             if let idx = tasks.firstIndex(where: { $0.id == task.id }) {
-                tasks[idx].completed_at = ISO8601DateFormatter().string(from: Date())
+                tasks[idx].completed_at = _listDetailISO8601Formatter.string(from: Date())
             }
 
             do {
@@ -330,7 +332,7 @@ final class ListDetailViewModel {
     /// Called by TaskRow's onComplete callback after TaskRow handles the API call.
     func markTaskCompleted(_ taskId: Int) {
         if let idx = tasks.firstIndex(where: { $0.id == taskId }) {
-            tasks[idx].completed_at = ISO8601DateFormatter().string(from: Date())
+            tasks[idx].completed_at = _listDetailISO8601Formatter.string(from: Date())
         }
     }
 

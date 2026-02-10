@@ -1,5 +1,7 @@
 import Foundation
 
+private let _inviteServiceISO8601Formatter = ISO8601DateFormatter()
+
 final class InviteService {
     private let apiClient: APIClient
 
@@ -50,7 +52,7 @@ final class InviteService {
         try validateListId(listId)
         var expiresAtString: String?
         if let expiresAt {
-            expiresAtString = ISO8601DateFormatter().string(from: expiresAt)
+            expiresAtString = _inviteServiceISO8601Formatter.string(from: expiresAt)
         }
 
         let request = CreateInviteRequest(

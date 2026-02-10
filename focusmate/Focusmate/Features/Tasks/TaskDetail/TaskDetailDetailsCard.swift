@@ -1,5 +1,7 @@
 import SwiftUI
 
+private let _detailCardISO8601Formatter = ISO8601DateFormatter()
+
 /// Details card showing due date, list, recurrence, and completion date
 struct TaskDetailDetailsCard: View {
     let task: TaskDTO
@@ -32,7 +34,7 @@ struct TaskDetailDetailsCard: View {
             }
 
             if task.isCompleted, let completedAt = task.completed_at {
-                if let date = ISO8601DateFormatter().date(from: completedAt) {
+                if let date = _detailCardISO8601Formatter.date(from: completedAt) {
                     DetailRow(
                         icon: DS.Icon.circleChecked,
                         title: "Completed",
