@@ -28,6 +28,8 @@ final class QuickAddViewModel {
 
     func loadLists() async {
         isLoadingLists = true
+        defer { isLoadingLists = false }
+
         do {
             lists = try await listService.fetchLists()
             selectedList = lists.first
@@ -35,7 +37,6 @@ final class QuickAddViewModel {
             Logger.error("Failed to load lists", error: error, category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Loading lists")
         }
-        isLoadingLists = false
     }
 
     func createTask() async -> Bool {

@@ -36,6 +36,8 @@ final class ListMembersViewModel {
 
     func loadMembers() async {
         isLoading = true
+        defer { isLoading = false }
+
         do {
             let response: MembershipsResponse = try await apiClient.request(
                 "GET",
@@ -48,7 +50,6 @@ final class ListMembersViewModel {
         } catch {
             self.error = ErrorHandler.shared.handle(error, context: "Loading members")
         }
-        isLoading = false
     }
 
     func removeMember(_ membership: MembershipDTO) async {
@@ -69,17 +70,20 @@ final class ListMembersViewModel {
 
     func loadFriends() async {
         isLoadingFriends = true
+        defer { isLoadingFriends = false }
+
         do {
             friends = try await friendService.fetchFriends()
         } catch {
-            // Silently fail - friends are optional
+            // Silently fail - friends are optional enhancement
             Logger.warning("Failed to load friends: \(error)", category: .api)
         }
-        isLoadingFriends = false
     }
 
     func addFriendToList(_ friend: FriendDTO) async {
         addingFriendId = friend.id
+        defer { addingFriendId = nil }
+
         do {
             let membership = try await friendService.addFriendToList(
                 listId: list.id,
@@ -97,6 +101,5 @@ final class ListMembersViewModel {
             self.error = ErrorHandler.shared.handle(error, context: "Adding friend to list")
             HapticManager.error()
         }
-        addingFriendId = nil
     }
 }

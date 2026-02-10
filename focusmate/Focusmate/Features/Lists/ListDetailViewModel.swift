@@ -218,6 +218,7 @@ final class ListDetailViewModel {
     func loadTasks() async {
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             let response = try await taskService.fetchTasks(listId: list.id)
@@ -229,8 +230,6 @@ final class ListDetailViewModel {
             self.error = ErrorHandler.shared.handle(error, context: "Loading tasks")
             HapticManager.error()
         }
-
-        isLoading = false
     }
 
     func toggleStar(_ task: TaskDTO) async {
@@ -256,6 +255,7 @@ final class ListDetailViewModel {
         } catch {
             tasks = originalTasks
             Logger.error("Failed to toggle star: \(error)", category: .api)
+            HapticManager.error()
         }
     }
 

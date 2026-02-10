@@ -18,6 +18,7 @@ final class ListInvitesViewModel {
     func loadInvites() async {
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             invites = try await inviteService.fetchInvites(listId: list.id)
@@ -26,8 +27,6 @@ final class ListInvitesViewModel {
         } catch {
             self.error = ErrorHandler.shared.handle(error, context: "Loading invites")
         }
-
-        isLoading = false
     }
 
     func createInvite(role: String, expiresAt: Date?, maxUses: Int?) async -> InviteDTO? {

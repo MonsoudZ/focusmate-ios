@@ -26,6 +26,7 @@ final class ListsViewModel {
     func loadLists() async {
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             lists = try await listService.fetchLists()
@@ -34,8 +35,6 @@ final class ListsViewModel {
         } catch {
             self.error = ErrorHandler.shared.handle(error)
         }
-
-        isLoading = false
     }
 
     func deleteList(_ list: ListDTO) async {

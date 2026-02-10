@@ -117,6 +117,7 @@ struct TaskDeepLinkView: View {
     private func loadTask() async {
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             task = try await taskService.fetchTaskById(taskId)
@@ -127,8 +128,6 @@ struct TaskDeepLinkView: View {
             self.error = .custom("UNKNOWN_ERROR", error.localizedDescription)
             Logger.error("Failed to fetch task for deep link", error: error, category: .api)
         }
-
-        isLoading = false
     }
 
     private func refreshTask() async {

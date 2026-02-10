@@ -195,6 +195,7 @@ struct AcceptInviteView: View {
     private func loadPreview() async {
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             preview = try await inviteService.previewInvite(code: code)
@@ -203,13 +204,12 @@ struct AcceptInviteView: View {
         } catch {
             self.error = .custom("INVITE_ERROR", "Failed to load invitation")
         }
-
-        isLoading = false
     }
 
     private func acceptInvite() async {
         isAccepting = true
         error = nil
+        defer { isAccepting = false }
 
         do {
             let response = try await inviteService.acceptInvite(code: code)
@@ -222,7 +222,5 @@ struct AcceptInviteView: View {
             self.error = .custom("INVITE_ERROR", "Failed to join list")
             HapticManager.error()
         }
-
-        isAccepting = false
     }
 }

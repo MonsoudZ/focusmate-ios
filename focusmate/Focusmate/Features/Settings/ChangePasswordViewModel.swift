@@ -26,6 +26,7 @@ final class ChangePasswordViewModel {
         guard !isLoading else { return }
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             let _: EmptyResponse = try await apiClient.request(
@@ -46,7 +47,5 @@ final class ChangePasswordViewModel {
             self.error = ErrorHandler.shared.handle(error)
             HapticManager.error()
         }
-
-        isLoading = false
     }
 }

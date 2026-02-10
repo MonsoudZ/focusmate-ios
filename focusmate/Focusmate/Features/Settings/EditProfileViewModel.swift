@@ -19,6 +19,7 @@ final class EditProfileViewModel {
     func updateProfile() async -> UserDTO? {
         isLoading = true
         error = nil
+        defer { isLoading = false }
 
         do {
             let response: UserResponse = try await apiClient.request(
@@ -27,17 +28,15 @@ final class EditProfileViewModel {
                 body: UpdateProfileRequest(name: name, timezone: timezone)
             )
             HapticManager.success()
-            isLoading = false
             return response.user
         } catch let err as FocusmateError {
             error = err
             HapticManager.error()
         } catch {
-            self.error = .custom("PROFILE_ERROR", error.localizedDescription)
+            self.error = ErrorHandler.shared.handle(error, context: "Updating profile")
             HapticManager.error()
         }
 
-        isLoading = false
         return nil
     }
 }
