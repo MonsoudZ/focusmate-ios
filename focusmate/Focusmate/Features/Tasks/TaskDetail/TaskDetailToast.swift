@@ -31,7 +31,7 @@ private struct ToastView: View {
         .padding(.vertical, DS.Spacing.md)
         .background(DS.Colors.success)
         .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+        .shadow(DS.Shadow.sm)
         .padding(.top, DS.Spacing.md)
         .transition(.move(edge: .top).combined(with: .opacity))
     }

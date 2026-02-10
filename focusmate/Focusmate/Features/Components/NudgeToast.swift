@@ -11,7 +11,7 @@ struct NudgeToast: View {
             .padding(.vertical, DS.Spacing.sm)
             .background(DS.Colors.accent)
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
-            .shadow(radius: 4)
+            .shadow(DS.Shadow.sm)
             .padding(.bottom, DS.Spacing.xl)
     }
 }

@@ -40,7 +40,7 @@ struct CreateTagView: View {
                     }
                     .padding(.horizontal, DS.Spacing.md)
                     .padding(.vertical, DS.Spacing.sm)
-                    .background(DS.Colors.list(selectedColor).opacity(0.2))
+                    .background(DS.Colors.list(selectedColor).opacity(DS.Opacity.tintBackgroundActive))
                     .clipShape(Capsule())
                 }
             }

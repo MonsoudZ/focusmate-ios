@@ -81,7 +81,7 @@ struct PriorityOption: View {
             VStack(spacing: DS.Spacing.xs) {
                 ZStack {
                     Circle()
-                        .fill(isSelected ? priority.color.opacity(0.2) : Color(.tertiarySystemBackground))
+                        .fill(isSelected ? priority.color.opacity(DS.Opacity.tintBackgroundActive) : Color(.tertiarySystemBackground))
                         .frame(width: 44, height: 44)
 
                     if let icon = priority.icon {

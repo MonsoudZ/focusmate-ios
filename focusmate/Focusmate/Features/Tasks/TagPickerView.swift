@@ -82,7 +82,7 @@ struct TagChip: View {
             }
             .padding(.horizontal, DS.Spacing.md)
             .padding(.vertical, DS.Spacing.sm)
-            .background(isSelected ? tag.tagColor.opacity(0.2) : Color(.secondarySystemBackground))
+            .background(isSelected ? tag.tagColor.opacity(DS.Opacity.tintBackgroundActive) : Color(.secondarySystemBackground))
             .overlay(
                 Capsule()
                     .stroke(isSelected ? tag.tagColor : .clear, lineWidth: 1.5)

@@ -96,6 +96,6 @@ struct TaskDetailSubtasksCard: View {
         }
         .background(DS.Colors.surfaceElevated)
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
-        .shadow(color: DS.Shadow.md.color, radius: DS.Shadow.md.radius, y: DS.Shadow.md.y)
+        .shadow(DS.Shadow.md)
     }
 }

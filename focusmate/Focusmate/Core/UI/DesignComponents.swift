@@ -254,7 +254,7 @@ struct Banner: View {
                     .fill(.ultraThinMaterial)
                     .overlay(
                         RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
-                            .fill(style.color.opacity(0.15))
+                            .fill(style.color.opacity(DS.Opacity.tintBackground))
                     )
             } else {
                 RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)

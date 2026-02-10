@@ -198,7 +198,7 @@ struct FloatingErrorBanner: View {
         .padding(.vertical, DS.Spacing.sm)
         .background(DS.Colors.error)
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
-        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+        .shadow(DS.Shadow.sm)
         .padding(.horizontal, DS.Spacing.md)
         .padding(.top, DS.Spacing.xs)
     }

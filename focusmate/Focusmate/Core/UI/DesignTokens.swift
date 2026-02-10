@@ -75,6 +75,15 @@ enum DS {
         static let full: CGFloat = 999  // circles, capsules
     }
 
+    // MARK: - Opacity
+
+    enum Opacity {
+        /// Tag pills, priority badges, status indicators
+        static let tintBackground: CGFloat = 0.15
+        /// Selected tags, active priority buttons
+        static let tintBackgroundActive: CGFloat = 0.2
+    }
+
     // MARK: - Shadows
 
     enum Shadow {

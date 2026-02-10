@@ -12,7 +12,7 @@ struct TaskDetailDetailsCard: View {
                 DetailRow(
                     icon: DS.Icon.calendar,
                     title: "Due",
-                    value: formatDueDate(dueDate, isAnytime: task.isAnytime),
+                    value: DueDateFormatter.full(dueDate, isAnytime: task.isAnytime),
                     valueColor: isOverdue ? DS.Colors.error : nil
                 )
             }
@@ -36,7 +36,7 @@ struct TaskDetailDetailsCard: View {
                     DetailRow(
                         icon: DS.Icon.circleChecked,
                         title: "Completed",
-                        value: formatDueDate(date, isAnytime: false),
+                        value: DueDateFormatter.full(date, isAnytime: false),
                         valueColor: DS.Colors.success
                     )
                 }
@@ -45,27 +45,6 @@ struct TaskDetailDetailsCard: View {
         .card()
     }
 
-    private func formatDueDate(_ date: Date, isAnytime: Bool) -> String {
-        let calendar = Calendar.current
-        let formatter = DateFormatter()
-
-        if isAnytime {
-            if calendar.isDateInToday(date) { return "Today" }
-            if calendar.isDateInTomorrow(date) { return "Tomorrow" }
-            formatter.dateFormat = "MMM d, yyyy"
-            return formatter.string(from: date)
-        }
-
-        if calendar.isDateInToday(date) {
-            formatter.dateFormat = "'Today at' h:mm a"
-        } else if calendar.isDateInTomorrow(date) {
-            formatter.dateFormat = "'Tomorrow at' h:mm a"
-        } else {
-            formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
-        }
-
-        return formatter.string(from: date)
-    }
 }
 
 // MARK: - Detail Row

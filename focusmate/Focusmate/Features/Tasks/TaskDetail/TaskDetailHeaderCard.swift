@@ -87,7 +87,7 @@ struct TaskDetailPriorityBadge: View {
         .foregroundStyle(priority.color)
         .padding(.horizontal, DS.Spacing.sm)
         .padding(.vertical, DS.Spacing.xs)
-        .background(priority.color.opacity(0.15))
+        .background(priority.color.opacity(DS.Opacity.tintBackground))
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
     }
 }

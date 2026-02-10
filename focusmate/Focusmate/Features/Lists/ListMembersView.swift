@@ -224,7 +224,7 @@ private struct RoleBadge: View {
 
     private var backgroundColor: Color {
         if isOwner {
-            return Color.yellow.opacity(0.15)
+            return Color.yellow.opacity(DS.Opacity.tintBackground)
         } else if isEditor {
             return DS.Colors.accent.opacity(0.1)
         } else {

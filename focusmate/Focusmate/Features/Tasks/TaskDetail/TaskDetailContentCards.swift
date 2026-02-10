@@ -26,7 +26,7 @@ struct TaskDetailTagsCard: View {
                     }
                     .padding(.horizontal, DS.Spacing.sm)
                     .padding(.vertical, DS.Spacing.xs)
-                    .background(tag.tagColor.opacity(0.15))
+                    .background(tag.tagColor.opacity(DS.Opacity.tintBackground))
                     .clipShape(Capsule())
                 }
             }

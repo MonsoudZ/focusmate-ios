@@ -126,7 +126,7 @@ struct ListRowView: View {
                     .foregroundStyle(tag.tagColor)
                     .padding(.horizontal, DS.Spacing.sm)
                     .padding(.vertical, DS.Spacing.xxs)
-                    .background(tag.tagColor.opacity(0.15))
+                    .background(tag.tagColor.opacity(DS.Opacity.tintBackground))
                     .clipShape(Capsule())
             }
 

@@ -59,13 +59,18 @@ extension View {
         }
     }
 
+    /// Apply a DS.Shadow token as a single call instead of destructuring the tuple.
+    func shadow(_ token: (color: Color, radius: CGFloat, y: CGFloat)) -> some View {
+        shadow(color: token.color, radius: token.radius, y: token.y)
+    }
+
     /// Card background with shadow and continuous corners
     func card(padding: CGFloat = DS.Spacing.md) -> some View {
         self
             .padding(padding)
             .background(DS.Colors.surfaceElevated)
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
-            .shadow(color: DS.Shadow.md.color, radius: DS.Shadow.md.radius, y: DS.Shadow.md.y)
+            .shadow(DS.Shadow.md)
     }
 
     /// Hero card — accent glow, elevated, larger radius
@@ -74,7 +79,7 @@ extension View {
             .padding(padding)
             .background(DS.Colors.surfaceElevated)
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-            .shadow(color: DS.Shadow.glow.color, radius: DS.Shadow.glow.radius, y: DS.Shadow.glow.y)
+            .shadow(DS.Shadow.glow)
     }
 
     /// Subtle card (less prominent)

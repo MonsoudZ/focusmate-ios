@@ -105,7 +105,7 @@ struct ErrorBanner: View {
                 .padding(DS.Spacing.md)
                 .background(DS.Colors.error)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
-                .shadow(color: DS.Shadow.sm.color, radius: DS.Shadow.sm.radius, y: DS.Shadow.sm.y)
+                .shadow(DS.Shadow.sm)
                 .padding(.horizontal)
                 .transition(.move(edge: .top).combined(with: .opacity))
         }
