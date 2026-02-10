@@ -1,7 +1,5 @@
 import Foundation
 
-private let _inviteServiceISO8601Formatter = ISO8601DateFormatter()
-
 final class InviteService {
     private let apiClient: APIClient
 
@@ -9,31 +7,11 @@ final class InviteService {
         self.apiClient = apiClient
     }
 
-    // MARK: - Input Validation
-
-    private func validateListId(_ listId: Int) throws {
-        guard listId > 0 else {
-            throw FocusmateError.validation(["list_id": ["must be a positive number"]], nil)
-        }
-    }
-
-    private func validateInviteId(_ inviteId: Int) throws {
-        guard inviteId > 0 else {
-            throw FocusmateError.validation(["invite_id": ["must be a positive number"]], nil)
-        }
-    }
-
-    private func validateInviteCode(_ code: String) throws {
-        guard !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw FocusmateError.validation(["code": ["cannot be empty"]], nil)
-        }
-    }
-
     // MARK: - List Owner Operations
 
     /// Fetch all invites for a list
     func fetchInvites(listId: Int) async throws -> [InviteDTO] {
-        try validateListId(listId)
+        try InputValidation.requirePositive(listId, fieldName: "list_id")
         let response: InvitesResponse = try await apiClient.request(
             "GET",
             API.Lists.invites(String(listId)),
@@ -49,10 +27,10 @@ final class InviteService {
         expiresAt: Date? = nil,
         maxUses: Int? = nil
     ) async throws -> InviteDTO {
-        try validateListId(listId)
+        try InputValidation.requirePositive(listId, fieldName: "list_id")
         var expiresAtString: String?
         if let expiresAt {
-            expiresAtString = _inviteServiceISO8601Formatter.string(from: expiresAt)
+            expiresAtString = ISO8601Utils.formatDateNoFrac(expiresAt)
         }
 
         let request = CreateInviteRequest(
@@ -73,8 +51,8 @@ final class InviteService {
 
     /// Revoke an invite
     func revokeInvite(listId: Int, inviteId: Int) async throws {
-        try validateListId(listId)
-        try validateInviteId(inviteId)
+        try InputValidation.requirePositive(listId, fieldName: "list_id")
+        try InputValidation.requirePositive(inviteId, fieldName: "invite_id")
         let _: EmptyResponse = try await apiClient.request(
             "DELETE",
             API.Lists.invite(String(listId), String(inviteId)),
@@ -86,7 +64,7 @@ final class InviteService {
 
     /// Preview an invite (no auth required)
     func previewInvite(code: String) async throws -> InvitePreviewDTO {
-        try validateInviteCode(code)
+        try InputValidation.requireNotEmpty(code, fieldName: "code")
         let response: InvitePreviewResponse = try await apiClient.request(
             "GET",
             API.Invites.preview(code),
@@ -97,7 +75,7 @@ final class InviteService {
 
     /// Accept an invite (auth required)
     func acceptInvite(code: String) async throws -> AcceptInviteResponse {
-        try validateInviteCode(code)
+        try InputValidation.requireNotEmpty(code, fieldName: "code")
         let response: AcceptInviteResponse = try await apiClient.request(
             "POST",
             API.Invites.accept(code),

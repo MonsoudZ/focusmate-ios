@@ -18,18 +18,7 @@ struct ListDTO: Codable, Identifiable, Hashable {
     let updated_at: String?
 
     var listColor: Color {
-        switch color ?? "blue" {
-        case "blue": return .blue
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "purple": return .purple
-        case "pink": return .pink
-        case "teal": return .teal
-        case "yellow": return .yellow
-        case "gray": return .gray
-        default: return .blue
-        }
+        ColorResolver.resolve(color)
     }
 
     var progress: Double {

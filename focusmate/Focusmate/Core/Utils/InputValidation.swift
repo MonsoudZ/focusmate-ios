@@ -44,4 +44,21 @@ enum InputValidation {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         return !trimmed.isEmpty && trimmed.count <= maxLength
     }
+    // MARK: - Throwing Validators
+    //
+    // These replace the ~10 identical `private func validateX` methods scattered
+    // across TaskService, InviteService, and FriendService. Each service had its
+    // own copy of the same guard-else-throw pattern, differing only in the field name.
+
+    static func requirePositive(_ value: Int, fieldName: String) throws {
+        guard value > 0 else {
+            throw FocusmateError.validation([fieldName: ["must be a positive number"]], nil)
+        }
+    }
+
+    static func requireNotEmpty(_ value: String, fieldName: String) throws {
+        guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw FocusmateError.validation([fieldName: ["cannot be empty"]], nil)
+        }
+    }
 }

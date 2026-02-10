@@ -1,16 +1,6 @@
 import Foundation
 import SwiftUI
 
-private let _iso8601Formatter: ISO8601DateFormatter = {
-    let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return f
-}()
-
-private let _iso8601FormatterNoFrac: ISO8601DateFormatter = {
-    ISO8601DateFormatter()
-}()
-
 struct TaskCreatorDTO: Codable, Identifiable, Hashable {
     let id: Int
     let email: String
@@ -99,8 +89,7 @@ struct TaskDTO: Codable, Identifiable {
 
     var dueDate: Date? {
         guard let due_at else { return nil }
-        return _iso8601Formatter.date(from: due_at)
-            ?? _iso8601FormatterNoFrac.date(from: due_at)
+        return ISO8601Utils.parseDate(due_at)
     }
 
     var taskPriority: TaskPriority {
@@ -108,18 +97,7 @@ struct TaskDTO: Codable, Identifiable {
     }
 
     var taskColor: Color {
-        switch color {
-        case "blue": return .blue
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "purple": return .purple
-        case "pink": return .pink
-        case "teal": return .teal
-        case "yellow": return .yellow
-        case "gray": return .gray
-        default: return .blue
-        }
+        ColorResolver.resolve(color)
     }
 
     var isAnytime: Bool {

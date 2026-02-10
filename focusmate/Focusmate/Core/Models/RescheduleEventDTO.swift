@@ -1,15 +1,5 @@
 import Foundation
 
-private let _iso8601Formatter: ISO8601DateFormatter = {
-    let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return f
-}()
-
-private let _iso8601FormatterNoFrac: ISO8601DateFormatter = {
-    ISO8601DateFormatter()
-}()
-
 struct RescheduleEventDTO: Codable, Identifiable, Hashable {
     let id: Int
     let task_id: Int
@@ -20,20 +10,17 @@ struct RescheduleEventDTO: Codable, Identifiable, Hashable {
 
     var previousDueDate: Date? {
         guard let previous_due_at else { return nil }
-        return _iso8601Formatter.date(from: previous_due_at)
-            ?? _iso8601FormatterNoFrac.date(from: previous_due_at)
+        return ISO8601Utils.parseDate(previous_due_at)
     }
 
     var newDueDate: Date? {
         guard let new_due_at else { return nil }
-        return _iso8601Formatter.date(from: new_due_at)
-            ?? _iso8601FormatterNoFrac.date(from: new_due_at)
+        return ISO8601Utils.parseDate(new_due_at)
     }
 
     var createdDate: Date? {
         guard let created_at else { return nil }
-        return _iso8601Formatter.date(from: created_at)
-            ?? _iso8601FormatterNoFrac.date(from: created_at)
+        return ISO8601Utils.parseDate(created_at)
     }
 
     var reasonLabel: String {
