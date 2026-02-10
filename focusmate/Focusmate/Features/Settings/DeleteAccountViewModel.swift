@@ -42,8 +42,10 @@ final class DeleteAccountViewModel {
             await authStore.signOut()
         } catch let err as FocusmateError {
             error = err
+            HapticManager.error()
         } catch {
             self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
         }
 
         isLoading = false

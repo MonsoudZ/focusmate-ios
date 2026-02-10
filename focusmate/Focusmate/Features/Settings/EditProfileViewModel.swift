@@ -26,12 +26,15 @@ final class EditProfileViewModel {
                 API.Users.profile,
                 body: UpdateProfileRequest(name: name, timezone: timezone)
             )
+            HapticManager.success()
             isLoading = false
             return response.user
         } catch let err as FocusmateError {
             error = err
+            HapticManager.error()
         } catch {
             self.error = .custom("PROFILE_ERROR", error.localizedDescription)
+            HapticManager.error()
         }
 
         isLoading = false

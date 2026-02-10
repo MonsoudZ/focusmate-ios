@@ -103,10 +103,10 @@ final class EscalationService: ObservableObject {
             withTimeInterval: interval,
             repeats: false
         ) { [weak self] _ in
-            // Timer callbacks run on main thread since service is @MainActor.
-            // Guard against timer firing after service deallocation or reset.
-            guard let self, self.gracePeriodTimer != nil else { return }
-            self.gracePeriodEnded()
+            Task { @MainActor in
+                guard let self, self.gracePeriodTimer != nil else { return }
+                self.gracePeriodEnded()
+            }
         }
     }
 
@@ -217,8 +217,10 @@ final class EscalationService: ObservableObject {
     /// No Task wrapper needed - direct method call is safe.
     private func startPeriodicCheck() {
         checkTimer = Timer.scheduledTimer(withTimeInterval: AppConfiguration.Escalation.statusCheckIntervalSeconds, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            self.checkGracePeriodStatus()
+            Task { @MainActor in
+                guard let self else { return }
+                self.checkGracePeriodStatus()
+            }
         }
     }
 

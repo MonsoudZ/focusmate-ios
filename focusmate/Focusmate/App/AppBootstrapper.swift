@@ -9,6 +9,7 @@ final class AppBootstrapper: ObservableObject {
     private let settings = AppSettings.shared
 
     private var hasTrackedInitialOpenThisRun = false
+    private var isRunning = false
 
     init(auth: AuthStore) {
         self.auth = auth
@@ -16,6 +17,11 @@ final class AppBootstrapper: ObservableObject {
 
     func runAuthenticatedBootTasksIfNeeded() async {
         guard auth.jwt != nil else { return }
+        // Serialize concurrent invocations from multiple .task modifiers.
+        // Since AppBootstrapper is @MainActor, this flag check is thread-safe.
+        guard !isRunning else { return }
+        isRunning = true
+        defer { isRunning = false }
 
         // ✅ Always track per-run (not persisted)
         if !hasTrackedInitialOpenThisRun {

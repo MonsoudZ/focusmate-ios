@@ -15,24 +15,35 @@ final class KeychainManager: @unchecked Sendable {
       return
     }
 
-    let query: [String: Any] = [
+    let searchQuery: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: self.service,
       kSecAttrAccount as String: self.tokenKey,
+    ]
+
+    let updateAttributes: [String: Any] = [
       kSecValueData as String: data,
-      // Security: Only accessible after first unlock, never backed up to iCloud
       kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
     ]
 
-    // Delete existing item first
-    SecItemDelete(query as CFDictionary)
+    // Atomic update: SecItemUpdate replaces the value in-place without a
+    // delete+add gap. If the item doesn't exist yet, fall back to add.
+    let updateStatus = SecItemUpdate(searchQuery as CFDictionary, updateAttributes as CFDictionary)
 
-    // Add new item
-    let status = SecItemAdd(query as CFDictionary, nil)
-    if status != errSecSuccess {
-      Logger.error("Failed to save token to keychain (status: \(status))", category: .auth)
+    if updateStatus == errSecItemNotFound {
+      var addQuery = searchQuery
+      addQuery[kSecValueData as String] = data
+      addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+      let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+      if addStatus != errSecSuccess {
+        Logger.error("Failed to save token to keychain (status: \(addStatus))", category: .auth)
+      } else {
+        Logger.debug("Token saved to keychain successfully", category: .auth)
+      }
+    } else if updateStatus != errSecSuccess {
+      Logger.error("Failed to update token in keychain (status: \(updateStatus))", category: .auth)
     } else {
-      Logger.debug("Token saved to keychain successfully", category: .auth)
+      Logger.debug("Token updated in keychain successfully", category: .auth)
     }
   }
 
@@ -85,21 +96,33 @@ final class KeychainManager: @unchecked Sendable {
       return
     }
 
-    let query: [String: Any] = [
+    let searchQuery: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: self.service,
       kSecAttrAccount as String: self.refreshTokenKey,
+    ]
+
+    let updateAttributes: [String: Any] = [
       kSecValueData as String: data,
       kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
     ]
 
-    SecItemDelete(query as CFDictionary)
+    let updateStatus = SecItemUpdate(searchQuery as CFDictionary, updateAttributes as CFDictionary)
 
-    let status = SecItemAdd(query as CFDictionary, nil)
-    if status != errSecSuccess {
-      Logger.error("Failed to save refresh token to keychain (status: \(status))", category: .auth)
+    if updateStatus == errSecItemNotFound {
+      var addQuery = searchQuery
+      addQuery[kSecValueData as String] = data
+      addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+      let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+      if addStatus != errSecSuccess {
+        Logger.error("Failed to save refresh token to keychain (status: \(addStatus))", category: .auth)
+      } else {
+        Logger.debug("Refresh token saved to keychain successfully", category: .auth)
+      }
+    } else if updateStatus != errSecSuccess {
+      Logger.error("Failed to update refresh token in keychain (status: \(updateStatus))", category: .auth)
     } else {
-      Logger.debug("Refresh token saved to keychain successfully", category: .auth)
+      Logger.debug("Refresh token updated in keychain successfully", category: .auth)
     }
   }
 

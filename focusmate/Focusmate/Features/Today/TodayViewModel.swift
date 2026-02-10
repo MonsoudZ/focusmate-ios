@@ -122,6 +122,13 @@ final class TodayViewModel {
         }
     }
 
+    /// Invalidate cached today data and reload fresh from server.
+    /// Called after mutations to ensure cache coherence (write invalidates read cache).
+    private func reloadAfterMutation() async {
+        await todayService?.invalidateCache()
+        await loadToday()
+    }
+
     func toggleComplete(_ task: TaskDTO, reason: String? = nil) async {
         guard inFlightTaskIds.insert(task.id).inserted else { return }
         defer { inFlightTaskIds.remove(task.id) }
@@ -129,7 +136,7 @@ final class TodayViewModel {
         if task.isCompleted {
             do {
                 _ = try await taskService.reopenTask(listId: task.list_id, taskId: task.id)
-                await loadToday()
+                await reloadAfterMutation()
             } catch {
                 Logger.error("Failed to reopen task", error: error, category: .api)
                 self.error = ErrorHandler.shared.handle(error, context: "Reopening task")
@@ -138,7 +145,7 @@ final class TodayViewModel {
             do {
                 _ = try await taskService.completeTask(listId: task.list_id, taskId: task.id, reason: reason)
                 HapticManager.success()
-                await loadToday()
+                await reloadAfterMutation()
             } catch {
                 Logger.error("Failed to complete task", error: error, category: .api)
                 self.error = ErrorHandler.shared.handle(error, context: "Completing task")
@@ -152,7 +159,7 @@ final class TodayViewModel {
 
         do {
             try await taskService.deleteTask(listId: task.list_id, taskId: task.id)
-            await loadToday()
+            await reloadAfterMutation()
         } catch {
             Logger.error("Failed to delete task", error: error, category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Deleting task")
@@ -173,7 +180,7 @@ final class TodayViewModel {
                 starred: !task.isStarred
             )
             HapticManager.light()
-            await loadToday()
+            await reloadAfterMutation()
         } catch {
             Logger.error("Failed to toggle star", error: error, category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Starring task")

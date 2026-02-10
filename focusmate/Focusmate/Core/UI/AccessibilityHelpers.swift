@@ -2,6 +2,15 @@ import SwiftUI
 
 enum Accessibility {
 
+    // MARK: - Shared Formatters
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
     // MARK: - Task Accessibility
 
     static func taskLabel(
@@ -17,9 +26,6 @@ enum Accessibility {
         }
 
         if let dueDate = dueDate {
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateStyle = .medium
-            dateFormatter.timeStyle = .short
             let dateString = dateFormatter.string(from: dueDate)
 
             if isOverdue && !isCompleted {

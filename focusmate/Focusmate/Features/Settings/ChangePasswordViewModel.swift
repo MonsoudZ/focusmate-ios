@@ -23,6 +23,7 @@ final class ChangePasswordViewModel {
     }
 
     func changePassword() async {
+        guard !isLoading else { return }
         isLoading = true
         error = nil
 
@@ -36,11 +37,14 @@ final class ChangePasswordViewModel {
                     passwordConfirmation: confirmPassword
                 )
             )
+            HapticManager.success()
             showSuccess = true
         } catch let err as FocusmateError {
             error = err
+            HapticManager.error()
         } catch {
             self.error = ErrorHandler.shared.handle(error)
+            HapticManager.error()
         }
 
         isLoading = false

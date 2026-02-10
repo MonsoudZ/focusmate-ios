@@ -13,7 +13,8 @@ final class ErrorHandler: @unchecked Sendable {
   func handle(_ error: Error, context: String = "") -> FocusmateError {
     let focusmateError = self.advancedHandler.handle(error, context: context)
 
-    // Send error to Sentry
+    // Send error to Sentry on MainActor since SentryService is @MainActor.
+    // Fire-and-forget: error reporting should never block the caller.
     var sentryContext: [String: Any] = [:]
     if !context.isEmpty {
       sentryContext["context"] = context
@@ -21,7 +22,10 @@ final class ErrorHandler: @unchecked Sendable {
     sentryContext["error_code"] = focusmateError.code
     sentryContext["is_retryable"] = focusmateError.isRetryable
 
-    sentryService.captureError(error, context: sentryContext)
+    let sentryService = self.sentryService
+    Task { @MainActor in
+      sentryService.captureError(error, context: sentryContext)
+    }
 
     return focusmateError
   }
