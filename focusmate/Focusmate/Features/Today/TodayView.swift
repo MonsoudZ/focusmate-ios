@@ -58,11 +58,10 @@ struct TodayView: View {
             if let message = viewModel.nudgeMessage {
                 NudgeToast(message: message)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            withAnimation {
-                                viewModel.nudgeMessage = nil
-                            }
+                    .task {
+                        try? await Task.sleep(for: .seconds(2))
+                        withAnimation {
+                            viewModel.nudgeMessage = nil
                         }
                     }
             }

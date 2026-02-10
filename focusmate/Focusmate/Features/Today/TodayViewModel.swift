@@ -45,8 +45,18 @@ final class TodayViewModel {
         return data.overdue.isEmpty && data.due_today.isEmpty && !data.completed_today.isEmpty
     }
 
-    var groupedTasks: (anytime: [TaskDTO], morning: [TaskDTO], afternoon: [TaskDTO], evening: [TaskDTO]) {
-        guard let data = todayData else { return ([], [], [], []) }
+    private(set) var groupedTasks: (anytime: [TaskDTO], morning: [TaskDTO], afternoon: [TaskDTO], evening: [TaskDTO]) = ([], [], [], [])
+
+    // MARK: - Private Helpers
+
+    /// Recompute the time-of-day grouping from todayData.
+    /// Called once per data load instead of on every body evaluation — avoids
+    /// redundant O(n) Calendar lookups during SwiftUI render cycles.
+    private func recomputeGroupedTasks() {
+        guard let data = todayData else {
+            groupedTasks = ([], [], [], [])
+            return
+        }
         var anytime: [TaskDTO] = [], morning: [TaskDTO] = []
         var afternoon: [TaskDTO] = [], evening: [TaskDTO] = []
         let calendar = Calendar.current
@@ -59,7 +69,7 @@ final class TodayViewModel {
             else if hour < 17 { afternoon.append(task) }
             else { evening.append(task) }
         }
-        return (anytime, morning, afternoon, evening)
+        groupedTasks = (anytime, morning, afternoon, evening)
     }
 
     // MARK: - Init
@@ -113,6 +123,7 @@ final class TodayViewModel {
 
         do {
             todayData = try await todayService.fetchToday()
+            recomputeGroupedTasks()
             onOverdueCountChange?(todayData?.stats?.overdue_count ?? 0)
 
             let totalDueToday = (todayData?.stats?.due_today_count ?? 0) + (todayData?.stats?.overdue_count ?? 0)
