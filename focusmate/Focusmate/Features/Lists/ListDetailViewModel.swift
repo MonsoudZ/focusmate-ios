@@ -215,21 +215,35 @@ final class ListDetailViewModel {
 
     // MARK: - Actions
 
+    private var loadVersion = 0
+
+    /// Load tasks with version counter to discard stale responses.
+    ///
+    /// Same race as ListsViewModel: `.task` and `.refreshable` can overlap,
+    /// and the older response arriving second would overwrite fresh data.
     func loadTasks() async {
-        isLoading = true
+        loadVersion += 1
+        let myVersion = loadVersion
+
+        isLoading = tasks.isEmpty
         error = nil
-        defer { isLoading = false }
 
         do {
             let response = try await taskService.fetchTasks(listId: list.id)
+            guard myVersion == loadVersion else { return }
             tasks = response
         } catch let err as FocusmateError {
+            guard myVersion == loadVersion else { return }
             error = err
             HapticManager.error()
         } catch {
+            guard myVersion == loadVersion else { return }
             self.error = ErrorHandler.shared.handle(error, context: "Loading tasks")
             HapticManager.error()
         }
+
+        guard myVersion == loadVersion else { return }
+        isLoading = false
     }
 
     func toggleStar(_ task: TaskDTO) async {

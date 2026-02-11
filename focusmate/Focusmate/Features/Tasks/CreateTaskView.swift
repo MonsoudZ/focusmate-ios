@@ -50,10 +50,11 @@ struct CreateTaskView: View {
             }
             .onAppear {
                 viewModel.onDismiss = { dismiss() }
-                // Auto-focus title field after a brief delay for smooth animation
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    isTitleFocused = true
-                }
+            }
+            .task {
+                // Brief delay for smooth sheet animation before focusing the title field
+                try? await Task.sleep(for: .seconds(0.5))
+                isTitleFocused = true
             }
             .onChange(of: viewModel.dueDate) { _, _ in
                 viewModel.dueDateChanged()

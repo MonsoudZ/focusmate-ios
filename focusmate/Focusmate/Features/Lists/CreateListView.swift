@@ -68,10 +68,9 @@ struct CreateListView: View {
             .task {
                 await viewModel.loadTags()
             }
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    isNameFocused = true
-                }
+            .task {
+                try? await Task.sleep(for: .seconds(0.5))
+                isNameFocused = true
             }
             .sheet(isPresented: $showingCreateTag) {
                 CreateTagView(tagService: viewModel.tagService) {
