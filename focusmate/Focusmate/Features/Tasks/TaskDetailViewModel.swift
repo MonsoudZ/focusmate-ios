@@ -213,10 +213,10 @@ final class TaskDetailViewModel {
 
     private func scheduleNudgeToastDismiss() {
         nudgeToastDismissTask?.cancel()
-        nudgeToastDismissTask = Task { @MainActor in
+        nudgeToastDismissTask = Task { [weak self] in
             do {
                 try await Task.sleep(nanoseconds: Self.toastDismissDuration)
-                showNudgeSent = false
+                await MainActor.run { self?.showNudgeSent = false }
             } catch {
                 // Task was cancelled, don't update state
             }
@@ -225,10 +225,10 @@ final class TaskDetailViewModel {
 
     private func scheduleCopiedToastDismiss() {
         copiedToastDismissTask?.cancel()
-        copiedToastDismissTask = Task { @MainActor in
+        copiedToastDismissTask = Task { [weak self] in
             do {
                 try await Task.sleep(nanoseconds: Self.toastDismissDuration)
-                showCopied = false
+                await MainActor.run { self?.showCopied = false }
             } catch {
                 // Task was cancelled, don't update state
             }

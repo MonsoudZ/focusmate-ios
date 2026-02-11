@@ -23,6 +23,7 @@ final class TodayViewModel {
 
     var onOverdueCountChange: ((Int) -> Void)?
     private var inFlightTaskIds = Set<Int>()
+    private var loadVersion = 0
 
     // MARK: - Computed Properties
 
@@ -114,23 +115,39 @@ final class TodayViewModel {
         }
     }
 
+    /// Load today data, using a version counter to discard stale responses.
+    ///
+    /// Two overlapping calls (e.g. pull-to-refresh during a debounced subtask
+    /// reload) race at the await point. Without protection, whichever API
+    /// response arrives last writes todayData — if the older call finishes
+    /// second, it overwrites fresher data. The version counter ensures only
+    /// the most recent call's result is applied; superseded calls bail out
+    /// silently after the await.
     func loadToday() async {
         guard let todayService else { return }
 
+        loadVersion += 1
+        let myVersion = loadVersion
+
         isLoading = todayData == nil
         error = nil
-        defer { isLoading = false }
 
         do {
-            todayData = try await todayService.fetchToday()
+            let data = try await todayService.fetchToday()
+            guard myVersion == loadVersion else { return }
+            todayData = data
             recomputeGroupedTasks()
             onOverdueCountChange?(todayData?.stats?.overdue_count ?? 0)
 
             let totalDueToday = (todayData?.stats?.due_today_count ?? 0) + (todayData?.stats?.overdue_count ?? 0)
             notificationService.scheduleMorningBriefing(taskCount: totalDueToday)
         } catch {
+            guard myVersion == loadVersion else { return }
             self.error = ErrorHandler.shared.handle(error, context: "Loading Today")
         }
+
+        guard myVersion == loadVersion else { return }
+        isLoading = false
     }
 
     /// Invalidate cached today data and reload fresh from server.

@@ -268,7 +268,8 @@ struct ShareInviteSheet: View {
                         copied = true
                         HapticManager.light()
 
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        Task {
+                            try? await Task.sleep(for: .seconds(2))
                             copied = false
                         }
                     } label: {
