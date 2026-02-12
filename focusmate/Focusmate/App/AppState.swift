@@ -80,6 +80,19 @@ final class AppState: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Clean up cross-cutting state on sign-out.
+        // Wired here (composition root) so AuthStore stays decoupled from ResponseCache / AppSettings.
+        AuthEventBus.shared.publisher
+            .receive(on: RunLoop.main)
+            .sink { event in
+                if event == .signedOut {
+                    Task { await ResponseCache.shared.invalidateAll() }
+                    AppSettings.shared.didCompleteAuthenticatedBoot = false
+                    AppSettings.shared.hasCompletedOnboarding = false
+                }
+            }
+            .store(in: &cancellables)
+
         // If AppDelegate already has a token, stash it immediately.
         pushState.lastKnownToken = AppDelegate.pushToken
 

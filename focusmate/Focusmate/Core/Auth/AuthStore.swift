@@ -1,6 +1,6 @@
+import AuthenticationServices
 import Combine
 import Foundation
-import AuthenticationServices
 
 @MainActor
 final class AuthStore: ObservableObject {
@@ -153,7 +153,7 @@ final class AuthStore: ObservableObject {
         } catch {
             Logger.error("Sign in failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Sign In")
-            if isCredentialError(error) {
+            if APIError.isCredentialError(error) {
                 await clearLocalSession()
             }
         }
@@ -172,7 +172,7 @@ final class AuthStore: ObservableObject {
         } catch {
             Logger.error("Registration failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Registration")
-            if isCredentialError(error) {
+            if APIError.isCredentialError(error) {
                 await clearLocalSession()
             }
         }
@@ -194,15 +194,10 @@ final class AuthStore: ObservableObject {
         }
 
         await clearLocalSession()
-        await ResponseCache.shared.invalidateAll()
-
-        // Reset one-time authenticated boot state
-        AppSettings.shared.didCompleteAuthenticatedBoot = false
-        AppSettings.shared.hasCompletedOnboarding = false
-
         eventBus.send(.signedOut)
     }
 
+    // MARK: - Apple Sign In
 
     func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
         switch result {
@@ -251,7 +246,7 @@ final class AuthStore: ObservableObject {
         } catch {
             Logger.error("Apple Sign In failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Apple Sign In")
-            if isCredentialError(error) {
+            if APIError.isCredentialError(error) {
                 await clearLocalSession()
             }
         }
@@ -291,7 +286,6 @@ final class AuthStore: ObservableObject {
             escalationService.resetAll()
             _ = await errorHandler.handleUnauthorized()
             await clearLocalSession()
-            await ResponseCache.shared.invalidateAll()
             eventBus.send(.signedOut)
         }
     }
@@ -330,32 +324,6 @@ final class AuthStore: ObservableObject {
             }
             await authSession.setRefreshToken(newRefreshToken)
         }
-    }
-
-    /// Returns true for errors that indicate the credentials are invalid (not transient).
-    /// Network errors, timeouts, and server errors should NOT destroy an existing session.
-    private func isCredentialError(_ error: Error) -> Bool {
-        if let apiError = error as? APIError {
-            switch apiError {
-            case .unauthorized:
-                return true
-            case .badStatus(let status, _, _) where status == 401 || status == 403 || status == 422:
-                return true
-            case .validation:
-                return true
-            default:
-                return false
-            }
-        }
-        if let focusmateError = error as? FocusmateError {
-            switch focusmateError {
-            case .unauthorized, .badRequest, .validation:
-                return true
-            default:
-                return false
-            }
-        }
-        return false
     }
 
     private func clearLocalSession() async {
