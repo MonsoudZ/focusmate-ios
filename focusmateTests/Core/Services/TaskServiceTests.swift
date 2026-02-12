@@ -30,7 +30,13 @@ final class TaskServiceTests: XCTestCase {
     }
 
     private func stubSingleTask(_ task: TaskDTO? = nil) {
-        mock.stubJSON(task ?? TestFactories.makeSampleTask())
+        let response = SingleTaskResponse(task: task ?? TestFactories.makeSampleTask())
+        mock.stubJSON(response)
+    }
+
+    private func stubSubtask(_ subtask: SubtaskDTO? = nil) {
+        let response = SubtaskResponse(subtask: subtask ?? TestFactories.makeSampleSubtask())
+        mock.stubJSON(response)
     }
 
     // MARK: - fetchTasks
@@ -245,7 +251,7 @@ final class TaskServiceTests: XCTestCase {
 
     func testCreateSubtaskSendsCorrectBody() async throws {
         let subtask = TestFactories.makeSampleSubtask(id: 100, title: "Sub item")
-        mock.stubJSON(subtask)
+        stubSubtask(subtask)
 
         _ = try await service.createSubtask(listId: 1, parentTaskId: 10, title: "Sub item")
 
@@ -258,7 +264,7 @@ final class TaskServiceTests: XCTestCase {
     }
 
     func testCompleteSubtaskSendsCorrectRequest() async throws {
-        stubSingleTask()
+        stubSubtask()
 
         _ = try await service.completeSubtask(listId: 1, parentTaskId: 10, subtaskId: 50)
 
@@ -267,7 +273,7 @@ final class TaskServiceTests: XCTestCase {
     }
 
     func testReopenSubtaskSendsCorrectRequest() async throws {
-        stubSingleTask()
+        stubSubtask()
 
         _ = try await service.reopenSubtask(listId: 1, parentTaskId: 10, subtaskId: 50)
 
