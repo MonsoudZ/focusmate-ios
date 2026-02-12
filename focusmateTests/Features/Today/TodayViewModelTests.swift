@@ -139,7 +139,7 @@ final class TodayViewModelTests: XCTestCase {
         )
 
         // Stub reopen response
-        mockNetworking.stubJSON(TestFactories.makeSampleTask(id: 1, listId: 10, title: "Reopened Task"))
+        mockNetworking.stubJSON(SingleTaskResponse(task: TestFactories.makeSampleTask(id: 1, listId: 10, title: "Reopened Task")))
 
         let vm = makeViewModel()
 
