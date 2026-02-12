@@ -43,6 +43,26 @@ final class InputValidationTests: XCTestCase {
         XCTAssertFalse(InputValidation.isValidEmail("@example.com"))
     }
 
+    func testEmailWithSpaceInLocalPart() {
+        XCTAssertFalse(InputValidation.isValidEmail("hello world@example.com"))
+    }
+
+    func testEmailWithLeadingDotInDomain() {
+        XCTAssertFalse(InputValidation.isValidEmail("user@.example.com"))
+    }
+
+    func testEmailWithTrailingDotInDomain() {
+        XCTAssertFalse(InputValidation.isValidEmail("user@example.com."))
+    }
+
+    func testEmailWithSingleCharTLD() {
+        XCTAssertFalse(InputValidation.isValidEmail("user@example.c"))
+    }
+
+    func testEmailWithSubdomain() {
+        XCTAssertTrue(InputValidation.isValidEmail("user@mail.example.com"))
+    }
+
     // MARK: - Password Validation
 
     func testValidPassword() {

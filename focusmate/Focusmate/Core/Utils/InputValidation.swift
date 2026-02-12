@@ -7,12 +7,16 @@ enum InputValidation {
     static func isValidEmail(_ email: String) -> Bool {
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
-        // Simple check: contains @ with text on both sides and a dot in the domain.
+        // No whitespace allowed within the email itself
+        guard !trimmed.contains(where: { $0.isWhitespace }) else { return false }
         let parts = trimmed.split(separator: "@")
-        guard parts.count == 2,
-              !parts[0].isEmpty,
-              parts[1].contains("."),
-              parts[1].count >= 3 else {
+        guard parts.count == 2, !parts[0].isEmpty else { return false }
+        // Domain must have at least two labels (e.g. "example.com"), no empty
+        // labels (catches leading/trailing dots), and a TLD of 2+ characters.
+        let domainLabels = String(parts[1]).split(separator: ".", omittingEmptySubsequences: false)
+        guard domainLabels.count >= 2,
+              domainLabels.allSatisfy({ !$0.isEmpty }),
+              let tld = domainLabels.last, tld.count >= 2 else {
             return false
         }
         return true
