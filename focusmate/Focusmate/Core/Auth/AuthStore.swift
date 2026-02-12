@@ -300,12 +300,16 @@ final class AuthStore: ObservableObject {
         // Update @Published jwt first since API tokenProvider reads from it.
         // This ensures API calls use the new token immediately.
         jwt = token
-        keychain.save(token: token)
+        if !keychain.save(token: token) {
+            Logger.error("Keychain token save failed — session will not survive app restart", category: .auth)
+        }
         currentUser = user
         await authSession.set(token: token)
 
         if let refreshToken {
-            keychain.save(refreshToken: refreshToken)
+            if !keychain.save(refreshToken: refreshToken) {
+                Logger.error("Keychain refresh token save failed — silent re-auth will not work after restart", category: .auth)
+            }
             await authSession.setRefreshToken(refreshToken)
         }
     }
@@ -315,11 +319,15 @@ final class AuthStore: ObservableObject {
         // Update @Published jwt first since API tokenProvider reads from it.
         // This ensures subsequent API calls use the new token immediately.
         jwt = newToken
-        keychain.save(token: newToken)
+        if !keychain.save(token: newToken) {
+            Logger.error("Keychain token save failed during refresh — session will not survive app restart", category: .auth)
+        }
         await authSession.set(token: newToken)
 
         if let newRefreshToken {
-            keychain.save(refreshToken: newRefreshToken)
+            if !keychain.save(refreshToken: newRefreshToken) {
+                Logger.error("Keychain refresh token save failed during refresh", category: .auth)
+            }
             await authSession.setRefreshToken(newRefreshToken)
         }
     }

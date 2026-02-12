@@ -1,11 +1,11 @@
 import Foundation
 
 protocol KeychainManaging {
-    func save(token: String)
+    @discardableResult func save(token: String) -> Bool
     func load() -> String?
     func clear()
 
-    func save(refreshToken: String)
+    @discardableResult func save(refreshToken: String) -> Bool
     func loadRefreshToken() -> String?
     func clearRefreshToken()
 }

@@ -67,6 +67,19 @@ final class AppState: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Keep Sentry user context in sync with auth state.
+        // Wired here (composition root) so AuthStore and SentryService stay decoupled.
+        auth.$currentUser
+            .receive(on: RunLoop.main)
+            .sink { user in
+                if let user {
+                    SentryService.shared.setUser(id: user.id, email: user.email, name: user.name ?? "Unknown")
+                } else {
+                    SentryService.shared.clearUser()
+                }
+            }
+            .store(in: &cancellables)
+
         // If AppDelegate already has a token, stash it immediately.
         pushState.lastKnownToken = AppDelegate.pushToken
 

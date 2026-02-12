@@ -9,10 +9,11 @@ final class KeychainManager: @unchecked Sendable {
   private let tokenKey = "jwt_token"
   private let refreshTokenKey = "refresh_token"
 
-  func save(token: String) {
+  @discardableResult
+  func save(token: String) -> Bool {
     guard let data = token.data(using: .utf8) else {
       Logger.error("Failed to encode token to Data", category: .auth)
-      return
+      return false
     }
 
     let searchQuery: [String: Any] = [
@@ -37,13 +38,17 @@ final class KeychainManager: @unchecked Sendable {
       let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
       if addStatus != errSecSuccess {
         Logger.error("Failed to save token to keychain (status: \(addStatus))", category: .auth)
+        return false
       } else {
         Logger.debug("Token saved to keychain successfully", category: .auth)
+        return true
       }
     } else if updateStatus != errSecSuccess {
       Logger.error("Failed to update token in keychain (status: \(updateStatus))", category: .auth)
+      return false
     } else {
       Logger.debug("Token updated in keychain successfully", category: .auth)
+      return true
     }
   }
 
@@ -90,10 +95,11 @@ final class KeychainManager: @unchecked Sendable {
 
   // MARK: - Refresh Token
 
-  func save(refreshToken: String) {
+  @discardableResult
+  func save(refreshToken: String) -> Bool {
     guard let data = refreshToken.data(using: .utf8) else {
       Logger.error("Failed to encode refresh token to Data", category: .auth)
-      return
+      return false
     }
 
     let searchQuery: [String: Any] = [
@@ -116,13 +122,17 @@ final class KeychainManager: @unchecked Sendable {
       let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
       if addStatus != errSecSuccess {
         Logger.error("Failed to save refresh token to keychain (status: \(addStatus))", category: .auth)
+        return false
       } else {
         Logger.debug("Refresh token saved to keychain successfully", category: .auth)
+        return true
       }
     } else if updateStatus != errSecSuccess {
       Logger.error("Failed to update refresh token in keychain (status: \(updateStatus))", category: .auth)
+      return false
     } else {
       Logger.debug("Refresh token updated in keychain successfully", category: .auth)
+      return true
     }
   }
 

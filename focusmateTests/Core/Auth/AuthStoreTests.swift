@@ -10,10 +10,10 @@ final class AuthStoreTests: XCTestCase {
     private final class FakeKeychain: KeychainManaging {
         var token: String?
         var refreshToken: String?
-        func save(token: String) { self.token = token }
+        @discardableResult func save(token: String) -> Bool { self.token = token; return true }
         func load() -> String? { token }
         func clear() { token = nil }
-        func save(refreshToken: String) { self.refreshToken = refreshToken }
+        @discardableResult func save(refreshToken: String) -> Bool { self.refreshToken = refreshToken; return true }
         func loadRefreshToken() -> String? { refreshToken }
         func clearRefreshToken() { refreshToken = nil }
     }

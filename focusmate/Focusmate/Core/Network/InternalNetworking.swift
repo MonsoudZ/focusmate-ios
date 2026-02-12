@@ -142,9 +142,10 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
 
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        // Public endpoints that don't need auth - skip Authorization header entirely
+        // Public endpoints that don't need auth - skip Authorization header entirely.
+        // Uses hasSuffix to avoid false positives (e.g. "auth/password/change" matching "auth/password").
         let publicEndpoints = ["auth/apple", "auth/sign_in", "auth/sign_up", "auth/refresh", "auth/password"]
-        let isPublicEndpoint = publicEndpoints.contains { path.contains($0) }
+        let isPublicEndpoint = publicEndpoints.contains { path.hasSuffix($0) }
 
         if !isPublicEndpoint, let jwt = tokenProvider() {
             req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
