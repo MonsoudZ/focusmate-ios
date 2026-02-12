@@ -132,6 +132,16 @@ struct RootView: View {
                 mainTabView
             }
         }
+        .onChange(of: auth.jwt) { oldJWT, newJWT in
+            if oldJWT == nil, newJWT != nil {
+                // Fresh login — re-sync onboarding flag from persistent store.
+                // @State was initialized once at view creation and is now stale
+                // after sign-out reset hasCompletedOnboarding = false.
+                showOnboarding = !AppSettings.shared.hasCompletedOnboarding
+                hasCheckedLists = false
+                userHasLists = true
+            }
+        }
     }
 
     @ViewBuilder
