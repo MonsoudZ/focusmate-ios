@@ -49,11 +49,20 @@ enum DeepLinkRoute: Equatable {
     init?(url: URL) {
         let pathComponents = url.pathComponents
 
-        // Check for invite URL pattern
+        // HTTPS universal links: https://focusmate.app/invite/CODE
         if pathComponents.count >= 3,
            pathComponents[1] == "invite",
            !pathComponents[2].isEmpty {
             self = .openInvite(code: pathComponents[2])
+            return
+        }
+
+        // Custom scheme: focusmate://invite/CODE
+        // URL parses "invite" as host, code lands in pathComponents[1]
+        if url.host == "invite",
+           pathComponents.count >= 2,
+           !pathComponents[1].isEmpty {
+            self = .openInvite(code: pathComponents[1])
             return
         }
 

@@ -123,7 +123,7 @@ final class TaskFormViewModelTests: XCTestCase {
     // MARK: - Save Tests
 
     func testSaveCreatesNewTaskWhenNoExisting() async {
-        mockNetworking.stubJSON(TestFactories.makeSampleTask(id: 100, listId: 5, title: "New Task"))
+        mockNetworking.stubJSON(SingleTaskResponse(task: TestFactories.makeSampleTask(id: 100, listId: 5, title: "New Task")))
 
         var dismissCalled = false
         let vm = TaskFormViewModel(
@@ -149,7 +149,7 @@ final class TaskFormViewModelTests: XCTestCase {
 
     func testSaveUpdatesExistingTask() async {
         let existingTask = TestFactories.makeSampleTask(id: 42, listId: 10, title: "Old Title")
-        mockNetworking.stubJSON(TestFactories.makeSampleTask(id: 42, listId: 10, title: "Updated Title"))
+        mockNetworking.stubJSON(SingleTaskResponse(task: TestFactories.makeSampleTask(id: 42, listId: 10, title: "Updated Title")))
 
         var saveCalled = false
         var dismissCalled = false

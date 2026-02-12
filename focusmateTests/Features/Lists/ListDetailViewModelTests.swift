@@ -203,7 +203,7 @@ final class ListDetailViewModelTests: XCTestCase {
 
         // Stub update response
         mockNetworking.reset()
-        mockNetworking.stubJSON(TestFactories.makeSampleTask(id: 1, title: "Task", starred: true))
+        mockNetworking.stubJSON(SingleTaskResponse(task: TestFactories.makeSampleTask(id: 1, title: "Task", starred: true)))
 
         await vm.toggleStar(task)
 
@@ -318,7 +318,7 @@ final class ListDetailViewModelTests: XCTestCase {
 
         // Stub subtask creation
         mockNetworking.reset()
-        mockNetworking.stubJSON(TestFactories.makeSampleSubtask(id: 100, taskId: 1, title: "New Subtask"))
+        mockNetworking.stubJSON(SubtaskResponse(subtask: TestFactories.makeSampleSubtask(id: 100, taskId: 1, title: "New Subtask")))
 
         await vm.createSubtask(parentTask: parentTask, title: "New Subtask")
 
@@ -336,7 +336,7 @@ final class ListDetailViewModelTests: XCTestCase {
 
         // Stub subtask update
         mockNetworking.reset()
-        mockNetworking.stubJSON(TestFactories.makeSampleSubtask(id: 100, taskId: 1, title: "New Title"))
+        mockNetworking.stubJSON(SubtaskResponse(subtask: TestFactories.makeSampleSubtask(id: 100, taskId: 1, title: "New Title")))
 
         let editInfo = SubtaskEditInfo(subtask: subtask, parentTask: parentTask)
         await vm.updateSubtask(info: editInfo, title: "New Title")
