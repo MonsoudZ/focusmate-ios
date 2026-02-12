@@ -31,19 +31,34 @@ final class ListService {
     func createList(name: String, description: String?, color: String = "blue", tagIds: [Int] = []) async throws -> ListDTO {
         let request = CreateListRequest(list: .init(name: name, description: description, color: color, tagIds: tagIds))
         let response: ListResponse = try await apiClient.request("POST", API.Lists.root, body: request)
-        await cache.invalidate(Self.cacheKey)
+        // Write-through: append to cached list so concurrent reads stay consistent.
+        // If cache is empty (cold start), skip — next fetchLists will populate it.
+        if var cached: [ListDTO] = await cache.get(Self.cacheKey) {
+            cached.append(response.list)
+            await cache.set(Self.cacheKey, value: cached, ttl: Self.cacheTTL)
+        }
         return response.list
     }
 
     func updateList(id: Int, name: String?, description: String?, color: String? = nil, tagIds: [Int]? = nil) async throws -> ListDTO {
         let request = UpdateListRequest(list: .init(name: name, description: description, visibility: nil, color: color, tag_ids: tagIds))
         let response: ListResponse = try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
-        await cache.invalidate(Self.cacheKey)
+        // Write-through: replace the updated list in-place.
+        if var cached: [ListDTO] = await cache.get(Self.cacheKey) {
+            if let idx = cached.firstIndex(where: { $0.id == id }) {
+                cached[idx] = response.list
+            }
+            await cache.set(Self.cacheKey, value: cached, ttl: Self.cacheTTL)
+        }
         return response.list
     }
 
     func deleteList(id: Int) async throws {
         _ = try await apiClient.request("DELETE", API.Lists.id(String(id)), body: nil as String?) as EmptyResponse
-        await cache.invalidate(Self.cacheKey)
+        // Write-through: remove from cached list.
+        if var cached: [ListDTO] = await cache.get(Self.cacheKey) {
+            cached.removeAll { $0.id == id }
+            await cache.set(Self.cacheKey, value: cached, ttl: Self.cacheTTL)
+        }
     }
 }

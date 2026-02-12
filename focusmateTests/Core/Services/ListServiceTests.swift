@@ -28,7 +28,8 @@ final class ListServiceTests: XCTestCase {
     }
 
     private func stubSingleList(_ list: ListDTO? = nil) {
-        mock.stubJSON(list ?? TestFactories.makeSampleList())
+        let response = ListResponse(list: list ?? TestFactories.makeSampleList())
+        mock.stubJSON(response)
     }
 
     // MARK: - fetchLists
@@ -86,23 +87,24 @@ final class ListServiceTests: XCTestCase {
         XCTAssertEqual(listBody?["color"] as? String, "red")
     }
 
-    func testCreateListInvalidatesCache() async throws {
-        // Populate cache
-        stubListsResponse([TestFactories.makeSampleList()])
+    func testCreateListWritesThroughCache() async throws {
+        // Populate cache with one list
+        let existing = TestFactories.makeSampleList(id: 1, name: "Existing")
+        stubListsResponse([existing])
         _ = try await service.fetchLists()
         XCTAssertEqual(mock.calls.count, 1)
 
-        // Create list — should invalidate cache
-        stubSingleList()
+        // Create list — should write through to cache
+        let created = TestFactories.makeSampleList(id: 2, name: "New")
+        stubSingleList(created)
         _ = try await service.createList(name: "New", description: nil)
         XCTAssertEqual(mock.calls.count, 2)
 
-        // Re-stub for fetch
-        stubListsResponse([TestFactories.makeSampleList()])
-
-        // Next fetch should hit network
-        _ = try await service.fetchLists()
-        XCTAssertEqual(mock.calls.count, 3, "Cache should have been invalidated by createList")
+        // Next fetch should serve from cache (no network hit) with both lists
+        let lists = try await service.fetchLists()
+        XCTAssertEqual(mock.calls.count, 2, "Should serve from write-through cache")
+        XCTAssertEqual(lists.count, 2)
+        XCTAssertEqual(lists.map(\.id), [1, 2])
     }
 
     // MARK: - updateList
@@ -131,20 +133,25 @@ final class ListServiceTests: XCTestCase {
         XCTAssertEqual(mock.lastCall?.path, API.Lists.id("7"))
     }
 
-    func testDeleteListInvalidatesCache() async throws {
-        // Populate cache
-        stubListsResponse([TestFactories.makeSampleList()])
+    func testDeleteListWritesThroughCache() async throws {
+        // Populate cache with two lists
+        let lists = [
+            TestFactories.makeSampleList(id: 1, name: "Keep"),
+            TestFactories.makeSampleList(id: 2, name: "Delete"),
+        ]
+        stubListsResponse(lists)
         _ = try await service.fetchLists()
         XCTAssertEqual(mock.calls.count, 1)
 
-        // Delete list — should invalidate cache
-        try await service.deleteList(id: 1)
+        // Delete list 2 — should remove from cache
+        try await service.deleteList(id: 2)
         XCTAssertEqual(mock.calls.count, 2)
 
-        // Re-stub for fetch
-        stubListsResponse([])
-        _ = try await service.fetchLists()
-        XCTAssertEqual(mock.calls.count, 3, "Cache should have been invalidated by deleteList")
+        // Next fetch should serve from cache with list 2 removed
+        let result = try await service.fetchLists()
+        XCTAssertEqual(mock.calls.count, 2, "Should serve from write-through cache")
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result.first?.id, 1)
     }
 
     // MARK: - Error Propagation

@@ -44,10 +44,7 @@ final class EscalationService: ObservableObject {
         overdueTaskIds.insert(task.id)
         saveState()
 
-        // Start periodic check if not already running
-        if checkTimer == nil {
-            startPeriodicCheck()
-        }
+        startPeriodicCheck()
 
         // Start grace period if not already running and blocking is possible
         if !isInGracePeriod && !screenTimeService.isBlocking
@@ -216,6 +213,7 @@ final class EscalationService: ObservableObject {
     /// Design: Timer callbacks run on main thread since service is @MainActor.
     /// No Task wrapper needed - direct method call is safe.
     private func startPeriodicCheck() {
+        guard checkTimer == nil else { return }
         checkTimer = Timer.scheduledTimer(withTimeInterval: AppConfiguration.Escalation.statusCheckIntervalSeconds, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }

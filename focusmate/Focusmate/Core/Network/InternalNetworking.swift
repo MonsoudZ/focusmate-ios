@@ -218,7 +218,9 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         }
 
         if data.isEmpty {
-            if let empty = EmptyResponse() as? T { return empty }
+            if T.self == EmptyResponse.self, let empty = EmptyResponse() as? T {
+                return empty
+            }
             throw APIError.decoding
         }
 
