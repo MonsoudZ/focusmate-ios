@@ -41,6 +41,7 @@ final class AppState: ObservableObject {
         self.auth = auth
 
         SentryService.shared.initialize()
+        NetworkMonitor.shared.start()
 
         // When auth changes, attempt any deferred setup (like device registration)
         auth.objectWillChange

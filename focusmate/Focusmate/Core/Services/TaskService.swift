@@ -172,7 +172,6 @@ final class TaskService {
             // Only update local state after confirmed server deletion
             await MainActor.run { sideEffects.taskDeleted(taskId: taskId) }
         } catch {
-            // Task still exists on server - don't update UI
             throw ErrorHandler.shared.handle(error, context: "Deleting task")
         }
     }

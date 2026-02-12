@@ -313,6 +313,13 @@ final class ListDetailViewModel {
                 if let idx = tasks.firstIndex(where: { $0.id == updated.id }) {
                     tasks[idx] = updated
                 }
+            } catch where NetworkMonitor.isOfflineError(error) {
+                HapticManager.light()
+                let svc = self.taskService
+                let listId = self.list.id, taskId = task.id
+                await MutationQueue.shared.enqueue(description: "Reopen task") {
+                    _ = try await svc.reopenTask(listId: listId, taskId: taskId)
+                }
             } catch {
                 tasks = originalTasks
                 self.error = ErrorHandler.shared.handle(error, context: "Reopening task")
@@ -330,6 +337,13 @@ final class ListDetailViewModel {
                 HapticManager.success()
                 if let idx = tasks.firstIndex(where: { $0.id == updated.id }) {
                     tasks[idx] = updated
+                }
+            } catch where NetworkMonitor.isOfflineError(error) {
+                HapticManager.success()
+                let svc = self.taskService
+                let listId = self.list.id, taskId = task.id
+                await MutationQueue.shared.enqueue(description: "Complete task") {
+                    _ = try await svc.completeTask(listId: listId, taskId: taskId, reason: reason)
                 }
             } catch {
                 tasks = originalTasks
@@ -356,6 +370,13 @@ final class ListDetailViewModel {
 
         do {
             try await taskService.deleteTask(listId: list.id, taskId: task.id)
+        } catch where NetworkMonitor.isOfflineError(error) {
+            // Keep optimistic removal — will sync when online
+            let svc = self.taskService
+            let listId = self.list.id, taskId = task.id
+            await MutationQueue.shared.enqueue(description: "Delete task") {
+                try await svc.deleteTask(listId: listId, taskId: taskId)
+            }
         } catch {
             tasks = originalTasks
             self.error = ErrorHandler.shared.handle(error, context: "Deleting task")
@@ -455,6 +476,14 @@ final class ListDetailViewModel {
         do {
             try await listService.deleteList(id: list.id)
             HapticManager.medium()
+            onDismiss?()
+        } catch where NetworkMonitor.isOfflineError(error) {
+            HapticManager.medium()
+            let svc = self.listService
+            let listId = self.list.id
+            await MutationQueue.shared.enqueue(description: "Delete list") {
+                try await svc.deleteList(id: listId)
+            }
             onDismiss?()
         } catch {
             self.error = ErrorHandler.shared.handle(error, context: "Deleting list")

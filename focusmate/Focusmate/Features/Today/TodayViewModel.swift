@@ -165,6 +165,12 @@ final class TodayViewModel {
             do {
                 _ = try await taskService.reopenTask(listId: task.list_id, taskId: task.id)
                 await reloadAfterMutation()
+            } catch where NetworkMonitor.isOfflineError(error) {
+                let svc = self.taskService
+                let listId = task.list_id, taskId = task.id
+                await MutationQueue.shared.enqueue(description: "Reopen task") {
+                    _ = try await svc.reopenTask(listId: listId, taskId: taskId)
+                }
             } catch {
                 Logger.error("Failed to reopen task", error: error, category: .api)
                 self.error = ErrorHandler.shared.handle(error, context: "Reopening task")
@@ -174,6 +180,13 @@ final class TodayViewModel {
                 _ = try await taskService.completeTask(listId: task.list_id, taskId: task.id, reason: reason)
                 HapticManager.success()
                 await reloadAfterMutation()
+            } catch where NetworkMonitor.isOfflineError(error) {
+                HapticManager.success()
+                let svc = self.taskService
+                let listId = task.list_id, taskId = task.id
+                await MutationQueue.shared.enqueue(description: "Complete task") {
+                    _ = try await svc.completeTask(listId: listId, taskId: taskId, reason: reason)
+                }
             } catch {
                 Logger.error("Failed to complete task", error: error, category: .api)
                 self.error = ErrorHandler.shared.handle(error, context: "Completing task")
@@ -188,6 +201,12 @@ final class TodayViewModel {
         do {
             try await taskService.deleteTask(listId: task.list_id, taskId: task.id)
             await reloadAfterMutation()
+        } catch where NetworkMonitor.isOfflineError(error) {
+            let svc = self.taskService
+            let listId = task.list_id, taskId = task.id
+            await MutationQueue.shared.enqueue(description: "Delete task") {
+                try await svc.deleteTask(listId: listId, taskId: taskId)
+            }
         } catch {
             Logger.error("Failed to delete task", error: error, category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Deleting task")
