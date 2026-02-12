@@ -291,6 +291,42 @@ struct ListColorPicker: View {
     }
 }
 
+/// Offline banner — shows connectivity status and pending mutation count
+struct OfflineBanner: View {
+    let isConnected: Bool
+    let pendingCount: Int
+
+    var body: some View {
+        if !isConnected || pendingCount > 0 {
+            HStack(spacing: DS.Spacing.sm) {
+                Image(systemName: isConnected ? "arrow.triangle.2.circlepath" : "wifi.slash")
+                    .font(DS.Typography.bodyMedium)
+
+                if !isConnected && pendingCount > 0 {
+                    Text("Offline — \(pendingCount) \(pendingCount == 1 ? "change" : "changes") pending")
+                        .font(DS.Typography.bodyMedium)
+                } else if !isConnected {
+                    Text("Offline")
+                        .font(DS.Typography.bodyMedium)
+                } else {
+                    Text("Syncing \(pendingCount) \(pendingCount == 1 ? "change" : "changes")…")
+                        .font(DS.Typography.bodyMedium)
+                }
+
+                Spacer()
+            }
+            .foregroundStyle(.white)
+            .padding(DS.Spacing.sm)
+            .padding(.horizontal, DS.Spacing.xs)
+            .background(
+                RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous)
+                    .fill(isConnected ? DS.Colors.accent : Color(.systemGray))
+            )
+            .padding(.horizontal, DS.Spacing.md)
+        }
+    }
+}
+
 /// Divider with optional centered text
 struct DSDivider: View {
     let text: String?

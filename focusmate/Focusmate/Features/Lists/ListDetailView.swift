@@ -199,6 +199,11 @@ struct ListDetailView: View {
 
     private var taskListView: some View {
         VStack(spacing: 0) {
+            OfflineBanner(
+                isConnected: NetworkMonitor.shared.isConnected,
+                pendingCount: NetworkMonitor.shared.pendingMutationCount
+            )
+
             if viewModel.isSharedList {
                 HStack {
                     Image(systemName: viewModel.roleIcon)

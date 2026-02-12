@@ -118,6 +118,11 @@ struct TodayView: View {
         let grouped = viewModel.groupedTasks
         return ScrollView {
             VStack(spacing: DS.Spacing.lg) {
+                OfflineBanner(
+                    isConnected: NetworkMonitor.shared.isConnected,
+                    pendingCount: NetworkMonitor.shared.pendingMutationCount
+                )
+
                 TodayEscalationBanner(
                     isBlocking: viewModel.screenTimeService.isBlocking,
                     isInGracePeriod: viewModel.escalationService.isInGracePeriod,
