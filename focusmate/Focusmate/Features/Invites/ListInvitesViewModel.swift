@@ -15,18 +15,29 @@ final class ListInvitesViewModel {
         self.inviteService = inviteService
     }
 
+    private var loadVersion = 0
+
     func loadInvites() async {
-        isLoading = true
+        loadVersion += 1
+        let myVersion = loadVersion
+
+        isLoading = invites.isEmpty
         error = nil
-        defer { isLoading = false }
 
         do {
-            invites = try await inviteService.fetchInvites(listId: list.id)
+            let result = try await inviteService.fetchInvites(listId: list.id)
+            guard myVersion == loadVersion else { return }
+            invites = result
         } catch let err as FocusmateError {
+            guard myVersion == loadVersion else { return }
             error = err
         } catch {
+            guard myVersion == loadVersion else { return }
             self.error = ErrorHandler.shared.handle(error, context: "Loading invites")
         }
+
+        guard myVersion == loadVersion else { return }
+        isLoading = false
     }
 
     func createInvite(role: String, expiresAt: Date?, maxUses: Int?) async -> InviteDTO? {

@@ -13,6 +13,7 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:focusmate-api-focusmate-api-staging.up.railway.app</string>
+		<string>applinks:focusmate-api-production.up.railway.app</string>
 	</array>
 </dict>
 </plist>

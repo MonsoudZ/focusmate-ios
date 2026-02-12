@@ -143,6 +143,94 @@ enum TestFactories {
         )
     }
 
+    // MARK: - InviteDTO
+
+    static func makeSampleInvite(
+        id: Int = 1,
+        code: String = "ABC123",
+        inviteUrl: String = "https://focusmate.app/invite/ABC123",
+        role: String = "viewer",
+        usesCount: Int = 0,
+        maxUses: Int? = nil,
+        expiresAt: String? = nil,
+        usable: Bool = true
+    ) -> InviteDTO {
+        InviteDTO(
+            id: id,
+            code: code,
+            invite_url: inviteUrl,
+            role: role,
+            uses_count: usesCount,
+            max_uses: maxUses,
+            expires_at: expiresAt,
+            usable: usable
+        )
+    }
+
+    // MARK: - InvitePreviewDTO
+
+    static func makeSampleInvitePreview(
+        code: String = "ABC123",
+        role: String = "viewer",
+        listId: Int = 1,
+        listName: String = "Test List",
+        listColor: String = "blue",
+        inviterName: String? = "John",
+        usable: Bool = true,
+        expired: Bool = false,
+        exhausted: Bool = false
+    ) -> InvitePreviewDTO {
+        InvitePreviewDTO(
+            code: code,
+            role: role,
+            list: .init(id: listId, name: listName, color: listColor),
+            inviter: inviterName.map { .init(name: $0) },
+            usable: usable,
+            expired: expired,
+            exhausted: exhausted
+        )
+    }
+
+    // MARK: - FriendDTO
+
+    static func makeSampleFriend(
+        id: Int = 1,
+        name: String? = "Alice",
+        email: String? = "alice@example.com"
+    ) -> FriendDTO {
+        FriendDTO(id: id, name: name, email: email)
+    }
+
+    // MARK: - MembershipDTO
+
+    static func makeSampleMembership(
+        id: Int = 1,
+        userId: Int = 10,
+        userEmail: String? = "user@example.com",
+        userName: String? = "User",
+        role: String = "editor"
+    ) -> MembershipDTO {
+        MembershipDTO(
+            id: id,
+            user: MemberUser(id: userId, email: userEmail, name: userName),
+            role: role,
+            created_at: nil,
+            updated_at: nil
+        )
+    }
+
+    // MARK: - TagDTO
+
+    static func makeSampleTag(
+        id: Int = 1,
+        name: String = "Work",
+        color: String? = "blue",
+        tasksCount: Int? = nil,
+        createdAt: String? = nil
+    ) -> TagDTO {
+        TagDTO(id: id, name: name, color: color, tasks_count: tasksCount, created_at: createdAt)
+    }
+
     // MARK: - Helpers
 
     static let isoFormatter: ISO8601DateFormatter = {

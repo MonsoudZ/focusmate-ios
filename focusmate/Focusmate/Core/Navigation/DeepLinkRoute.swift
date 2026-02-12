@@ -45,11 +45,14 @@ enum DeepLinkRoute: Equatable {
     }
 
     /// Parse from URL (universal links)
-    /// Supports: focusmate://invite/ABC123 or https://focusmate.app/invite/ABC123
+    /// Supports:
+    ///   - focusmate://invite/ABC123
+    ///   - https://focusmate.app/invite/ABC123
+    ///   - https://focusmate-api-production.up.railway.app/invite/ABC123
     init?(url: URL) {
         let pathComponents = url.pathComponents
 
-        // HTTPS universal links: https://focusmate.app/invite/CODE
+        // HTTPS universal links: https://<host>/invite/CODE
         if pathComponents.count >= 3,
            pathComponents[1] == "invite",
            !pathComponents[2].isEmpty {
