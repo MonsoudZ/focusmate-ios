@@ -92,6 +92,36 @@ final class DeepLinkRouteTests: XCTestCase {
         XCTAssertNil(route)
     }
 
+    func testParseTaskNotificationWithSuffix() {
+        let route = DeepLinkRoute(localNotificationIdentifier: "task-42-due-soon")
+
+        XCTAssertEqual(route, .openTask(taskId: 42))
+    }
+
+    func testParseEscalationStartNotification() {
+        let route = DeepLinkRoute(localNotificationIdentifier: "escalation-55-start")
+
+        XCTAssertEqual(route, .openTask(taskId: 55))
+    }
+
+    func testParseEscalationWarningNotification() {
+        let route = DeepLinkRoute(localNotificationIdentifier: "escalation-101-warning")
+
+        XCTAssertEqual(route, .openTask(taskId: 101))
+    }
+
+    func testParseEscalationBlockingStartedNotification() {
+        let route = DeepLinkRoute(localNotificationIdentifier: "escalation-blocking-started")
+
+        XCTAssertEqual(route, .openToday)
+    }
+
+    func testParseEscalationBlockingSkippedNotification() {
+        let route = DeepLinkRoute(localNotificationIdentifier: "escalation-blocking-skipped")
+
+        XCTAssertEqual(route, .openToday)
+    }
+
     func testParseUnknownLocalNotificationReturnsNil() {
         let route = DeepLinkRoute(localNotificationIdentifier: "some-random-id")
 
@@ -136,6 +166,38 @@ final class DeepLinkRouteTests: XCTestCase {
         let route = DeepLinkRoute(url: url)
 
         XCTAssertEqual(route, .openInvite(code: "ABCDEFGHIJKLMNOP123456"))
+    }
+
+    func testParseTaskURLWithCustomScheme() {
+        let url = URL(string: "focusmate://task/42")!
+
+        let route = DeepLinkRoute(url: url)
+
+        XCTAssertEqual(route, .openTask(taskId: 42))
+    }
+
+    func testParseTaskURLWithHttpsScheme() {
+        let url = URL(string: "https://focusmate.app/task/99")!
+
+        let route = DeepLinkRoute(url: url)
+
+        XCTAssertEqual(route, .openTask(taskId: 99))
+    }
+
+    func testParseTaskURLWithLargeId() {
+        let url = URL(string: "focusmate://task/999999")!
+
+        let route = DeepLinkRoute(url: url)
+
+        XCTAssertEqual(route, .openTask(taskId: 999999))
+    }
+
+    func testParseTaskURLWithNonNumericIdReturnsNil() {
+        let url = URL(string: "focusmate://task/abc")!
+
+        let route = DeepLinkRoute(url: url)
+
+        XCTAssertNil(route)
     }
 
     func testParseURLWithoutInvitePathReturnsNil() {

@@ -41,22 +41,50 @@ enum DeepLinkRoute: Equatable {
             }
         }
 
+        // Escalation notifications:
+        //   escalation-{taskId}-start / escalation-{taskId}-warning → open that task
+        //   escalation-blocking-started / escalation-blocking-skipped → no task ID, open today
+        if identifier.hasPrefix("escalation-") {
+            let parts = identifier.split(separator: "-")
+            if parts.count >= 3, let taskId = Int(parts[1]) {
+                self = .openTask(taskId: taskId)
+                return
+            }
+            self = .openToday
+            return
+        }
+
         return nil
     }
 
-    /// Parse from URL (universal links)
+    /// Parse from URL (universal links and custom scheme)
     /// Supports:
     ///   - focusmate://invite/ABC123
+    ///   - focusmate://task/123
     ///   - https://focusmate.app/invite/ABC123
+    ///   - https://focusmate.app/task/123
     ///   - https://focusmate-api-production.up.railway.app/invite/ABC123
     init?(url: URL) {
         let pathComponents = url.pathComponents
 
-        // HTTPS universal links: https://<host>/invite/CODE
-        if pathComponents.count >= 3,
-           pathComponents[1] == "invite",
-           !pathComponents[2].isEmpty {
-            self = .openInvite(code: pathComponents[2])
+        // HTTPS universal links: https://<host>/task/ID or https://<host>/invite/CODE
+        if pathComponents.count >= 3 {
+            if pathComponents[1] == "task", let taskId = Int(pathComponents[2]) {
+                self = .openTask(taskId: taskId)
+                return
+            }
+            if pathComponents[1] == "invite", !pathComponents[2].isEmpty {
+                self = .openInvite(code: pathComponents[2])
+                return
+            }
+        }
+
+        // Custom scheme: focusmate://task/ID
+        // URL parses "task" as host, ID lands in pathComponents[1]
+        if url.host == "task",
+           pathComponents.count >= 2,
+           let taskId = Int(pathComponents[1]) {
+            self = .openTask(taskId: taskId)
             return
         }
 
