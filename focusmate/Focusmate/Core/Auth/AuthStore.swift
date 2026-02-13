@@ -42,9 +42,8 @@ final class AuthStore: ObservableObject {
         )
     }()
 
-    private let authSession = AuthSession()
-    private lazy var authAPI: AuthAPI = AuthAPI(api: api, session: authSession)
-    private lazy var authService: AuthService = AuthService(api: api, authAPI: authAPI, session: authSession)
+    private lazy var authAPI: AuthAPI = AuthAPI(api: api)
+    private lazy var authService: AuthService = AuthService(api: api, authAPI: authAPI)
     private let errorHandler = ErrorHandler.shared
 
     private let eventBus: AuthEventBus
@@ -72,11 +71,8 @@ final class AuthStore: ObservableObject {
         let loadedJWT = keychain.load()
         self.jwt = loadedJWT
 
-        if autoValidateOnInit, let token = loadedJWT {
-            Task {
-                await authSession.set(token: token)
-                await validateSession()
-            }
+        if autoValidateOnInit, loadedJWT != nil {
+            Task { await validateSession() }
         }
     }
 
@@ -99,11 +95,8 @@ final class AuthStore: ObservableObject {
         let loadedJWT = keychain.load()
         self.jwt = loadedJWT
 
-        if autoValidateOnInit, let token = loadedJWT {
-            Task {
-                await authSession.set(token: token)
-                await validateSession()
-            }
+        if autoValidateOnInit, loadedJWT != nil {
+            Task { await validateSession() }
         }
     }
 
@@ -135,7 +128,7 @@ final class AuthStore: ObservableObject {
             Logger.info("Session validated", category: .auth)
         } catch {
             Logger.warning("Session invalid, clearing: \(error)", category: .auth)
-            await clearLocalSession()
+            clearLocalSession()
         }
     }
 
@@ -148,13 +141,13 @@ final class AuthStore: ObservableObject {
         do {
             let result = try await authService.signIn(email: email, password: password)
             Logger.info("Sign in successful", category: .auth)
-            await setAuthenticatedSession(token: result.token, user: result.user, refreshToken: result.refreshToken)
+            setAuthenticatedSession(token: result.token, user: result.user, refreshToken: result.refreshToken)
             eventBus.send(.signedIn)
         } catch {
             Logger.error("Sign in failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Sign In")
             if APIError.isCredentialError(error) {
-                await clearLocalSession()
+                clearLocalSession()
             }
         }
     }
@@ -167,13 +160,13 @@ final class AuthStore: ObservableObject {
         do {
             let result = try await authService.register(name: name, email: email, password: password)
             Logger.info("Registration successful", category: .auth)
-            await setAuthenticatedSession(token: result.token, user: result.user, refreshToken: result.refreshToken)
+            setAuthenticatedSession(token: result.token, user: result.user, refreshToken: result.refreshToken)
             eventBus.send(.signedIn)
         } catch {
             Logger.error("Registration failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Registration")
             if APIError.isCredentialError(error) {
-                await clearLocalSession()
+                clearLocalSession()
             }
         }
     }
@@ -193,7 +186,7 @@ final class AuthStore: ObservableObject {
             Logger.warning("Remote sign out failed, continuing local sign out: \(error)", category: .auth)
         }
 
-        await clearLocalSession()
+        clearLocalSession()
         eventBus.send(.signedOut)
     }
 
@@ -241,13 +234,13 @@ final class AuthStore: ObservableObject {
         do {
             let result = try await authService.signInWithApple(identityToken: identityToken, name: name)
             Logger.info("Apple Sign In successful", category: .auth)
-            await setAuthenticatedSession(token: result.token, user: result.user, refreshToken: result.refreshToken)
+            setAuthenticatedSession(token: result.token, user: result.user, refreshToken: result.refreshToken)
             eventBus.send(.signedIn)
         } catch {
             Logger.error("Apple Sign In failed", error: error, category: .auth)
             self.error = errorHandler.handle(error, context: "Apple Sign In")
             if APIError.isCredentialError(error) {
-                await clearLocalSession()
+                clearLocalSession()
             }
         }
     }
@@ -285,49 +278,40 @@ final class AuthStore: ObservableObject {
             Logger.warning("Global unauthorized received. Clearing local session.", category: .auth)
             escalationService.resetAll()
             _ = await errorHandler.handleUnauthorized()
-            await clearLocalSession()
+            clearLocalSession()
             eventBus.send(.signedOut)
         }
     }
 
-    private func setAuthenticatedSession(token: String, user: UserDTO, refreshToken: String? = nil) async {
-        // Update @Published jwt first since API tokenProvider reads from it.
-        // This ensures API calls use the new token immediately.
+    private func setAuthenticatedSession(token: String, user: UserDTO, refreshToken: String? = nil) {
         jwt = token
         if !keychain.save(token: token) {
             Logger.error("Keychain token save failed — session will not survive app restart", category: .auth)
         }
         currentUser = user
-        await authSession.set(token: token)
 
         if let refreshToken {
             if !keychain.save(refreshToken: refreshToken) {
                 Logger.error("Keychain refresh token save failed — silent re-auth will not work after restart", category: .auth)
             }
-            await authSession.setRefreshToken(refreshToken)
         }
     }
 
     /// Called by InternalNetworking after a successful token refresh.
-    func handleTokenRefresh(newToken: String, newRefreshToken: String?) async {
-        // Update @Published jwt first since API tokenProvider reads from it.
-        // This ensures subsequent API calls use the new token immediately.
+    func handleTokenRefresh(newToken: String, newRefreshToken: String?) {
         jwt = newToken
         if !keychain.save(token: newToken) {
             Logger.error("Keychain token save failed during refresh — session will not survive app restart", category: .auth)
         }
-        await authSession.set(token: newToken)
 
         if let newRefreshToken {
             if !keychain.save(refreshToken: newRefreshToken) {
                 Logger.error("Keychain refresh token save failed during refresh", category: .auth)
             }
-            await authSession.setRefreshToken(newRefreshToken)
         }
     }
 
-    private func clearLocalSession() async {
-        await authSession.clear()
+    private func clearLocalSession() {
         jwt = nil
         currentUser = nil
         keychain.clear()

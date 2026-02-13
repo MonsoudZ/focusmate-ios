@@ -114,6 +114,9 @@ extension CertificatePinning: URLSessionDelegate {
             completionHandler(.useCredential, URLCredential(trust: serverTrust))
         } else {
             Logger.error("Cancelling connection to '\(domain)' due to certificate validation failure", category: .api)
+            #if !DEBUG
+            SentryService.shared.captureMessage("Certificate pinning failed for: \(domain)")
+            #endif
             completionHandler(.cancelAuthenticationChallenge, nil)
         }
     }
@@ -127,18 +130,31 @@ struct CertificatePinningConfig {
         [productionDomain, stagingDomain]
     }
 
-    // To generate hashes, run against each domain:
+    // SHA-256 hashes of public keys in the TLS certificate chain.
+    //
+    // Both hashes are checked against every cert in the server's chain.
+    // If ANY cert matches ANY hash, the connection is allowed.
+    //
+    // - Leaf (*.up.railway.app): tight match while current. Rotates every
+    //   ~90 days via Let's Encrypt auto-renewal on Railway. When it rotates,
+    //   the intermediate hash still matches, so the app keeps working.
+    //
+    // - Intermediate (Let's Encrypt R13): stable for years. Survives leaf
+    //   rotation. Only requires an app update if LE retires R13 entirely
+    //   (pre-announced months in advance).
+    //
+    // To regenerate after a rotation:
     //   echo | openssl s_client -connect <DOMAIN>:443 -servername <DOMAIN> 2>/dev/null \
     //     | openssl x509 -pubkey -noout \
     //     | openssl pkey -pubin -outform DER \
     //     | openssl dgst -sha256 -hex
-    //
-    // Add at least two hashes: the leaf certificate and a backup/intermediate.
-    // Pinning is only enforced when this set is non-empty.
     static var publicKeyHashes: Set<String> {
-        // TODO: Add your production and staging public key SHA-256 hashes here.
-        // Example: ["ab3c...de9f", "12fa...89bc"]
-        []
+        [
+            // Leaf: *.up.railway.app (shared by production + staging)
+            "bba75270b0ee1364eb024b3b72de070c17a45e8f5bc85112ea8029a96fe90234",
+            // Intermediate: Let's Encrypt R13
+            "025490860b498ab73c6a12f27a49ad5fe230fafe3ac8f6112c9b7d0aad46941d",
+        ]
     }
 
     static func createPinning(enforceInDebug: Bool = false) -> CertificatePinning {

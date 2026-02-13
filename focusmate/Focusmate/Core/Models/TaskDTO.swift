@@ -197,17 +197,15 @@ struct SingleTaskResponse: Codable {
 }
 
 // MARK: - Hashable Conformance
+//
+// TaskDTO is an entity — identity is the primary key.  Two DTOs with the
+// same `id` represent the same task.  Change detection (title edited,
+// completion toggled, etc.) is handled by the ViewModel's @Published
+// properties, not by DTO equality.
 
 extension TaskDTO: Hashable {
     static func == (lhs: TaskDTO, rhs: TaskDTO) -> Bool {
         lhs.id == rhs.id
-            && lhs.completed_at == rhs.completed_at
-            && lhs.starred == rhs.starred
-            && lhs.hidden == rhs.hidden
-            && lhs.position == rhs.position
-            && lhs.title == rhs.title
-            && lhs.updated_at == rhs.updated_at
-            && lhs.subtasks == rhs.subtasks
     }
 
     func hash(into hasher: inout Hasher) {

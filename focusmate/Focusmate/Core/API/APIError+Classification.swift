@@ -8,7 +8,7 @@ extension APIError {
             switch apiError {
             case .unauthorized:
                 return true
-            case .badStatus(let status, _, _) where status == 401 || status == 403 || status == 422:
+            case .badStatus(let status, _, _) where status == 401 || status == 422:
                 return true
             case .validation:
                 return true

@@ -62,7 +62,7 @@ enum DueDateFormatter {
             return "Tomorrow \(timeFormatter.string(from: date))"
         }
         if calendar.isDateInYesterday(date) {
-            return "Yesterday"
+            return "Yesterday \(timeFormatter.string(from: date))"
         }
         return dateTimeFormatter.string(from: date)
     }

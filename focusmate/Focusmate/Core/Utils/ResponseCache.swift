@@ -59,6 +59,35 @@ actor ResponseCache {
         )
     }
 
+    /// Atomically reads, transforms, and writes a cache entry.
+    ///
+    /// The entire read-modify-write runs inside a single actor-isolated method,
+    /// so no other caller can interleave between the read and the write.
+    /// Without this, doing `get → mutate locally → set` as separate calls
+    /// creates a TOCTOU race: two concurrent writers both read the same
+    /// snapshot, mutate independently, and the second `set` overwrites the
+    /// first writer's changes.
+    ///
+    /// If the key is missing or expired, the transform is not called.
+    func mutate<T>(_ key: String, ttl: TimeInterval, transform: (inout T) -> Void) {
+        guard let entry = store[key] else { return }
+
+        if Date() >= entry.expiration {
+            store.removeValue(forKey: key)
+            return
+        }
+
+        guard var value = entry.value as? T else { return }
+        transform(&value)
+
+        let now = Date()
+        store[key] = Entry(
+            value: value,
+            expiration: now.addingTimeInterval(ttl),
+            lastAccessed: now
+        )
+    }
+
     func invalidate(_ key: String) {
         store.removeValue(forKey: key)
     }

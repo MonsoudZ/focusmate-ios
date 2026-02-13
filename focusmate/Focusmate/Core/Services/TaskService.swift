@@ -23,46 +23,34 @@ final class TaskService {
 
     func fetchTasks(listId: Int) async throws -> [TaskDTO] {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
-        do {
-            let response: TasksResponse = try await apiClient.request(
-                "GET",
-                API.Lists.tasks(String(listId)),
-                body: nil as String?
-            )
-            return response.tasks
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Fetching tasks")
-        }
+        let response: TasksResponse = try await apiClient.request(
+            "GET",
+            API.Lists.tasks(String(listId)),
+            body: nil as String?
+        )
+        return response.tasks
     }
 
     func fetchTask(listId: Int, taskId: Int) async throws -> TaskDTO {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
         try InputValidation.requirePositive(taskId, fieldName: "task_id")
-        do {
-            let response: SingleTaskResponse = try await apiClient.request(
-                "GET",
-                API.Lists.task(String(listId), String(taskId)),
-                body: nil as String?
-            )
-            return response.task
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Fetching task")
-        }
+        let response: SingleTaskResponse = try await apiClient.request(
+            "GET",
+            API.Lists.task(String(listId), String(taskId)),
+            body: nil as String?
+        )
+        return response.task
     }
 
     /// Fetch a task by ID without knowing the list ID (for deep links)
     func fetchTaskById(_ taskId: Int) async throws -> TaskDTO {
         try InputValidation.requirePositive(taskId, fieldName: "task_id")
-        do {
-            let response: SingleTaskResponse = try await apiClient.request(
-                "GET",
-                API.Tasks.id(String(taskId)),
-                body: nil as String?
-            )
-            return response.task
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Fetching task")
-        }
+        let response: SingleTaskResponse = try await apiClient.request(
+            "GET",
+            API.Tasks.id(String(taskId)),
+            body: nil as String?
+        )
+        return response.task
     }
 
     func createTask(
@@ -84,35 +72,31 @@ final class TaskService {
     ) async throws -> TaskDTO {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
         try InputValidation.requireNotEmpty(title, fieldName: "title")
-        do {
-            let request = CreateTaskRequest(task: .init(
-                title: title,
-                note: note,
-                due_at: dueAt?.ISO8601Format(),
-                color: color,
-                priority: priority.rawValue,
-                starred: starred,
-                tag_ids: tagIds.isEmpty ? nil : tagIds,
-                is_recurring: isRecurring ? true : nil,
-                recurrence_pattern: recurrencePattern,
-                recurrence_interval: recurrenceInterval,
-                recurrence_days: recurrenceDays,
-                recurrence_end_date: recurrenceEndDate?.ISO8601Format(),
-                recurrence_count: recurrenceCount,
-                parent_task_id: parentTaskId
-            ))
-            let response: SingleTaskResponse = try await apiClient.request(
-                "POST",
-                API.Lists.tasks(String(listId)),
-                body: request
-            )
+        let request = CreateTaskRequest(task: .init(
+            title: title,
+            note: note,
+            due_at: dueAt?.ISO8601Format(),
+            color: color,
+            priority: priority.rawValue,
+            starred: starred,
+            tag_ids: tagIds.isEmpty ? nil : tagIds,
+            is_recurring: isRecurring ? true : nil,
+            recurrence_pattern: recurrencePattern,
+            recurrence_interval: recurrenceInterval,
+            recurrence_days: recurrenceDays,
+            recurrence_end_date: recurrenceEndDate?.ISO8601Format(),
+            recurrence_count: recurrenceCount,
+            parent_task_id: parentTaskId
+        ))
+        let response: SingleTaskResponse = try await apiClient.request(
+            "POST",
+            API.Lists.tasks(String(listId)),
+            body: request
+        )
 
-            await MainActor.run { sideEffects.taskCreated(response.task, isSubtask: parentTaskId != nil) }
+        await MainActor.run { sideEffects.taskCreated(response.task, isSubtask: parentTaskId != nil) }
 
-            return response.task
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Creating task")
-        }
+        return response.task
     }
 
     func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil, priority: TaskPriority? = nil, starred: Bool? = nil, hidden: Bool? = nil, tagIds: [Int]? = nil) async throws -> TaskDTO {
@@ -121,29 +105,25 @@ final class TaskService {
         if let title, title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw FocusmateError.validation(["title": ["cannot be empty"]], nil)
         }
-        do {
-            let request = UpdateTaskRequest(task: .init(
-                title: title,
-                note: note,
-                due_at: dueAt,
-                color: color,
-                priority: priority?.rawValue,
-                starred: starred,
-                hidden: hidden,
-                tag_ids: tagIds
-            ))
-            let response: SingleTaskResponse = try await apiClient.request(
-                "PUT",
-                API.Lists.task(String(listId), String(taskId)),
-                body: request
-            )
+        let request = UpdateTaskRequest(task: .init(
+            title: title,
+            note: note,
+            due_at: dueAt,
+            color: color,
+            priority: priority?.rawValue,
+            starred: starred,
+            hidden: hidden,
+            tag_ids: tagIds
+        ))
+        let response: SingleTaskResponse = try await apiClient.request(
+            "PUT",
+            API.Lists.task(String(listId), String(taskId)),
+            body: request
+        )
 
-            await MainActor.run { sideEffects.taskUpdated(response.task) }
+        await MainActor.run { sideEffects.taskUpdated(response.task) }
 
-            return response.task
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Updating task")
-        }
+        return response.task
     }
 
     /// Deletes a task from the server, then updates local state on success.
@@ -161,108 +141,84 @@ final class TaskService {
     func deleteTask(listId: Int, taskId: Int) async throws {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
         try InputValidation.requirePositive(taskId, fieldName: "task_id")
-        do {
-            // API call FIRST - ensure server accepts the delete
-            _ = try await apiClient.request(
-                "DELETE",
-                API.Lists.task(String(listId), String(taskId)),
-                body: nil as String?
-            ) as EmptyResponse
+        // API call FIRST - ensure server accepts the delete
+        _ = try await apiClient.request(
+            "DELETE",
+            API.Lists.task(String(listId), String(taskId)),
+            body: nil as String?
+        ) as EmptyResponse
 
-            // Only update local state after confirmed server deletion
-            await MainActor.run { sideEffects.taskDeleted(taskId: taskId) }
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Deleting task")
-        }
+        // Only update local state after confirmed server deletion
+        await MainActor.run { sideEffects.taskDeleted(taskId: taskId) }
     }
 
     func rescheduleTask(listId: Int, taskId: Int, newDueAt: String, reason: String) async throws -> TaskDTO {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
         try InputValidation.requirePositive(taskId, fieldName: "task_id")
 
-        do {
-            let request = RescheduleTaskRequest(new_due_at: newDueAt, reason: reason)
-            let response: SingleTaskResponse = try await apiClient.request(
-                "POST",
-                API.Lists.taskAction(String(listId), String(taskId), "reschedule"),
-                body: request
-            )
-            await MainActor.run { sideEffects.taskUpdated(response.task) }
-            return response.task
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Rescheduling task")
-        }
+        let request = RescheduleTaskRequest(new_due_at: newDueAt, reason: reason)
+        let response: SingleTaskResponse = try await apiClient.request(
+            "POST",
+            API.Lists.taskAction(String(listId), String(taskId), "reschedule"),
+            body: request
+        )
+        await MainActor.run { sideEffects.taskUpdated(response.task) }
+        return response.task
     }
 
     func completeTask(listId: Int, taskId: Int, reason: String? = nil) async throws -> TaskDTO {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
         try InputValidation.requirePositive(taskId, fieldName: "task_id")
-        do {
-            // Only include reason if it's non-empty after trimming
-            let trimmedReason = reason?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let body: CompleteTaskRequest? = trimmedReason.flatMap { $0.isEmpty ? nil : CompleteTaskRequest(missed_reason: $0) }
-            let response: SingleTaskResponse = try await apiClient.request(
-                "PATCH",
-                API.Lists.taskAction(String(listId), String(taskId), "complete"),
-                body: body
-            )
+        // Only include reason if it's non-empty after trimming
+        let trimmedReason = reason?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body: CompleteTaskRequest? = trimmedReason.flatMap { $0.isEmpty ? nil : CompleteTaskRequest(missed_reason: $0) }
+        let response: SingleTaskResponse = try await apiClient.request(
+            "PATCH",
+            API.Lists.taskAction(String(listId), String(taskId), "complete"),
+            body: body
+        )
 
-            await MainActor.run { sideEffects.taskCompleted(taskId: taskId) }
+        await MainActor.run { sideEffects.taskCompleted(taskId: taskId) }
 
-            return response.task
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Completing task")
-        }
+        return response.task
     }
 
     func reopenTask(listId: Int, taskId: Int) async throws -> TaskDTO {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
         try InputValidation.requirePositive(taskId, fieldName: "task_id")
-        do {
-            let response: SingleTaskResponse = try await apiClient.request(
-                "PATCH",
-                API.Lists.taskAction(String(listId), String(taskId), "reopen"),
-                body: nil as String?
-            )
+        let response: SingleTaskResponse = try await apiClient.request(
+            "PATCH",
+            API.Lists.taskAction(String(listId), String(taskId), "reopen"),
+            body: nil as String?
+        )
 
-            await MainActor.run { sideEffects.taskReopened(response.task) }
+        await MainActor.run { sideEffects.taskReopened(response.task) }
 
-            return response.task
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Reopening task")
-        }
+        return response.task
     }
 
     func reorderTasks(listId: Int, tasks: [(id: Int, position: Int)]) async throws {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
-        do {
-            let request = ReorderTasksRequest(tasks: tasks.map { ReorderTask(id: $0.id, position: $0.position) })
-            _ = try await apiClient.request(
-                "POST",
-                API.Lists.tasksReorder(String(listId)),
-                body: request
-            ) as EmptyResponse
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Reordering tasks")
-        }
+        let request = ReorderTasksRequest(tasks: tasks.map { ReorderTask(id: $0.id, position: $0.position) })
+        _ = try await apiClient.request(
+            "POST",
+            API.Lists.tasksReorder(String(listId)),
+            body: request
+        ) as EmptyResponse
     }
 
     func searchTasks(query: String) async throws -> [TaskDTO] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else {
-            return [] // Return empty results for empty query instead of making API call
+            return []
         }
-        do {
-            let response: TasksResponse = try await apiClient.request(
-                "GET",
-                API.Tasks.search,
-                body: nil as String?,
-                queryParameters: ["q": trimmedQuery]
-            )
-            return response.tasks
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Searching tasks")
-        }
+        let response: TasksResponse = try await apiClient.request(
+            "GET",
+            API.Tasks.search,
+            body: nil as String?,
+            queryParameters: ["q": trimmedQuery]
+        )
+        return response.tasks
     }
 
     // MARK: - Subtask Methods
@@ -271,18 +227,14 @@ final class TaskService {
     func createSubtask(listId: Int, parentTaskId: Int, title: String) async throws -> SubtaskDTO {
         try validateSubtaskContext(listId: listId, parentTaskId: parentTaskId)
         try InputValidation.requireNotEmpty(title, fieldName: "title")
-        do {
-            let request = CreateSubtaskRequest(subtask: .init(title: title))
-            let response: SubtaskResponse = try await apiClient.request(
-                "POST",
-                API.Lists.subtasks(String(listId), String(parentTaskId)),
-                body: request
-            )
-            Logger.debug("TaskService: Created subtask '\(title)' under task \(parentTaskId)", category: .api)
-            return response.subtask
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Creating subtask")
-        }
+        let request = CreateSubtaskRequest(subtask: .init(title: title))
+        let response: SubtaskResponse = try await apiClient.request(
+            "POST",
+            API.Lists.subtasks(String(listId), String(parentTaskId)),
+            body: request
+        )
+        Logger.debug("TaskService: Created subtask '\(title)' under task \(parentTaskId)", category: .api)
+        return response.subtask
     }
 
     /// Complete a subtask
@@ -299,33 +251,25 @@ final class TaskService {
     func updateSubtask(listId: Int, parentTaskId: Int, subtaskId: Int, title: String) async throws -> SubtaskDTO {
         try validateSubtaskContext(listId: listId, parentTaskId: parentTaskId, subtaskId: subtaskId)
         try InputValidation.requireNotEmpty(title, fieldName: "title")
-        do {
-            let request = UpdateSubtaskRequest(subtask: .init(title: title))
-            let response: SubtaskResponse = try await apiClient.request(
-                "PUT",
-                API.Lists.subtask(String(listId), String(parentTaskId), String(subtaskId)),
-                body: request
-            )
-            Logger.debug("TaskService: Updated subtask \(subtaskId)", category: .api)
-            return response.subtask
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Updating subtask")
-        }
+        let request = UpdateSubtaskRequest(subtask: .init(title: title))
+        let response: SubtaskResponse = try await apiClient.request(
+            "PUT",
+            API.Lists.subtask(String(listId), String(parentTaskId), String(subtaskId)),
+            body: request
+        )
+        Logger.debug("TaskService: Updated subtask \(subtaskId)", category: .api)
+        return response.subtask
     }
 
     /// Delete a subtask
     func deleteSubtask(listId: Int, parentTaskId: Int, subtaskId: Int) async throws {
         try validateSubtaskContext(listId: listId, parentTaskId: parentTaskId, subtaskId: subtaskId)
-        do {
-            _ = try await apiClient.request(
-                "DELETE",
-                API.Lists.subtask(String(listId), String(parentTaskId), String(subtaskId)),
-                body: nil as String?
-            ) as EmptyResponse
-            Logger.debug("TaskService: Deleted subtask \(subtaskId)", category: .api)
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Deleting subtask")
-        }
+        _ = try await apiClient.request(
+            "DELETE",
+            API.Lists.subtask(String(listId), String(parentTaskId), String(subtaskId)),
+            body: nil as String?
+        ) as EmptyResponse
+        Logger.debug("TaskService: Deleted subtask \(subtaskId)", category: .api)
     }
 
     // MARK: - Subtask Helpers
@@ -346,17 +290,13 @@ final class TaskService {
         action: String
     ) async throws -> SubtaskDTO {
         try validateSubtaskContext(listId: listId, parentTaskId: parentTaskId, subtaskId: subtaskId)
-        do {
-            let response: SubtaskResponse = try await apiClient.request(
-                "PATCH",
-                API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), action),
-                body: nil as String?
-            )
-            Logger.debug("TaskService: \(action.capitalized) subtask \(subtaskId)", category: .api)
-            return response.subtask
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "\(action.capitalized) subtask")
-        }
+        let response: SubtaskResponse = try await apiClient.request(
+            "PATCH",
+            API.Lists.subtaskAction(String(listId), String(parentTaskId), String(subtaskId), action),
+            body: nil as String?
+        )
+        Logger.debug("TaskService: \(action.capitalized) subtask \(subtaskId)", category: .api)
+        return response.subtask
     }
 
     // MARK: - Nudge
@@ -364,12 +304,8 @@ final class TaskService {
     func nudgeTask(listId: Int, taskId: Int) async throws {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
         try InputValidation.requirePositive(taskId, fieldName: "task_id")
-        do {
-            let endpoint = API.Lists.taskAction(String(listId), String(taskId), "nudge")
-            let _: NudgeResponse = try await apiClient.request("POST", endpoint, body: nil as String?)
-            Logger.debug("TaskService: Nudged task \(taskId)", category: .api)
-        } catch {
-            throw ErrorHandler.shared.handle(error, context: "Nudging task")
-        }
+        let endpoint = API.Lists.taskAction(String(listId), String(taskId), "nudge")
+        let _: NudgeResponse = try await apiClient.request("POST", endpoint, body: nil as String?)
+        Logger.debug("TaskService: Nudged task \(taskId)", category: .api)
     }
 }

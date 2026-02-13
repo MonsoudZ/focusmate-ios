@@ -4,26 +4,20 @@ import Foundation
 final class AuthService {
     private let api: APIClient
     private let authAPI: AuthAPI
-    private let session: AuthSession
 
-    init(api: APIClient, authAPI: AuthAPI, session: AuthSession) {
+    init(api: APIClient, authAPI: AuthAPI) {
         self.api = api
         self.authAPI = authAPI
-        self.session = session
     }
 
     func signIn(email: String, password: String) async throws -> (token: String, refreshToken: String?, user: UserDTO) {
-        let user = try await authAPI.signIn(email: email, password: password)
-        let token = try await session.access()
-        let refreshToken = await session.accessRefreshToken()
-        return (token, refreshToken, user)
+        let res = try await authAPI.signIn(email: email, password: password)
+        return (res.token, res.refreshToken, res.user)
     }
 
     func register(name: String, email: String, password: String) async throws -> (token: String, refreshToken: String?, user: UserDTO) {
-        let user = try await authAPI.signUp(name: name, email: email, password: password)
-        let token = try await session.access()
-        let refreshToken = await session.accessRefreshToken()
-        return (token, refreshToken, user)
+        let res = try await authAPI.signUp(name: name, email: email, password: password)
+        return (res.token, res.refreshToken, res.user)
     }
 
     func signInWithApple(identityToken: Data, name: String?) async throws -> (token: String, refreshToken: String?, user: UserDTO) {

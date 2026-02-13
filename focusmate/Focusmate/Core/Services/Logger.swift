@@ -43,7 +43,7 @@ enum LogCategory: String {
 
 final class Logger {
 
-    static var minimumLevel: LogLevel = {
+    static let minimumLevel: LogLevel = {
         #if DEBUG
         return .debug
         #else
@@ -51,7 +51,7 @@ final class Logger {
         #endif
     }()
 
-    static var consoleLoggingEnabled: Bool = {
+    static let consoleLoggingEnabled: Bool = {
         #if DEBUG
         return true
         #else
@@ -59,7 +59,7 @@ final class Logger {
         #endif
     }()
 
-    static var osLogEnabled: Bool = true
+    static let osLogEnabled: Bool = true
 
     static func debug(
         _ message: String,
@@ -107,19 +107,28 @@ final class Logger {
         log(.error, fullMessage, category: category, file: file, function: function, line: line)
 
         #if !DEBUG
+        // Fire-and-forget on MainActor — SentryService is @MainActor isolated.
+        // Without this Task wrapper, the compiler infers Logger.error() itself as
+        // MainActor-isolated (synchronous access to an @MainActor singleton),
+        // which would prevent calling Logger.error() from background threads.
+        let file = filename(from: file)
         if let error = error {
-            SentryService.shared.captureError(
-                error,
-                context: [
-                    "message": message,
-                    "file": filename(from: file),
-                    "function": function,
-                    "line": line
-                ]
-            )
+            Task { @MainActor in
+                SentryService.shared.captureError(
+                    error,
+                    context: [
+                        "message": message,
+                        "file": file,
+                        "function": function,
+                        "line": line
+                    ]
+                )
+            }
         } else {
-            let contextMessage = "\(fullMessage) [file: \(filename(from: file)), function: \(function), line: \(line)]"
-            SentryService.shared.captureMessage(contextMessage)
+            let contextMessage = "\(fullMessage) [file: \(file), function: \(function), line: \(line)]"
+            Task { @MainActor in
+                SentryService.shared.captureMessage(contextMessage)
+            }
         }
         #endif
     }

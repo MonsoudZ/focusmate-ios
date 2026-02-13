@@ -21,7 +21,7 @@ final class RetryCoordinator {
     private let maxTrackedEntries = 100
 
     /// Entries older than this are considered stale and can be cleaned up
-    private let staleEntryThreshold: TimeInterval = 300 // 5 minutes
+    private let staleEntryThreshold: TimeInterval = AppConfiguration.Retry.staleEntryThresholdSeconds
 
     // MARK: - Init
 

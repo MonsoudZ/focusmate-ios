@@ -58,8 +58,8 @@ final class CalendarService {
             return cachedEvents
         }
         let predicate = eventStore.predicateForEvents(
-            withStart: Date().addingTimeInterval(-30 * 24 * 3600),
-            end: Date().addingTimeInterval(30 * 24 * 3600),
+            withStart: Date().addingTimeInterval(TimeInterval(-AppConfiguration.Calendar.syncWindowDays * 24 * 3600)),
+            end: Date().addingTimeInterval(TimeInterval(AppConfiguration.Calendar.syncWindowDays * 24 * 3600)),
             calendars: [calendar]
         )
         cachedEvents = eventStore.events(matching: predicate)
@@ -158,11 +158,10 @@ final class CalendarService {
         event.title = task.title
         event.notes = task.note ?? "Created by Intentia"
         event.startDate = dueDate
-        event.endDate = dueDate.addingTimeInterval(3600) // 1 hour duration
+        event.endDate = dueDate.addingTimeInterval(AppConfiguration.Calendar.eventDurationSeconds)
         event.calendar = calendar
         
-        // Add alarm 1 hour before
-        event.addAlarm(EKAlarm(relativeOffset: -3600))
+        event.addAlarm(EKAlarm(relativeOffset: -AppConfiguration.Calendar.eventAlarmOffsetSeconds))
         
         // Store task ID in URL field for later reference
         event.url = URL(string: "intentia://task/\(task.id)")

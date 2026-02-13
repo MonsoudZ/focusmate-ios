@@ -38,7 +38,7 @@ private actor TokenRefreshCoordinator {
     }
 }
 
-final class InternalNetworking: NSObject, NetworkingProtocol {
+final class InternalNetworking: NetworkingProtocol {
     private let tokenProvider: () -> String?
     private let refreshTokenProvider: (() -> String?)?
     private let onTokenRefreshed: ((String, String?) async -> Void)?
@@ -47,7 +47,6 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
     private let refreshCoordinator = TokenRefreshCoordinator()
 
     // Optional injected session for tests/previews/custom configs.
-    // If you inject a session and still want pinning, that session must use this instance as its delegate.
     private let injectedSession: URLSession?
 
     private lazy var session: URLSession = {
@@ -57,8 +56,14 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         configuration.timeoutIntervalForRequest = AppConfiguration.Network.requestTimeoutSeconds
         configuration.timeoutIntervalForResource = AppConfiguration.Network.resourceTimeoutSeconds
 
-        // Delegate must be self so certificate pinning runs.
-        return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+        // CertificatePinning is the delegate — NOT self.
+        // URLSession retains its delegate strongly.  If we passed `self`,
+        // the reference graph would be:
+        //   InternalNetworking → session → InternalNetworking  (cycle)
+        // By using certificatePinning (which already conforms to
+        // URLSessionDelegate), we get:
+        //   InternalNetworking → session → CertificatePinning  (no cycle)
+        return URLSession(configuration: configuration, delegate: certificatePinning, delegateQueue: nil)
     }()
 
     // MARK: - Initializers
@@ -74,7 +79,6 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         self.onTokenRefreshed = onTokenRefreshed
         self.certificatePinning = CertificatePinningConfig.createPinning()
         self.injectedSession = nil
-        super.init()
     }
 
     /// DI initializer (tests/previews/custom session)
@@ -88,7 +92,6 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
         self.onTokenRefreshed = nil
         self.injectedSession = session
         self.certificatePinning = certificatePinning
-        super.init()
     }
 
     // MARK: - Requests (public)
@@ -394,34 +397,3 @@ final class InternalNetworking: NSObject, NetworkingProtocol {
     }
 }
 
-// MARK: - URLSessionDelegate (Certificate Pinning)
-
-extension InternalNetworking: URLSessionDelegate {
-    func urlSession(
-        _ session: URLSession,
-        didReceive challenge: URLAuthenticationChallenge,
-        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
-    ) {
-        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust else {
-            completionHandler(.performDefaultHandling, nil)
-            return
-        }
-
-        guard let serverTrust = challenge.protectionSpace.serverTrust else {
-            completionHandler(.cancelAuthenticationChallenge, nil)
-            return
-        }
-
-        let host = challenge.protectionSpace.host
-
-        if certificatePinning.validateServerTrust(serverTrust, forDomain: host) {
-            completionHandler(.useCredential, URLCredential(trust: serverTrust))
-        } else {
-            Logger.error("Certificate validation failed for \(host)", category: .api)
-            #if !DEBUG
-            SentryService.shared.captureMessage("Certificate pinning failed for: \(host)")
-            #endif
-            completionHandler(.cancelAuthenticationChallenge, nil)
-        }
-    }
-}

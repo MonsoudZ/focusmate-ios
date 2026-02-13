@@ -41,18 +41,19 @@ final class NotificationService: @unchecked Sendable {
     // MARK: - Schedule Task Notifications
     
     func scheduleTaskNotifications(for task: TaskDTO) {
+        // Always cancel first — if the task lost its due date or was
+        // completed, the old notifications must not fire.
+        cancelTaskNotifications(for: task.id)
+
         guard let dueDate = task.dueDate, !task.isCompleted else {
             return
         }
-        
-        // Cancel existing notifications for this task
-        cancelTaskNotifications(for: task.id)
         
         let now = Date()
         
         // Due soon - 1 hour before (check preference)
         if dueSoonEnabled {
-            let dueSoonDate = dueDate.addingTimeInterval(-3600)
+            let dueSoonDate = dueDate.addingTimeInterval(-AppConfiguration.Notifications.dueSoonOffsetSeconds)
             if dueSoonDate > now {
                 scheduleNotification(
                     id: "task-\(task.id)-due-soon",
@@ -77,7 +78,7 @@ final class NotificationService: @unchecked Sendable {
         
         // Overdue - 1 hour after (check preference)
         if overdueEnabled {
-            let overdueDate = dueDate.addingTimeInterval(3600)
+            let overdueDate = dueDate.addingTimeInterval(AppConfiguration.Notifications.overdueOffsetSeconds)
             if overdueDate > now {
                 scheduleNotification(
                     id: "task-\(task.id)-overdue",
@@ -119,12 +120,9 @@ final class NotificationService: @unchecked Sendable {
         
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
         
-        // Completion handler runs on background thread; dispatch to main for thread-safe logging
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                Task { @MainActor in
-                    Logger.error("Failed to schedule escalation notification: \(id)", error: error, category: .general)
-                }
+                Logger.error("Failed to schedule escalation notification: \(id)", error: error, category: .general)
             }
         }
     }

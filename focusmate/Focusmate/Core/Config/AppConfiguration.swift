@@ -38,6 +38,9 @@ enum AppConfiguration {
 
         /// Maximum delay between retries (caps exponential growth).
         static let maxBackoffSeconds: TimeInterval = 60.0
+
+        /// How long to keep retry tracking entries before cleanup.
+        static let staleEntryThresholdSeconds: TimeInterval = 300
     }
 
     // MARK: - Cache TTL (Time-To-Live)
@@ -51,5 +54,28 @@ enum AppConfiguration {
 
         /// How long to cache calendar events lookup.
         static let calendarEventsTTLSeconds: TimeInterval = 2
+    }
+
+    // MARK: - Notifications
+
+    enum Notifications {
+        /// How far before the due date to fire the "due soon" notification.
+        static let dueSoonOffsetSeconds: TimeInterval = 3600
+
+        /// How far after the due date to fire the "overdue" notification.
+        static let overdueOffsetSeconds: TimeInterval = 3600
+    }
+
+    // MARK: - Calendar
+
+    enum Calendar {
+        /// How many days back/forward to search for calendar events.
+        static let syncWindowDays: Int = 30
+
+        /// Default duration for calendar events created from tasks.
+        static let eventDurationSeconds: TimeInterval = 3600
+
+        /// How far before the event to trigger the alarm.
+        static let eventAlarmOffsetSeconds: TimeInterval = 3600
     }
 }

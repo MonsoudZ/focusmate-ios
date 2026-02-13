@@ -137,18 +137,37 @@ final class AppState: ObservableObject {
         error = nil
     }
 
-    /// Accepts a pending invite code after the user signs in
+    /// Accepts a pending invite code after the user signs in.
+    ///
+    /// Called from the `objectWillChange` subscriber, which fires on every
+    /// AuthStore property change.  Three outcomes:
+    ///
+    /// 1. **Success** — code cleared, won't retry.
+    /// 2. **Transient failure** (offline / 5xx) — code preserved, retries
+    ///    automatically on the next auth state change.
+    /// 3. **Permanent failure** (4xx — expired, invalid, already used) — code
+    ///    cleared, error shown once, won't retry.
+    private var isAcceptingInvite = false
+
     private func tryAcceptPendingInvite() async {
         guard auth.jwt != nil else { return }
         guard let code = pendingInviteCode else { return }
+        guard !isAcceptingInvite else { return }
 
-        pendingInviteCode = nil // Clear immediately to prevent duplicate attempts
+        isAcceptingInvite = true
+        defer { isAcceptingInvite = false }
 
         do {
             let response = try await inviteService.acceptInvite(code: code)
+            pendingInviteCode = nil
             joinedList = response.list
             Logger.info("Auto-accepted pending invite for list: \(response.list.name)", category: .api)
+        } catch where NetworkMonitor.isOfflineError(error) {
+            // Transient — preserve code for automatic retry
+            Logger.warning("Invite accept deferred (offline): \(error)", category: .api)
         } catch {
+            // Permanent — clear code to stop retrying
+            pendingInviteCode = nil
             Logger.warning("Failed to auto-accept pending invite: \(error)", category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Accept Invite")
         }
