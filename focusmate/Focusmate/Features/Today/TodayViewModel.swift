@@ -73,6 +73,74 @@ final class TodayViewModel {
         groupedTasks = (anytime, morning, afternoon, evening)
     }
 
+    // MARK: - Timezone Guard
+
+    /// Remove tasks that clearly don't belong to "today" in the device timezone.
+    ///
+    /// **Design choice — guard, not re-bucket.**  The server owns bucketing logic
+    /// (overdue vs. due_today, grace periods, etc.).  Re-implementing that here
+    /// creates two sources of truth that drift apart.  Instead, this method only
+    /// *removes* tasks whose calendar day is clearly wrong — tomorrow or later
+    /// leaked into due_today, or future-dated tasks leaked into overdue.  The
+    /// server's internal split between overdue and due_today is preserved.
+    ///
+    /// **What this catches:** The server computes "start of today" from the
+    /// `users.timezone` column.  If the device is UTC-5 but the server thinks
+    /// UTC, the server's midnight is 5 hours ahead.  A task due tomorrow in the
+    /// user's timezone might slip through as "due today" server-side.  This guard
+    /// strips those leaks without re-inventing overdue logic.
+    ///
+    /// **What this deliberately does NOT do:**
+    /// - Move tasks between overdue ↔ due_today (server's call)
+    /// - Re-define "overdue" with client-side time checks
+    /// - Touch completed_today (completion timestamps are authoritative)
+    ///
+    /// **Tradeoff:** If the server sends a task that's *actually* today in the
+    /// user's TZ but falls on a different calendar day due to rounding, this
+    /// guard could remove it.  Layers 1+2 (timezone sync + query param) make
+    /// that window extremely narrow.
+    private func removeOutOfDayTasks(_ response: TodayResponse) -> TodayResponse {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday) else {
+            return response
+        }
+
+        func belongsToTodayOrEarlier(_ task: TaskDTO) -> Bool {
+            guard let dueDate = task.dueDate else { return true }
+            let taskDay = calendar.startOfDay(for: dueDate)
+            return taskDay < startOfTomorrow
+        }
+
+        func belongsToTodayOrEarlierForOverdue(_ task: TaskDTO) -> Bool {
+            guard let dueDate = task.dueDate else { return true }
+            let taskDay = calendar.startOfDay(for: dueDate)
+            // Overdue tasks should be today or earlier — reject future tasks
+            return taskDay < startOfTomorrow
+        }
+
+        let filteredOverdue = response.overdue.filter { belongsToTodayOrEarlierForOverdue($0) }
+        let filteredDueToday = response.due_today.filter { belongsToTodayOrEarlier($0) }
+
+        // Only rebuild stats if we actually removed something
+        if filteredOverdue.count == response.overdue.count &&
+            filteredDueToday.count == response.due_today.count {
+            return response
+        }
+
+        return TodayResponse(
+            overdue: filteredOverdue,
+            due_today: filteredDueToday,
+            completed_today: response.completed_today,
+            stats: TodayStats(
+                overdue_count: filteredOverdue.count,
+                due_today_count: filteredDueToday.count,
+                completed_today_count: response.completed_today.count
+            ),
+            streak: response.streak
+        )
+    }
+
     // MARK: - Init
 
     init(
@@ -133,8 +201,9 @@ final class TodayViewModel {
         error = nil
 
         do {
-            let data = try await todayService.fetchToday()
+            let raw = try await todayService.fetchToday()
             guard myVersion == loadVersion else { return }
+            let data = removeOutOfDayTasks(raw)
             todayData = data
             recomputeGroupedTasks()
             onOverdueCountChange?(todayData?.stats?.overdue_count ?? 0)

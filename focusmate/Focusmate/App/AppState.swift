@@ -52,6 +52,7 @@ final class AppState: ObservableObject {
                 Task {
                     await self.tryRegisterDeviceIfPossible()
                     await self.tryAcceptPendingInvite()
+                    await self.syncTimezoneIfNeeded()
                 }
             }
             .store(in: &cancellables)
@@ -77,6 +78,22 @@ final class AppState: ObservableObject {
                     SentryService.shared.setUser(id: user.id, email: user.email, name: user.name ?? "Unknown")
                 } else {
                     SentryService.shared.clearUser()
+                }
+            }
+            .store(in: &cancellables)
+
+        // Sync device timezone to server when the system timezone changes at
+        // runtime (e.g. user crosses a timezone boundary or changes Settings).
+        // Without this, the server continues filtering "today" using the stale
+        // timezone stored at signup — producing wrong results until the user
+        // manually edits their profile.
+        NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                Task {
+                    await self.syncTimezoneIfNeeded()
+                    await ResponseCache.shared.invalidate("today")
                 }
             }
             .store(in: &cancellables)
@@ -172,4 +189,53 @@ final class AppState: ObservableObject {
             self.error = ErrorHandler.shared.handle(error, context: "Accept Invite")
         }
     }
+
+    // MARK: - Timezone Sync
+
+    /// Fire-and-forget PATCH to keep the server's timezone in sync with the device.
+    ///
+    /// **Why this matters at the data layer:** The `GET /api/v1/today` endpoint
+    /// computes bucket boundaries (overdue / due_today / completed_today) using
+    /// `users.timezone`.  When that column is stale — say the user flew from
+    /// New York to Los Angeles but the server still says `America/New_York` — the
+    /// server's "start of today" is 3 hours ahead of reality.  Tasks due between
+    /// 9 PM and midnight Pacific leak into "tomorrow", and yesterday's stragglers
+    /// linger in "today".  Syncing on every auth change + system TZ notification
+    /// keeps the column fresh so server-side queries stay correct.
+    ///
+    /// **Tradeoff:** We accept a brief race window — the first `fetchToday` after
+    /// a timezone change may still use the old value if it wins the race against
+    /// this PATCH.  Layer 2 (the `timezone` query parameter on `fetchToday`) and
+    /// Layer 3 (client-side re-bucketing) cover that gap.
+    private var isSyncingTimezone = false
+
+    private func syncTimezoneIfNeeded() async {
+        guard auth.jwt != nil else { return }
+        guard !isSyncingTimezone else { return }
+        let deviceTZ = TimeZone.current.identifier
+        guard auth.currentUser?.timezone != deviceTZ else { return }
+
+        isSyncingTimezone = true
+        defer { isSyncingTimezone = false }
+
+        do {
+            let _: UserResponse = try await auth.api.request(
+                "PATCH", API.Users.profile,
+                body: TimezoneUpdateRequest(timezone: deviceTZ)
+            )
+            auth.currentUser = auth.currentUser.map {
+                UserDTO(
+                    id: $0.id, email: $0.email, name: $0.name,
+                    role: $0.role, timezone: deviceTZ, hasPassword: $0.hasPassword
+                )
+            }
+            Logger.info("Synced timezone to \(deviceTZ)", category: .api)
+        } catch {
+            Logger.warning("Timezone sync failed: \(error)", category: .api)
+        }
+    }
+}
+
+private struct TimezoneUpdateRequest: Encodable {
+    let timezone: String
 }

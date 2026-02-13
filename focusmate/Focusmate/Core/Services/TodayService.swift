@@ -16,7 +16,11 @@ final class TodayService {
         if !ignoreCache, let cached: TodayResponse = await cache.get(Self.cacheKey) {
             return cached
         }
-        let response: TodayResponse = try await api.request("GET", API.Today.root, body: nil as String?)
+        let response: TodayResponse = try await api.request(
+            "GET", API.Today.root,
+            body: nil as String?,
+            queryParameters: ["timezone": TimeZone.current.identifier]
+        )
         Logger.debug("TodayService: streak = \(String(describing: response.streak))", category: .api)
         await cache.set(Self.cacheKey, value: response, ttl: Self.cacheTTL)
         return response

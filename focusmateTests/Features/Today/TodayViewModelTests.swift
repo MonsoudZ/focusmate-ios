@@ -72,8 +72,15 @@ final class TodayViewModelTests: XCTestCase {
     // MARK: - loadToday Tests
 
     func testLoadTodaySetsDataOnSuccess() async {
-        let task1 = TestFactories.makeSampleTask(id: 1, title: "Overdue Task", overdue: true)
-        let task2 = TestFactories.makeSampleTask(id: 2, title: "Due Today Task")
+        let task1 = TestFactories.makeSampleTask(
+            id: 1, title: "Overdue Task",
+            dueAt: TestFactories.isoString(daysFromNow: -1, hour: 10, minute: 0),
+            overdue: true
+        )
+        let task2 = TestFactories.makeSampleTask(
+            id: 2, title: "Due Today Task",
+            dueAt: TestFactories.isoString(daysFromNow: 0, hour: 14, minute: 0)
+        )
         let task3 = TestFactories.makeSampleTask(
             id: 3,
             title: "Completed Task",
@@ -111,7 +118,11 @@ final class TodayViewModelTests: XCTestCase {
     }
 
     func testLoadTodayUpdatesOverdueCount() async {
-        let overdueTask = TestFactories.makeSampleTask(id: 1, title: "Overdue", overdue: true)
+        let overdueTask = TestFactories.makeSampleTask(
+            id: 1, title: "Overdue",
+            dueAt: TestFactories.isoString(daysFromNow: -1, hour: 10, minute: 0),
+            overdue: true
+        )
         stubTodayResponse(
             overdue: [overdueTask],
             stats: TodayStats(overdue_count: 1, due_today_count: 0, completed_today_count: 0)
@@ -173,9 +184,19 @@ final class TodayViewModelTests: XCTestCase {
     // MARK: - Computed Properties Tests
 
     func testComputedPropertiesCalculateCorrectly() async {
-        let overdue1 = TestFactories.makeSampleTask(id: 1, title: "Overdue 1", overdue: true)
-        let dueToday1 = TestFactories.makeSampleTask(id: 2, title: "Due Today 1")
-        let dueToday2 = TestFactories.makeSampleTask(id: 3, title: "Due Today 2")
+        let overdue1 = TestFactories.makeSampleTask(
+            id: 1, title: "Overdue 1",
+            dueAt: TestFactories.isoString(daysFromNow: -1, hour: 10, minute: 0),
+            overdue: true
+        )
+        let dueToday1 = TestFactories.makeSampleTask(
+            id: 2, title: "Due Today 1",
+            dueAt: TestFactories.isoString(daysFromNow: 0, hour: 10, minute: 0)
+        )
+        let dueToday2 = TestFactories.makeSampleTask(
+            id: 3, title: "Due Today 2",
+            dueAt: TestFactories.isoString(daysFromNow: 0, hour: 14, minute: 0)
+        )
         let completed1 = TestFactories.makeSampleTask(
             id: 4,
             title: "Completed 1",
@@ -224,9 +245,6 @@ final class TodayViewModelTests: XCTestCase {
     // MARK: - groupedTasks Tests
 
     func testGroupedTasksSortsCorrectly() async {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-
         // Anytime task (midnight)
         let anytimeTask = TestFactories.makeSampleTask(
             id: 1,
@@ -298,5 +316,158 @@ final class TodayViewModelTests: XCTestCase {
 
         XCTAssertEqual(vm.progress, 0)
         XCTAssertEqual(vm.totalTasks, 0)
+    }
+
+    // MARK: - Timezone Guard Tests
+    //
+    // The guard only REMOVES tasks whose calendar day is clearly wrong
+    // (future tasks that leaked in from a timezone mismatch).  It does NOT
+    // re-bucket between overdue ↔ due_today — the server owns that split.
+
+    func testGuardDropsTomorrowTaskFromDueToday() async {
+        // Server's stale timezone included a tomorrow task in due_today
+        let tomorrowTask = TestFactories.makeSampleTask(
+            id: 1, title: "Tomorrow Task",
+            dueAt: TestFactories.isoString(daysFromNow: 1, hour: 10, minute: 0)
+        )
+
+        stubTodayResponse(dueToday: [tomorrowTask])
+
+        let vm = makeViewModel()
+        await vm.loadToday()
+
+        XCTAssertEqual(vm.todayData?.due_today.count, 0, "Tomorrow's task should be removed from due_today")
+        XCTAssertEqual(vm.todayData?.overdue.count, 0, "Tomorrow's task should not appear in overdue")
+    }
+
+    func testGuardDropsFutureTaskFromOverdue() async {
+        // A future task should never be in overdue
+        let futureTask = TestFactories.makeSampleTask(
+            id: 1, title: "Future Task",
+            dueAt: TestFactories.isoString(daysFromNow: 2, hour: 10, minute: 0)
+        )
+
+        stubTodayResponse(overdue: [futureTask])
+
+        let vm = makeViewModel()
+        await vm.loadToday()
+
+        XCTAssertEqual(vm.todayData?.overdue.count, 0, "Future task should be removed from overdue")
+    }
+
+    func testGuardKeepsTodayTaskInDueToday() async {
+        let todayTask = TestFactories.makeSampleTask(
+            id: 1, title: "Today Task",
+            dueAt: TestFactories.isoString(daysFromNow: 0, hour: 23, minute: 59)
+        )
+
+        stubTodayResponse(dueToday: [todayTask])
+
+        let vm = makeViewModel()
+        await vm.loadToday()
+
+        XCTAssertEqual(vm.todayData?.due_today.count, 1, "Today's task should remain in due_today")
+        XCTAssertEqual(vm.todayData?.due_today.first?.id, 1)
+    }
+
+    func testGuardKeepsYesterdayTaskInServerBucket() async {
+        // Server placed a yesterday task in due_today — guard does NOT
+        // second-guess the server's bucketing, only removes future leaks.
+        let yesterdayTask = TestFactories.makeSampleTask(
+            id: 1, title: "Yesterday Task",
+            dueAt: TestFactories.isoString(daysFromNow: -1, hour: 14, minute: 0)
+        )
+
+        stubTodayResponse(dueToday: [yesterdayTask])
+
+        let vm = makeViewModel()
+        await vm.loadToday()
+
+        XCTAssertEqual(vm.todayData?.due_today.count, 1, "Past tasks stay in server's bucket — guard only strips future leaks")
+    }
+
+    func testGuardPreservesOverdueBucket() async {
+        // Server says overdue — client doesn't move it to due_today
+        let overdueTask = TestFactories.makeSampleTask(
+            id: 1, title: "Overdue",
+            dueAt: TestFactories.isoString(daysFromNow: -1, hour: 10, minute: 0),
+            overdue: true
+        )
+
+        stubTodayResponse(overdue: [overdueTask])
+
+        let vm = makeViewModel()
+        await vm.loadToday()
+
+        XCTAssertEqual(vm.todayData?.overdue.count, 1, "Overdue tasks stay in overdue — server's call")
+        XCTAssertEqual(vm.todayData?.due_today.count, 0)
+    }
+
+    func testGuardTrustsCompletedTodayFromServer() async {
+        // Completed tasks pass through untouched regardless of due date
+        let completedTask = TestFactories.makeSampleTask(
+            id: 1, title: "Done",
+            dueAt: TestFactories.isoString(daysFromNow: -2, hour: 10, minute: 0),
+            completedAt: Date().ISO8601Format()
+        )
+
+        stubTodayResponse(completedToday: [completedTask])
+
+        let vm = makeViewModel()
+        await vm.loadToday()
+
+        XCTAssertEqual(vm.todayData?.completed_today.count, 1, "Completed tasks should be trusted from server")
+    }
+
+    func testGuardRecalculatesStatsOnRemoval() async {
+        // Server says 2 due_today — but one is tomorrow
+        let tomorrowTask = TestFactories.makeSampleTask(
+            id: 1, title: "Tomorrow",
+            dueAt: TestFactories.isoString(daysFromNow: 1, hour: 14, minute: 0)
+        )
+        let todayTask = TestFactories.makeSampleTask(
+            id: 2, title: "Today",
+            dueAt: TestFactories.isoString(daysFromNow: 0, hour: 23, minute: 0)
+        )
+
+        stubTodayResponse(
+            dueToday: [tomorrowTask, todayTask],
+            stats: TodayStats(overdue_count: 0, due_today_count: 2, completed_today_count: 0)
+        )
+
+        let vm = makeViewModel()
+        await vm.loadToday()
+
+        XCTAssertEqual(vm.todayData?.stats?.due_today_count, 1, "Stats should reflect removal of tomorrow task")
+    }
+
+    func testGuardSkipsRebuildWhenNothingRemoved() async {
+        // All tasks belong to today — guard should return the original response
+        let task1 = TestFactories.makeSampleTask(
+            id: 1, title: "Task 1",
+            dueAt: TestFactories.isoString(daysFromNow: 0, hour: 23, minute: 0)
+        )
+        let task2 = TestFactories.makeSampleTask(
+            id: 2, title: "Task 2",
+            dueAt: TestFactories.midnightISOString(daysFromNow: 0)
+        )
+
+        stubTodayResponse(dueToday: [task1, task2])
+
+        let vm = makeViewModel()
+        await vm.loadToday()
+
+        XCTAssertEqual(vm.todayData?.due_today.count, 2, "Both today tasks should remain")
+    }
+
+    func testGuardKeepsNoDueDateTaskInServerBucket() async {
+        let noDueDateTask = TestFactories.makeSampleTask(id: 1, title: "No Due Date")
+
+        stubTodayResponse(dueToday: [noDueDateTask])
+
+        let vm = makeViewModel()
+        await vm.loadToday()
+
+        XCTAssertEqual(vm.todayData?.due_today.count, 1, "No-due-date task should stay in due_today")
     }
 }
