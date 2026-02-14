@@ -24,9 +24,15 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                             Text(user?.name ?? "No Name")
                                 .font(DS.Typography.headline)
-                            Text(user?.email ?? "")
-                                .font(DS.Typography.subheadline)
-                                .foregroundStyle(.secondary)
+                            if user?.hasPassword == false {
+                                Text("Signed in with Apple")
+                                    .font(DS.Typography.subheadline)
+                                    .foregroundStyle(.secondary)
+                            } else if let email = user?.email {
+                                Text(email)
+                                    .font(DS.Typography.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
 
                         Spacer()

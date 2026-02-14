@@ -48,7 +48,7 @@ struct TaskDetailQuickActions: View {
             }
 
             // Share
-            if let shareURL = URL(string: "focusmate://task/\(task.id)") {
+            if let shareURL = URL(string: "intentia://task/\(task.id)") {
                 ShareLink(item: shareURL) {
                     VStack(spacing: DS.Spacing.xs) {
                         Image(systemName: "square.and.arrow.up")

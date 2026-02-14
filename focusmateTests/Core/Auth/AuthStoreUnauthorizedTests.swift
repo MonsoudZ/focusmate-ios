@@ -39,7 +39,8 @@ final class AuthStoreUnauthorizedTests: XCTestCase {
             keychain: testKeychain,
             networking: nil,
             autoValidateOnInit: false,
-            eventBus: eventBus
+            eventBus: eventBus,
+            escalationService: EscalationService(screenTimeService: MockScreenTimeService())
         )
 
         // Precondition: token loaded

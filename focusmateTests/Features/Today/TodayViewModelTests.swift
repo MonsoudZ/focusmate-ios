@@ -43,7 +43,8 @@ final class TodayViewModelTests: XCTestCase {
             listService: listService,
             tagService: tagService,
             apiClient: apiClient,
-            subtaskManager: subtaskManager
+            subtaskManager: subtaskManager,
+            screenTimeService: MockScreenTimeService()
         )
         vm.initializeServiceIfNeeded()
         return vm

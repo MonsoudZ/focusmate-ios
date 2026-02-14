@@ -42,6 +42,15 @@ final class AppBootstrapper: ObservableObject {
     }
 
     func handleBecameActive() async {
+        // Re-check FamilyControls authorization on every foreground transition.
+        // Users can revoke Screen Time permissions in Settings → Screen Time at
+        // any time.  Without this check the app would continue showing "blocking
+        // enabled" in the UI while the OS silently ignores the ManagedSettings
+        // store writes — a silent failure that leads to confused users reporting
+        // "blocking doesn't work."  Reading AuthorizationCenter.authorizationStatus
+        // is a synchronous property read (no IPC), so there's no performance cost.
+        ScreenTimeService.shared.updateAuthorizationStatus()
+
         await trackAppOpenedIfAuthenticated()
     }
 

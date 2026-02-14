@@ -11,7 +11,7 @@ struct TodayView: View {
         apiClient: APIClient,
         subtaskManager: SubtaskManager,
         escalationService: EscalationService? = nil,
-        screenTimeService: ScreenTimeService? = nil,
+        screenTimeService: (any ScreenTimeManaging)? = nil,
         onOverdueCountChange: ((Int) -> Void)? = nil
     ) {
         let vm = TodayViewModel(

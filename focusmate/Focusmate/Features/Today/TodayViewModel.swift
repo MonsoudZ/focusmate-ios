@@ -9,7 +9,7 @@ final class TodayViewModel {
     let listService: ListService
     let tagService: TagService
     let escalationService: EscalationService
-    let screenTimeService: ScreenTimeService
+    let screenTimeService: any ScreenTimeManaging
     private let notificationService: NotificationService
     private let subtaskManager: SubtaskManager
     private var todayService: TodayService?
@@ -150,7 +150,7 @@ final class TodayViewModel {
         apiClient: APIClient,
         subtaskManager: SubtaskManager,
         escalationService: EscalationService? = nil,
-        screenTimeService: ScreenTimeService? = nil,
+        screenTimeService: (any ScreenTimeManaging)? = nil,
         notificationService: NotificationService? = nil
     ) {
         self.taskService = taskService
@@ -159,7 +159,7 @@ final class TodayViewModel {
         self.apiClient = apiClient
         self.subtaskManager = subtaskManager
         self.escalationService = escalationService ?? .shared
-        self.screenTimeService = screenTimeService ?? .shared
+        self.screenTimeService = screenTimeService ?? ScreenTimeService.shared
         self.notificationService = notificationService ?? .shared
 
         // Subscribe to subtask changes and reload data.

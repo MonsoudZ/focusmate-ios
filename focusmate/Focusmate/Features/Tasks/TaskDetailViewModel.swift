@@ -202,7 +202,7 @@ final class TaskDetailViewModel {
     }
 
     func copyTaskLink() {
-        let link = "focusmate://task/\(task.id)"
+        let link = "intentia://task/\(task.id)"
         UIPasteboard.general.string = link
         HapticManager.success()
         showCopied = true

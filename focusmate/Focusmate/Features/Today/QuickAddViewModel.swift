@@ -12,6 +12,8 @@ final class QuickAddViewModel {
     var isLoading = false
     var isLoadingLists = true
     var error: FocusmateError?
+    var hasSpecificTime = false
+    var dueTime = Date.nextWholeHour()
 
     var onTaskCreated: (() async -> Void)?
 
@@ -49,7 +51,15 @@ final class QuickAddViewModel {
         defer { isLoading = false }
 
         do {
-            let dueDate = Calendar.current.date(bySettingHour: 23, minute: 59, second: 0, of: Date()) ?? Date()
+            let dueDate: Date
+            if hasSpecificTime {
+                let calendar = Calendar.current
+                let hour = calendar.component(.hour, from: dueTime)
+                let minute = calendar.component(.minute, from: dueTime)
+                dueDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
+            } else {
+                dueDate = Calendar.current.date(bySettingHour: 23, minute: 59, second: 0, of: Date()) ?? Date()
+            }
 
             _ = try await taskService.createTask(
                 listId: list.id,

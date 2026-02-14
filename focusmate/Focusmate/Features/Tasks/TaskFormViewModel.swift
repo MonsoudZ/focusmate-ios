@@ -55,8 +55,7 @@ final class TaskFormViewModel {
 
         switch mode {
         case .create:
-            let calendar = Calendar.current
-            dueTime = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
+            dueTime = Date.nextWholeHour()
             originalHadDueDate = false
 
         case .edit(_, let task):
@@ -77,7 +76,7 @@ final class TaskFormViewModel {
                 hasSpecificTime = !(hour == 0 && minute == 0)
             } else {
                 dueDate = Date()
-                dueTime = Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date()) ?? Date()
+                dueTime = Date.nextWholeHour()
                 hasSpecificTime = false
             }
         }

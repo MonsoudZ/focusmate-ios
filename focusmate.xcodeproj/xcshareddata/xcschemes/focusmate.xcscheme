@@ -40,6 +40,16 @@
                ReferencedContainer = "container:focusmate.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "99C4FB3F2E9E05B2003F8E91"
+               BuildableName = "focusmateUITests.xctest"
+               BlueprintName = "focusmateUITests"
+               ReferencedContainer = "container:focusmate.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

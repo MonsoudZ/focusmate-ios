@@ -50,8 +50,20 @@ struct QuickAddTaskView: View {
                     }
 
                     Section {
-                        Label("Due today", systemImage: DS.Icon.calendar)
-                            .foregroundStyle(.secondary)
+                        Toggle(isOn: $viewModel.hasSpecificTime) {
+                            Label("Set a time", systemImage: DS.Icon.clock)
+                        }
+
+                        if viewModel.hasSpecificTime {
+                            DatePicker(
+                                "Time",
+                                selection: $viewModel.dueTime,
+                                displayedComponents: .hourAndMinute
+                            )
+                        } else {
+                            Label("Due today (anytime)", systemImage: DS.Icon.calendar)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }

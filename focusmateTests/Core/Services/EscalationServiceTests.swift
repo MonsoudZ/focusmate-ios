@@ -5,17 +5,18 @@ import XCTest
 final class EscalationServiceTests: XCTestCase {
 
     private var sut: EscalationService!
+    private var mockScreenTime: MockScreenTimeService!
 
     private let gracePeriodStartKey = "Escalation_GracePeriodStart"
     private let overdueTaskIdsKey = "Escalation_OverdueTaskIds"
 
     override func setUp() {
         super.setUp()
-        sut = EscalationService.shared
-        sut.resetAll()
-        // Clear persisted state
+        // Clear persisted state before creating service (loadState reads these on init)
         UserDefaults.standard.removeObject(forKey: gracePeriodStartKey)
         UserDefaults.standard.removeObject(forKey: overdueTaskIdsKey)
+        mockScreenTime = MockScreenTimeService()
+        sut = EscalationService(screenTimeService: mockScreenTime)
     }
 
     override func tearDown() {
@@ -69,11 +70,11 @@ final class EscalationServiceTests: XCTestCase {
     }
 
     func testTaskBecameOverdueDoesNotStartGracePeriodWhenNotAuthorized() {
-        // In test environment, ScreenTimeService won't be authorized
+        mockScreenTime.isAuthorized = false
         let task = TestFactories.makeSampleTask(id: 5)
         sut.taskBecameOverdue(task)
 
-        // Grace period should NOT start because ScreenTimeService.shared.isAuthorized is false
+        // Grace period should NOT start because mock ScreenTime is not authorized
         XCTAssertFalse(sut.isInGracePeriod)
         XCTAssertNil(sut.gracePeriodEndTime)
     }

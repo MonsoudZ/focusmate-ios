@@ -63,6 +63,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>intentia</string>
 				<string>focusmate</string>
 			</array>
 		</dict>

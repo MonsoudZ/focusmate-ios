@@ -59,8 +59,8 @@ enum DeepLinkRoute: Equatable {
 
     /// Parse from URL (universal links and custom scheme)
     /// Supports:
-    ///   - focusmate://invite/ABC123
-    ///   - focusmate://task/123
+    ///   - intentia://invite/ABC123
+    ///   - intentia://task/123
     ///   - https://focusmate.app/invite/ABC123
     ///   - https://focusmate.app/task/123
     ///   - https://focusmate-api-production.up.railway.app/invite/ABC123
@@ -79,7 +79,7 @@ enum DeepLinkRoute: Equatable {
             }
         }
 
-        // Custom scheme: focusmate://task/ID
+        // Custom scheme: intentia://task/ID
         // URL parses "task" as host, ID lands in pathComponents[1]
         if url.host == "task",
            pathComponents.count >= 2,
@@ -88,7 +88,7 @@ enum DeepLinkRoute: Equatable {
             return
         }
 
-        // Custom scheme: focusmate://invite/CODE
+        // Custom scheme: intentia://invite/CODE
         // URL parses "invite" as host, code lands in pathComponents[1]
         if url.host == "invite",
            pathComponents.count >= 2,

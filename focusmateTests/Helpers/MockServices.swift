@@ -226,13 +226,15 @@ final class MockEscalationService: ObservableObject {
 // MARK: - MockScreenTimeService
 
 @MainActor
-final class MockScreenTimeService {
+final class MockScreenTimeService: ScreenTimeManaging {
     var isBlocking = false
     var isAuthorized = true
     var hasSelections = true
 
     private(set) var startBlockingCalled = false
     private(set) var stopBlockingCalled = false
+    private(set) var requestAuthorizationCalled = false
+    private(set) var updateAuthorizationStatusCalled = false
 
     func startBlocking() {
         startBlockingCalled = true
@@ -242,6 +244,15 @@ final class MockScreenTimeService {
     func stopBlocking() {
         stopBlockingCalled = true
         isBlocking = false
+    }
+
+    func requestAuthorization() async throws {
+        requestAuthorizationCalled = true
+        isAuthorized = true
+    }
+
+    func updateAuthorizationStatus() {
+        updateAuthorizationStatusCalled = true
     }
 }
 

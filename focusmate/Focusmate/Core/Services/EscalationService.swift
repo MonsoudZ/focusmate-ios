@@ -18,14 +18,14 @@ final class EscalationService: ObservableObject {
     private let gracePeriodStartKey = "Escalation_GracePeriodStart"
     private let overdueTaskIdsKey = "Escalation_OverdueTaskIds"
 
-    private let screenTimeService: ScreenTimeService
+    private let screenTimeService: ScreenTimeManaging
     private let notificationService: NotificationService
 
     init(
-        screenTimeService: ScreenTimeService? = nil,
+        screenTimeService: (any ScreenTimeManaging)? = nil,
         notificationService: NotificationService? = nil
     ) {
-        self.screenTimeService = screenTimeService ?? .shared
+        self.screenTimeService = screenTimeService ?? ScreenTimeService.shared
         self.notificationService = notificationService ?? .shared
         loadState()
 
