@@ -100,7 +100,13 @@ final class NotificationService: @unchecked Sendable {
             "escalation-\(taskId)-start",
             "escalation-\(taskId)-warning"
         ]
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+        let center = UNUserNotificationCenter.current()
+        // Remove scheduled notifications that haven't fired yet
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        // Remove already-delivered notifications from the notification center tray.
+        // Without this, a "Task Due Now" notification delivered seconds before
+        // completion stays visible — the user sees it 1-2 minutes later.
+        center.removeDeliveredNotifications(withIdentifiers: ids)
     }
     
     // MARK: - Escalation Notifications

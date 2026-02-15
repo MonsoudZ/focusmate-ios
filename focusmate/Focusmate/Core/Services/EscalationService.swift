@@ -9,6 +9,12 @@ final class EscalationService: ObservableObject {
     @Published var gracePeriodEndTime: Date?
     @Published var overdueTaskIds: Set<Int> = []
 
+    /// Set when Screen Time authorization is revoked during an active escalation.
+    /// Intentionally NOT cleared by `resetAll()` — it needs to survive so the UI
+    /// can show a recovery banner explaining what happened and linking to Settings.
+    /// Cleared by: user tapping the banner, or authorization being re-granted on foreground.
+    @Published var authorizationWasRevoked: Bool = false
+
     private var gracePeriodTimer: Timer?
     private var checkTimer: Timer?
 
@@ -122,10 +128,17 @@ final class EscalationService: ObservableObject {
     }
 
     private func startBlocking() {
+        guard screenTimeService.isAuthorized else {
+            Logger.warning("Cannot block - Screen Time authorization revoked", category: .general)
+            authorizationWasRevoked = true
+            sendAuthorizationRevokedNotification()
+            resetAll()
+            return
+        }
+
         guard screenTimeService.hasSelections else {
             Logger.warning("Cannot block - no apps selected", category: .general)
             sendBlockingSkippedNotification()
-            // No point keeping escalation state active when blocking is impossible.
             resetAll()
             return
         }
@@ -204,6 +217,44 @@ final class EscalationService: ObservableObject {
             body: "You have overdue tasks but haven't selected any apps to block. Set this up in Settings.",
             date: Date().addingTimeInterval(1)
         )
+    }
+
+    private func sendAuthorizationRevokedNotification() {
+        notificationService.scheduleEscalationNotification(
+            id: "escalation-auth-revoked",
+            title: "Screen Time Permission Removed",
+            body: "App blocking was disabled because Screen Time access was revoked. Re-enable it in Settings.",
+            date: Date().addingTimeInterval(1)
+        )
+    }
+
+    // MARK: - Authorization Revocation Check
+
+    /// Called on foreground transition to detect if Screen Time authorization
+    /// was revoked while the app was backgrounded during an active escalation.
+    func checkAuthorizationRevocation() {
+        // Auto-clear: if authorization was re-granted while the revocation banner is showing,
+        // dismiss it — the user fixed the problem from iOS Settings.
+        if authorizationWasRevoked && screenTimeService.isAuthorized {
+            authorizationWasRevoked = false
+            return
+        }
+
+        guard !overdueTaskIds.isEmpty else { return }
+        guard !screenTimeService.isAuthorized else { return }
+
+        // Authorization was revoked while we had active escalation state.
+        // The OS silently ignores ManagedSettings writes without authorization,
+        // so any "blocking" we think is active is actually a no-op. Reset everything.
+        Logger.warning("Screen Time authorization revoked during active escalation — resetting", category: .general)
+        authorizationWasRevoked = true
+        sendAuthorizationRevokedNotification()
+        resetAll()
+    }
+
+    /// Clears the revocation flag. Called when the user taps the recovery banner.
+    func clearAuthorizationRevocationFlag() {
+        authorizationWasRevoked = false
     }
 
     // MARK: - Periodic Check

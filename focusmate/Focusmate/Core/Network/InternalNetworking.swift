@@ -152,6 +152,25 @@ final class InternalNetworking: NetworkingProtocol {
 
         if !isPublicEndpoint, let jwt = tokenProvider() {
             req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+
+            // Proactive token refresh: if the JWT expires within the buffer window,
+            // refresh now instead of waiting for a 401. This eliminates the
+            // request → 401 → refresh → retry double round trip (~200-400ms).
+            // Cost: ~5μs to parse the JWT payload (base64 + JSON of ~200 bytes).
+            // The refreshCoordinator serializes concurrent proactive refreshes.
+            if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil,
+               JWTExpiry.isExpiringSoon(jwt, buffer: AppConfiguration.Auth.proactiveRefreshBufferSeconds) {
+                do {
+                    try await attemptTokenRefresh()
+                    if let freshJwt = tokenProvider() {
+                        req.setValue("Bearer \(freshJwt)", forHTTPHeaderField: "Authorization")
+                    }
+                } catch {
+                    // Proactive refresh failed — proceed with current token.
+                    // The reactive 401 path will catch it if the token is truly expired.
+                    Logger.debug("Proactive token refresh failed, proceeding with current token", category: .auth)
+                }
+            }
         }
 
         if let idempotencyKey {
@@ -184,11 +203,32 @@ final class InternalNetworking: NetworkingProtocol {
         case 401:
             // Don't attempt token refresh for public endpoints - they don't need auth
             if !isPublicEndpoint, attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
+                // Breadcrumb 1: Refresh triggered — which endpoint caused the 401
+                sentryService.addBreadcrumb(
+                    message: "Token refresh triggered by 401",
+                    category: "auth",
+                    level: .warning,
+                    data: ["endpoint": path, "method": method]
+                )
                 do {
                     try await attemptTokenRefresh()
+                    // Breadcrumb 2: Refresh succeeded, retrying the original request
+                    sentryService.addBreadcrumb(
+                        message: "Token refresh succeeded, retrying request",
+                        category: "auth",
+                        level: .info,
+                        data: ["endpoint": path, "method": method]
+                    )
                     Logger.info("Token refreshed, retrying \(method) \(path)", category: .api)
                     return try await performRequest(method, path, body: body, queryParameters: queryParameters, idempotencyKey: idempotencyKey, attemptRefresh: false)
                 } catch {
+                    // Breadcrumb 3: Refresh failed — error type and description
+                    sentryService.addBreadcrumb(
+                        message: "Token refresh failed",
+                        category: "auth",
+                        level: .error,
+                        data: ["endpoint": path, "method": method, "error": String(describing: error)]
+                    )
                     Logger.warning("Token refresh failed for \(method) \(path): \(error)", category: .api)
                 }
             }
@@ -265,6 +305,18 @@ final class InternalNetworking: NetworkingProtocol {
 
         if let jwt = tokenProvider() {
             req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+
+            if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil,
+               JWTExpiry.isExpiringSoon(jwt, buffer: AppConfiguration.Auth.proactiveRefreshBufferSeconds) {
+                do {
+                    try await attemptTokenRefresh()
+                    if let freshJwt = tokenProvider() {
+                        req.setValue("Bearer \(freshJwt)", forHTTPHeaderField: "Authorization")
+                    }
+                } catch {
+                    Logger.debug("Proactive token refresh failed, proceeding with current token", category: .auth)
+                }
+            }
         }
 
         let data: Data
@@ -283,11 +335,29 @@ final class InternalNetworking: NetworkingProtocol {
             return data
         case 401:
             if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
+                sentryService.addBreadcrumb(
+                    message: "Token refresh triggered by 401",
+                    category: "auth",
+                    level: .warning,
+                    data: ["endpoint": endpoint, "method": "GET"]
+                )
                 do {
                     try await attemptTokenRefresh()
+                    sentryService.addBreadcrumb(
+                        message: "Token refresh succeeded, retrying request",
+                        category: "auth",
+                        level: .info,
+                        data: ["endpoint": endpoint, "method": "GET"]
+                    )
                     Logger.info("Token refreshed, retrying GET \(endpoint)", category: .api)
                     return try await performGetRawResponse(endpoint: endpoint, params: params, attemptRefresh: false)
                 } catch {
+                    sentryService.addBreadcrumb(
+                        message: "Token refresh failed",
+                        category: "auth",
+                        level: .error,
+                        data: ["endpoint": endpoint, "method": "GET", "error": String(describing: error)]
+                    )
                     Logger.warning("Token refresh failed for GET \(endpoint): \(error)", category: .api)
                 }
             }
@@ -311,6 +381,12 @@ final class InternalNetworking: NetworkingProtocol {
             }
 
             guard let refreshToken = refreshTokenProvider() else {
+                // Breadcrumb 4: No refresh token available — explains why refresh couldn't be attempted
+                sentryService.addBreadcrumb(
+                    message: "No refresh token available",
+                    category: "auth",
+                    level: .warning
+                )
                 Logger.warning("No refresh token available", category: .auth)
                 throw APIError.unauthorized(nil)
             }
@@ -325,6 +401,14 @@ final class InternalNetworking: NetworkingProtocol {
             let (data, resp) = try await session.data(for: req)
 
             guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                // Breadcrumb 5: Refresh endpoint returned non-2xx — the refresh call itself failed
+                let statusCode = (resp as? HTTPURLResponse)?.statusCode
+                sentryService.addBreadcrumb(
+                    message: "Refresh endpoint returned non-2xx",
+                    category: "auth",
+                    level: .error,
+                    data: statusCode.map { ["status_code": $0] }
+                )
                 Logger.warning("Refresh endpoint returned non-2xx", category: .auth)
                 throw APIError.unauthorized(nil)
             }

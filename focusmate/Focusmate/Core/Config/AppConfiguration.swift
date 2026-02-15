@@ -17,6 +17,18 @@ enum AppConfiguration {
         static let statusCheckIntervalSeconds: TimeInterval = 60
     }
 
+    // MARK: - Auth & Token Refresh
+
+    enum Auth {
+        /// How many seconds before JWT expiry to trigger a proactive refresh.
+        /// At 300s (5 min), any request made within 5 minutes of token expiry
+        /// refreshes first, avoiding the 401 → refresh → retry round trip.
+        /// Tradeoff: higher values mean more "unnecessary" refreshes when the user
+        /// happens to be idle near expiry; lower values leave a narrower window
+        /// and risk falling back to the reactive 401 path on slow networks.
+        static let proactiveRefreshBufferSeconds: TimeInterval = 300
+    }
+
     // MARK: - Network & API
 
     enum Network {

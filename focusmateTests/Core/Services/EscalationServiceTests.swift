@@ -118,4 +118,96 @@ final class EscalationServiceTests: XCTestCase {
     func testGracePeriodRemainingFormattedNilWhenNoGracePeriod() {
         XCTAssertNil(sut.gracePeriodRemainingFormatted)
     }
+
+    // MARK: - checkAuthorizationRevocation
+
+    func testCheckAuthorizationRevocationResetsWhenUnauthorized() {
+        // Start escalation with authorization
+        let task = TestFactories.makeSampleTask(id: 99)
+        sut.taskBecameOverdue(task)
+        XCTAssertFalse(sut.overdueTaskIds.isEmpty)
+
+        // Simulate user revoking Screen Time in iOS Settings
+        mockScreenTime.isAuthorized = false
+
+        sut.checkAuthorizationRevocation()
+
+        // Escalation state should be fully reset
+        XCTAssertTrue(sut.overdueTaskIds.isEmpty)
+        XCTAssertFalse(sut.isInGracePeriod)
+        XCTAssertTrue(mockScreenTime.stopBlockingCalled)
+    }
+
+    func testCheckAuthorizationRevocationNoOpWhenStillAuthorized() {
+        let task = TestFactories.makeSampleTask(id: 99)
+        sut.taskBecameOverdue(task)
+
+        // Authorization still granted — should not reset
+        sut.checkAuthorizationRevocation()
+
+        XCTAssertTrue(sut.overdueTaskIds.contains(99))
+    }
+
+    func testCheckAuthorizationRevocationNoOpWhenNoActiveEscalation() {
+        mockScreenTime.isAuthorized = false
+
+        // No overdue tasks — nothing to revoke
+        sut.checkAuthorizationRevocation()
+
+        XCTAssertTrue(sut.overdueTaskIds.isEmpty)
+        XCTAssertFalse(mockScreenTime.stopBlockingCalled)
+    }
+
+    // MARK: - authorizationWasRevoked flag
+
+    func testCheckAuthorizationRevocationSetsRevokedFlag() {
+        let task = TestFactories.makeSampleTask(id: 50)
+        sut.taskBecameOverdue(task)
+
+        mockScreenTime.isAuthorized = false
+        sut.checkAuthorizationRevocation()
+
+        // Flag should be set so the UI can show a recovery banner
+        XCTAssertTrue(sut.authorizationWasRevoked)
+    }
+
+    func testResetAllDoesNotClearRevokedFlag() {
+        // Set the flag, then reset — flag must survive for the banner to display
+        let task = TestFactories.makeSampleTask(id: 51)
+        sut.taskBecameOverdue(task)
+        mockScreenTime.isAuthorized = false
+        sut.checkAuthorizationRevocation()
+        XCTAssertTrue(sut.authorizationWasRevoked)
+
+        // resetAll should NOT clear authorizationWasRevoked
+        sut.resetAll()
+        XCTAssertTrue(sut.authorizationWasRevoked)
+    }
+
+    func testClearAuthorizationRevocationFlagClearsFlag() {
+        let task = TestFactories.makeSampleTask(id: 52)
+        sut.taskBecameOverdue(task)
+        mockScreenTime.isAuthorized = false
+        sut.checkAuthorizationRevocation()
+        XCTAssertTrue(sut.authorizationWasRevoked)
+
+        sut.clearAuthorizationRevocationFlag()
+        XCTAssertFalse(sut.authorizationWasRevoked)
+    }
+
+    func testCheckAuthorizationRevocationAutoClearsWhenReauthorized() {
+        // Simulate: revocation detected → user re-grants in iOS Settings → app foregrounds
+        let task = TestFactories.makeSampleTask(id: 53)
+        sut.taskBecameOverdue(task)
+        mockScreenTime.isAuthorized = false
+        sut.checkAuthorizationRevocation()
+        XCTAssertTrue(sut.authorizationWasRevoked)
+
+        // User re-grants authorization
+        mockScreenTime.isAuthorized = true
+        sut.checkAuthorizationRevocation()
+
+        // Flag should auto-clear because the user fixed the problem
+        XCTAssertFalse(sut.authorizationWasRevoked)
+    }
 }

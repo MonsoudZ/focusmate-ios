@@ -51,6 +51,11 @@ final class AppBootstrapper: ObservableObject {
         // is a synchronous property read (no IPC), so there's no performance cost.
         ScreenTimeService.shared.updateAuthorizationStatus()
 
+        // If authorization was revoked while we had active escalation, reset.
+        // This must run AFTER updateAuthorizationStatus() so isAuthorized reflects
+        // the current OS state, not the stale cached value.
+        EscalationService.shared.checkAuthorizationRevocation()
+
         await trackAppOpenedIfAuthenticated()
     }
 

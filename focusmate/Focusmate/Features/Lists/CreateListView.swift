@@ -73,8 +73,9 @@ struct CreateListView: View {
                 isNameFocused = true
             }
             .sheet(isPresented: $showingCreateTag) {
-                CreateTagView(tagService: viewModel.tagService) {
-                    Task { await viewModel.loadTags() }
+                CreateTagView(tagService: viewModel.tagService) { newTag in
+                    viewModel.availableTags.append(newTag)
+                    viewModel.selectedTagIds.insert(newTag.id)
                 }
             }
         }

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CreateTagView: View {
     let tagService: TagService
-    var onCreated: (() -> Void)? = nil
+    var onCreated: ((TagDTO) -> Void)? = nil
     @Environment(\.dismiss) var dismiss
     @FocusState private var isNameFocused: Bool
 
@@ -79,9 +79,9 @@ struct CreateTagView: View {
         defer { isLoading = false }
         
         do {
-            _ = try await tagService.createTag(name: trimmedName, color: selectedColor)
+            let newTag = try await tagService.createTag(name: trimmedName, color: selectedColor)
             HapticManager.success()
-            onCreated?()
+            onCreated?(newTag)
             dismiss()
         } catch let err as FocusmateError {
             error = err

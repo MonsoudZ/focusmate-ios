@@ -126,7 +126,15 @@ struct TodayView: View {
                 TodayEscalationBanner(
                     isBlocking: viewModel.screenTimeService.isBlocking,
                     isInGracePeriod: viewModel.escalationService.isInGracePeriod,
-                    gracePeriodRemaining: viewModel.escalationService.gracePeriodRemainingFormatted
+                    gracePeriodRemaining: viewModel.escalationService.gracePeriodRemainingFormatted,
+                    authorizationWasRevoked: viewModel.escalationService.authorizationWasRevoked,
+                    onRevocationBannerTapped: {
+                        // Navigation handled in the view (not ViewModel) because router
+                        // is @Environment — follows the existing pattern for presentQuickAdd().
+                        viewModel.escalationService.clearAuthorizationRevocationFlag()
+                        router.push(.appBlockingSettings, in: .settings)
+                        router.switchTab(to: .settings)
+                    }
                 )
 
                 TodayProgressSection(

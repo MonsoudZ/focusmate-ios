@@ -113,7 +113,7 @@ struct SheetContent: View {
             )
 
         case .createTag:
-            CreateTagView(tagService: appState.tagService) {
+            CreateTagView(tagService: appState.tagService) { _ in
                 Task { await router.sheetCallbacks.onTagCreated?() }
             }
 
