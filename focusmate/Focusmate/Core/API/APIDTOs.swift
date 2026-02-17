@@ -76,13 +76,22 @@ struct CreateListRequest: Encodable {
         let description: String?
         let visibility: String
         let color: String
+        let list_type: String?
         let tag_ids: [Int]?
 
-        init(name: String, description: String? = nil, visibility: String = "private", color: String = "blue", tagIds: [Int] = []) {
+        init(
+            name: String,
+            description: String? = nil,
+            visibility: String = "private",
+            color: String = "blue",
+            listType: String? = nil,
+            tagIds: [Int] = []
+        ) {
             self.name = name
             self.description = description
             self.visibility = visibility
             self.color = color
+            self.list_type = listType
             self.tag_ids = tagIds.isEmpty ? nil : tagIds
         }
     }

@@ -51,6 +51,16 @@ struct SheetContent: View {
             }
 
         // MARK: - Lists Tab Sheets
+        case .templatePicker:
+            TemplatePickerView(
+                listService: appState.listService,
+                taskService: appState.taskService,
+                onCreated: { list in
+                    Task { await router.sheetCallbacks.onListCreated?() }
+                    router.navigateToList(list)
+                }
+            )
+
         case .createList:
             CreateListView(listService: appState.listService, tagService: appState.tagService)
 

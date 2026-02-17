@@ -7,6 +7,7 @@ struct ListDTO: Codable, Identifiable, Hashable {
     let description: String?
     let visibility: String
     let color: String?
+    let list_type: String?
     let role: String?
     let tasks_count: Int?
     let parent_tasks_count: Int?

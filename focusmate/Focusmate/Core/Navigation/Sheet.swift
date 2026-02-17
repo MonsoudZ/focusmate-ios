@@ -9,6 +9,7 @@ enum Sheet: Identifiable {
     case editSubtask(SubtaskEditInfo)
 
     // MARK: - Lists Tab Sheets
+    case templatePicker
     case createList
     case editList(ListDTO)
     case enterInviteCode
@@ -50,6 +51,8 @@ enum Sheet: Identifiable {
             return "addSubtask-\(task.id)"
         case .editSubtask(let info):
             return "editSubtask-\(info.subtask.id)"
+        case .templatePicker:
+            return "templatePicker"
         case .createList:
             return "createList"
         case .editList(let list):

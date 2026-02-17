@@ -28,8 +28,8 @@ final class ListService {
         return response.list
     }
 
-    func createList(name: String, description: String?, color: String = "blue", tagIds: [Int] = []) async throws -> ListDTO {
-        let request = CreateListRequest(list: .init(name: name, description: description, color: color, tagIds: tagIds))
+    func createList(name: String, description: String?, color: String = "blue", listType: String? = nil, tagIds: [Int] = []) async throws -> ListDTO {
+        let request = CreateListRequest(list: .init(name: name, description: description, color: color, listType: listType, tagIds: tagIds))
         let response: ListResponse = try await apiClient.request("POST", API.Lists.root, body: request)
         let newList = response.list
         await cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in

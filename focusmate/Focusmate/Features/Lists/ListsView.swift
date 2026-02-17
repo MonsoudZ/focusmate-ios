@@ -20,13 +20,45 @@ struct ListsView: View {
             if viewModel.isLoading && viewModel.lists.isEmpty {
                 ListsLoadingView()
             } else if viewModel.lists.isEmpty {
-                EmptyState(
-                    "No lists yet",
-                    message: "Create a list to organize your tasks",
-                    icon: DS.Icon.emptyList,
-                    actionTitle: "Create List",
-                    action: { presentCreateList() }
-                )
+                ScrollView {
+                    VStack(spacing: DS.Spacing.xl) {
+                        EmptyState(
+                            "No lists yet",
+                            message: "Create a list to organize your tasks",
+                            icon: DS.Icon.emptyList,
+                            actionTitle: "Create List",
+                            action: { presentCreateList() }
+                        )
+
+                        DSDivider("or start from a template")
+
+                        VStack(spacing: DS.Spacing.sm) {
+                            ForEach(TemplateCatalog.previewTemplates()) { template in
+                                Button {
+                                    presentTemplatePicker()
+                                } label: {
+                                    TemplateCardView(
+                                        template: template,
+                                        isCreating: false,
+                                        isDisabled: false
+                                    )
+                                }
+                                .buttonStyle(IntentiaCardButtonStyle())
+                            }
+
+                            Button {
+                                presentTemplatePicker()
+                            } label: {
+                                Text("See all templates")
+                                    .font(DS.Typography.caption)
+                                    .foregroundStyle(DS.Colors.accent)
+                            }
+                            .padding(.top, DS.Spacing.xs)
+                        }
+                    }
+                    .padding(DS.Spacing.md)
+                }
+                .surfaceBackground()
             } else {
                 ScrollView {
                     LazyVStack(spacing: DS.Spacing.sm) {
@@ -79,6 +111,12 @@ struct ListsView: View {
                     }
 
                     Button {
+                        presentTemplatePicker()
+                    } label: {
+                        Label("Start from Template", systemImage: "doc.on.doc")
+                    }
+
+                    Button {
                         presentEnterInviteCode()
                     } label: {
                         Label("Join List", systemImage: "link.badge.plus")
@@ -125,6 +163,13 @@ struct ListsView: View {
             await viewModel.loadLists()
         }
         router.present(.createList)
+    }
+
+    private func presentTemplatePicker() {
+        router.sheetCallbacks.onListCreated = {
+            await viewModel.loadLists()
+        }
+        router.present(.templatePicker)
     }
 
     private func presentEnterInviteCode() {
