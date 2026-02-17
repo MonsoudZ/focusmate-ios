@@ -57,7 +57,12 @@ struct DeviceInfo: Codable {
 struct DeviceResponse: Codable {
     let id: Int
     let platform: String
-    let device_name: String
-    let is_active: Bool
-    let created_at: String
+    let device_name: String?
+    let bundle_id: String?
+    let os_version: String?
+    let app_version: String?
+    let active: Bool?
+    let last_seen_at: String?
+    let created_at: String?
+    let updated_at: String?
 }

@@ -318,7 +318,7 @@ final class ListDetailViewModelTests: XCTestCase {
 
         // Stub subtask creation
         mockNetworking.reset()
-        mockNetworking.stubJSON(SubtaskResponse(subtask: TestFactories.makeSampleSubtask(id: 100, taskId: 1, title: "New Subtask")))
+        mockNetworking.stubJSON(SubtaskResponse(subtask: TestFactories.makeSampleSubtask(id: 100, parentTaskId: 1, title: "New Subtask")))
 
         await vm.createSubtask(parentTask: parentTask, title: "New Subtask")
 
@@ -327,7 +327,7 @@ final class ListDetailViewModelTests: XCTestCase {
     }
 
     func testUpdateSubtaskUpdatesInPlace() async {
-        let subtask = TestFactories.makeSampleSubtask(id: 100, taskId: 1, title: "Old Title")
+        let subtask = TestFactories.makeSampleSubtask(id: 100, parentTaskId: 1, title: "Old Title")
         let parentTask = TestFactories.makeSampleTask(id: 1, title: "Parent", subtasks: [subtask])
         stubTasksResponse([parentTask])
 
@@ -336,7 +336,7 @@ final class ListDetailViewModelTests: XCTestCase {
 
         // Stub subtask update
         mockNetworking.reset()
-        mockNetworking.stubJSON(SubtaskResponse(subtask: TestFactories.makeSampleSubtask(id: 100, taskId: 1, title: "New Title")))
+        mockNetworking.stubJSON(SubtaskResponse(subtask: TestFactories.makeSampleSubtask(id: 100, parentTaskId: 1, title: "New Title")))
 
         let editInfo = SubtaskEditInfo(subtask: subtask, parentTask: parentTask)
         await vm.updateSubtask(info: editInfo, title: "New Title")

@@ -11,6 +11,7 @@ struct InviteDTO: Codable, Identifiable {
     let max_uses: Int?
     let expires_at: String?
     let usable: Bool
+    let created_at: String?
 
     var isExpired: Bool {
         guard let expires_at else { return false }
@@ -53,7 +54,7 @@ struct InvitePreviewDTO: Codable {
     struct InviteListInfo: Codable {
         let id: Int
         let name: String
-        let color: String
+        let color: String?
     }
 
     struct InviterInfo: Codable {

@@ -282,6 +282,7 @@ final class PerformanceTests: XCTestCase {
     ) -> TodayResponse {
         TodayResponse(
             overdue: overdueTasks,
+            has_more_overdue: nil,
             due_today: dueTodayTasks,
             completed_today: completedTasks,
             stats: nil,

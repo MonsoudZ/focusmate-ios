@@ -67,12 +67,15 @@ final class QAUnitTests: XCTestCase {
   ) {
     let response = TodayResponse(
       overdue: overdue,
+      has_more_overdue: nil,
       due_today: dueToday,
       completed_today: completedToday,
       stats: stats ?? TodayStats(
         overdue_count: overdue.count,
         due_today_count: dueToday.count,
-        completed_today_count: completedToday.count
+        completed_today_count: completedToday.count,
+        remaining_today: nil,
+        completion_percentage: nil
       ),
       streak: streak
     )
@@ -583,7 +586,8 @@ final class QAUnitTests: XCTestCase {
     let pastDate = TestFactories.isoString(daysFromNow: -1, hour: 12, minute: 0)
     let expiredInvite = InviteDTO(
       id: 1, code: "EXP", invite_url: "url", role: "viewer",
-      uses_count: 0, max_uses: nil, expires_at: pastDate, usable: false
+      uses_count: 0, max_uses: nil, expires_at: pastDate, usable: false,
+      created_at: nil
     )
     XCTAssertTrue(expiredInvite.isExpired, "Invite with past expiry should be expired")
   }

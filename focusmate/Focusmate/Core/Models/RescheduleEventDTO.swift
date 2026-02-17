@@ -1,16 +1,22 @@
 import Foundation
 
+struct RescheduledByDTO: Codable, Hashable {
+    let id: Int
+    let name: String?
+}
+
 struct RescheduleEventDTO: Codable, Identifiable, Hashable {
     let id: Int
-    let task_id: Int
-    let previous_due_at: String?
+    let task_id: Int?
+    let original_due_at: String?
     let new_due_at: String?
-    let reason: String
+    let reason: String?
+    let rescheduled_by: RescheduledByDTO?
     let created_at: String?
 
     var previousDueDate: Date? {
-        guard let previous_due_at else { return nil }
-        return ISO8601Utils.parseDate(previous_due_at)
+        guard let original_due_at else { return nil }
+        return ISO8601Utils.parseDate(original_due_at)
     }
 
     var newDueDate: Date? {
@@ -24,6 +30,7 @@ struct RescheduleEventDTO: Codable, Identifiable, Hashable {
     }
 
     var reasonLabel: String {
+        guard let reason else { return "Rescheduled" }
         switch reason {
         case "scope_changed": return "Scope changed"
         case "priorities_shifted": return "Priorities shifted"

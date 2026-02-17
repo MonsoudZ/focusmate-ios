@@ -75,6 +75,18 @@ enum TestFactories {
             template_id: templateId,
             instance_date: instanceDate,
             instance_number: instanceNumber,
+            location_based: nil,
+            location_name: nil,
+            location_latitude: nil,
+            location_longitude: nil,
+            location_radius_meters: nil,
+            notify_on_arrival: nil,
+            notify_on_departure: nil,
+            notification_interval_minutes: nil,
+            has_subtasks: nil,
+            subtasks_count: nil,
+            subtasks_completed_count: nil,
+            subtask_completion_percentage: nil,
             overdue: overdue,
             minutes_overdue: minutesOverdue,
             requires_explanation_if_missed: requiresExplanationIfMissed,
@@ -109,6 +121,7 @@ enum TestFactories {
             visibility: visibility,
             color: color,
             list_type: listType,
+            user: nil,
             role: role,
             tasks_count: tasksCount,
             parent_tasks_count: parentTasksCount,
@@ -125,7 +138,7 @@ enum TestFactories {
 
     static func makeSampleSubtask(
         id: Int = 100,
-        taskId: Int? = 1,
+        parentTaskId: Int? = 1,
         title: String = "Test Subtask",
         note: String? = nil,
         status: String? = nil,
@@ -135,13 +148,14 @@ enum TestFactories {
     ) -> SubtaskDTO {
         SubtaskDTO(
             id: id,
-            task_id: taskId,
+            parent_task_id: parentTaskId,
             title: title,
             note: note,
             status: status,
             completed_at: completedAt,
             position: position,
-            created_at: createdAt
+            created_at: createdAt,
+            updated_at: nil
         )
     }
 
@@ -165,7 +179,8 @@ enum TestFactories {
             uses_count: usesCount,
             max_uses: maxUses,
             expires_at: expiresAt,
-            usable: usable
+            usable: usable,
+            created_at: nil
         )
     }
 

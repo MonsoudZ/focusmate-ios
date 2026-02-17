@@ -58,12 +58,15 @@ final class TodayViewModelTests: XCTestCase {
     ) {
         let response = TodayResponse(
             overdue: overdue,
+            has_more_overdue: nil,
             due_today: dueToday,
             completed_today: completedToday,
             stats: stats ?? TodayStats(
                 overdue_count: overdue.count,
                 due_today_count: dueToday.count,
-                completed_today_count: completedToday.count
+                completed_today_count: completedToday.count,
+                remaining_today: nil,
+                completion_percentage: nil
             ),
             streak: nil
         )
@@ -126,7 +129,13 @@ final class TodayViewModelTests: XCTestCase {
         )
         stubTodayResponse(
             overdue: [overdueTask],
-            stats: TodayStats(overdue_count: 1, due_today_count: 0, completed_today_count: 0)
+            stats: TodayStats(
+                overdue_count: 1,
+                due_today_count: 0,
+                completed_today_count: 0,
+                remaining_today: nil,
+                completion_percentage: nil
+            )
         )
 
         var receivedCount: Int?
@@ -433,7 +442,13 @@ final class TodayViewModelTests: XCTestCase {
 
         stubTodayResponse(
             dueToday: [tomorrowTask, todayTask],
-            stats: TodayStats(overdue_count: 0, due_today_count: 2, completed_today_count: 0)
+            stats: TodayStats(
+                overdue_count: 0,
+                due_today_count: 2,
+                completed_today_count: 0,
+                remaining_today: nil,
+                completion_percentage: nil
+            )
         )
 
         let vm = makeViewModel()

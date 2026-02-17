@@ -47,6 +47,24 @@ struct TaskDTO: Codable, Identifiable {
     let instance_date: String?
     let instance_number: Int?
 
+    // Location
+    let location_based: Bool?
+    let location_name: String?
+    let location_latitude: Double?
+    let location_longitude: Double?
+    let location_radius_meters: Int?
+    let notify_on_arrival: Bool?
+    let notify_on_departure: Bool?
+
+    // Notification
+    let notification_interval_minutes: Int?
+
+    // Server-computed subtask metadata
+    let has_subtasks: Bool?
+    let subtasks_count: Int?
+    let subtasks_completed_count: Int?
+    let subtask_completion_percentage: Int?
+
     let overdue: Bool?
     let minutes_overdue: Int?
     let requires_explanation_if_missed: Bool?

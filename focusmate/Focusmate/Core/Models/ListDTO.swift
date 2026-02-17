@@ -1,6 +1,11 @@
 import Foundation
 import SwiftUI
 
+struct ListOwnerDTO: Codable, Hashable {
+    let id: Int
+    let name: String?
+}
+
 struct ListDTO: Codable, Identifiable, Hashable {
     let id: Int
     let name: String
@@ -8,6 +13,7 @@ struct ListDTO: Codable, Identifiable, Hashable {
     let visibility: String
     let color: String?
     let list_type: String?
+    let user: ListOwnerDTO?
     let role: String?
     let tasks_count: Int?
     let parent_tasks_count: Int?

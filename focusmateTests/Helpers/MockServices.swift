@@ -113,11 +113,11 @@ final class MockTaskService {
     }
 
     func createSubtask(listId: Int, parentTaskId: Int, title: String) async throws -> SubtaskDTO {
-        return TestFactories.makeSampleSubtask(taskId: parentTaskId, title: title)
+        return TestFactories.makeSampleSubtask(parentTaskId: parentTaskId, title: title)
     }
 
     func updateSubtask(listId: Int, parentTaskId: Int, subtaskId: Int, title: String) async throws -> SubtaskDTO {
-        return TestFactories.makeSampleSubtask(id: subtaskId, taskId: parentTaskId, title: title)
+        return TestFactories.makeSampleSubtask(id: subtaskId, parentTaskId: parentTaskId, title: title)
     }
 }
 
@@ -293,9 +293,16 @@ final class MockTodayService {
         }
         return TodayResponse(
             overdue: [],
+            has_more_overdue: nil,
             due_today: [],
             completed_today: [],
-            stats: TodayStats(overdue_count: 0, due_today_count: 0, completed_today_count: 0),
+            stats: TodayStats(
+                overdue_count: 0,
+                due_today_count: 0,
+                completed_today_count: 0,
+                remaining_today: nil,
+                completion_percentage: nil
+            ),
             streak: nil
         )
     }

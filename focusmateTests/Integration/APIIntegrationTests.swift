@@ -225,7 +225,7 @@ final class APIIntegrationTests: XCTestCase {
     func testCreateSubtaskRequestIsSent() async throws {
         // Given: A parent task exists
         let parentTask = TestFactories.makeSampleTask(id: 1, title: "Parent")
-        let subtask = TestFactories.makeSampleSubtask(id: 100, taskId: 1, title: "Subtask")
+        let subtask = TestFactories.makeSampleSubtask(id: 100, parentTaskId: 1, title: "Subtask")
         mockNetworking.stubJSON(SingleTaskResponse(task: TestFactories.makeSampleTask(id: 100, title: "Subtask")))
 
         // When: Creating a subtask

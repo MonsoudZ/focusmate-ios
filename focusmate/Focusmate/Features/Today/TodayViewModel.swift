@@ -133,12 +133,15 @@ final class TodayViewModel {
 
         return TodayResponse(
             overdue: filteredOverdue,
+            has_more_overdue: response.has_more_overdue,
             due_today: filteredDueToday,
             completed_today: response.completed_today,
             stats: TodayStats(
                 overdue_count: filteredOverdue.count,
                 due_today_count: filteredDueToday.count,
-                completed_today_count: response.completed_today.count
+                completed_today_count: response.completed_today.count,
+                remaining_today: nil,
+                completion_percentage: nil
             ),
             streak: response.streak
         )
