@@ -30,6 +30,8 @@ final class TemplateCreationViewModel {
     failedTaskCount = 0
     error = nil
 
+    Logger.info("TemplateCreation: Starting '\(template.id)' with \(template.tasks.count) tasks", category: .api)
+
     do {
       let list = try await listService.createList(
         name: template.name,
@@ -39,26 +41,50 @@ final class TemplateCreationViewModel {
       )
       createdList = list
 
+      Logger.info("TemplateCreation: List created id=\(list.id), creating \(template.tasks.count) tasks", category: .api)
+
+      // Default due date: start of today (midnight) — shows as "anytime" in time grouping.
+      // The backend requires due_at for task creation; omitting it causes a 422 validation error.
+      let defaultDueDate = Calendar.current.startOfDay(for: Date())
+
       // Create tasks sequentially to preserve position ordering
-      for templateTask in template.tasks {
+      for (index, templateTask) in template.tasks.enumerated() {
         do {
-          _ = try await taskService.createTask(
+          let task = try await taskService.createTask(
             listId: list.id,
             title: templateTask.title,
             note: nil,
-            dueAt: nil,
+            dueAt: defaultDueDate,
             isRecurring: templateTask.isRecurring,
             recurrencePattern: templateTask.recurrencePattern,
             recurrenceInterval: templateTask.recurrenceInterval,
             recurrenceDays: templateTask.recurrenceDays
           )
+          Logger.debug(
+            "TemplateCreation: Task \(index + 1)/\(template.tasks.count) created id=\(task.id) '\(templateTask.title)'",
+            category: .api
+          )
         } catch {
           failedTaskCount += 1
-          Logger.warning(
-            "TemplateCreation: Failed to create task '\(templateTask.title)' in list \(list.id): \(error)",
+          Logger.error(
+            "TemplateCreation: Task \(index + 1)/\(template.tasks.count) FAILED '\(templateTask.title)'",
+            error: error,
             category: .api
           )
         }
+      }
+
+      if failedTaskCount > 0 {
+        Logger.warning(
+          "TemplateCreation: Completed with \(failedTaskCount)/\(template.tasks.count) task failures",
+          category: .api
+        )
+        self.error = .custom(
+          "\(failedTaskCount) of \(template.tasks.count) tasks couldn't be created",
+          "The list was created but some tasks failed. You can add them manually."
+        )
+      } else {
+        Logger.info("TemplateCreation: All \(template.tasks.count) tasks created successfully", category: .api)
       }
 
       HapticManager.success()
@@ -72,7 +98,8 @@ final class TemplateCreationViewModel {
       isCreating = false
       creatingTemplateId = nil
       Logger.error(
-        "TemplateCreation: Failed to create list from template '\(template.id)': \(error)",
+        "TemplateCreation: Failed to create list from template '\(template.id)'",
+        error: error,
         category: .api
       )
       return nil
