@@ -23,12 +23,12 @@ struct TaskDetailInfoCard: View {
             // Creator info for shared tasks
             if isSharedTask, let creator = creator {
                 HStack(spacing: DS.Spacing.sm) {
-                    Avatar(creator.name ?? creator.email, size: 32)
+                    Avatar(creator.displayName, size: 32)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Created by")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(creator.name ?? creator.email)
+                        Text(creator.displayName)
                             .font(.subheadline.weight(.medium))
                     }
                 }

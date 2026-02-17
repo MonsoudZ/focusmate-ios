@@ -3,9 +3,13 @@ import SwiftUI
 
 struct TaskCreatorDTO: Codable, Identifiable, Hashable {
     let id: Int
-    let email: String
+    let email: String?
     let name: String?
     let role: String?
+
+    var displayName: String {
+        name ?? email ?? "Member"
+    }
 }
 
 struct TaskDTO: Codable, Identifiable {

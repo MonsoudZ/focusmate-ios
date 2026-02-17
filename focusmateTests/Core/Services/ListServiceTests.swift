@@ -228,6 +228,33 @@ final class ListServiceTests: XCTestCase {
         XCTAssertEqual(member.displayName, "Member")
     }
 
+    // MARK: - TaskCreatorDTO decoding
+
+    func testTaskCreatorDecodesWithoutEmail() throws {
+        let json = """
+        {"id": 1, "name": "Alice", "role": "client"}
+        """.data(using: .utf8)!
+        let creator = try APIClient.decoder.decode(TaskCreatorDTO.self, from: json)
+
+        XCTAssertEqual(creator.name, "Alice")
+        XCTAssertNil(creator.email)
+        XCTAssertEqual(creator.displayName, "Alice")
+    }
+
+    func testTaskCreatorDisplayNameFallsBackToEmail() throws {
+        let json = """
+        {"id": 1, "name": null, "email": "alice@test.com", "role": "client"}
+        """.data(using: .utf8)!
+        let creator = try APIClient.decoder.decode(TaskCreatorDTO.self, from: json)
+
+        XCTAssertEqual(creator.displayName, "alice@test.com")
+    }
+
+    func testTaskCreatorDisplayNameFallsBackToMember() {
+        let creator = TaskCreatorDTO(id: 1, email: nil, name: nil, role: nil)
+        XCTAssertEqual(creator.displayName, "Member")
+    }
+
     // MARK: - Error Propagation
 
     func testFetchListsPropagatesNetworkError() async {

@@ -16,7 +16,7 @@ struct TaskRowActions: View {
         HStack(spacing: DS.Spacing.sm) {
             // Creator avatar for shared lists
             if isSharedTask, let creator = task.creator {
-                Avatar(creator.name ?? creator.email, size: 24)
+                Avatar(creator.displayName, size: 24)
             }
 
             // Star (only show if starred or can edit)
