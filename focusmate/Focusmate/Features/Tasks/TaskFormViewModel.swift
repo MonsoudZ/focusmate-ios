@@ -40,11 +40,14 @@ final class TaskFormViewModel {
 
     var hasDueDate = true
     let originalHadDueDate: Bool
+    /// Snapshotted at form open: was the task overdue by 60+ minutes?
+    private let wasSignificantlyOverdue: Bool
 
     // MARK: - Callbacks
 
     var onSave: (() -> Void)?
     var onDismiss: (() -> Void)?
+    var onRescheduleRequired: ((Date, TaskDTO) -> Void)?
 
     // MARK: - Init
 
@@ -57,9 +60,11 @@ final class TaskFormViewModel {
         case .create:
             dueTime = Date.nextWholeHour()
             originalHadDueDate = false
+            wasSignificantlyOverdue = false
 
         case .edit(_, let task):
             originalHadDueDate = task.due_at != nil
+            wasSignificantlyOverdue = (task.minutes_overdue ?? 0) >= 60
             title = task.title
             note = task.note ?? ""
             hasDueDate = task.due_at != nil
@@ -98,6 +103,27 @@ final class TaskFormViewModel {
 
     var canSubmit: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading
+    }
+
+    /// Whether saving should route through the reschedule flow.
+    /// True when the task was overdue by 60+ minutes at form open AND the user changed the due date.
+    var requiresReschedule: Bool {
+        guard wasSignificantlyOverdue, case .edit(_, let task) = mode else { return false }
+        return dueDateChanged(from: task)
+    }
+
+    private func dueDateChanged(from task: TaskDTO) -> Bool {
+        guard let originalDue = task.dueDate else {
+            // Had no due date, now adding one
+            return hasDueDate
+        }
+        guard hasDueDate else {
+            // Removing due date
+            return true
+        }
+        guard let newDue = finalDueDate else { return false }
+        // Compare with 60-second tolerance
+        return abs(originalDue.timeIntervalSince(newDue)) > 60
     }
 
     var finalDueDate: Date? {
@@ -189,6 +215,10 @@ final class TaskFormViewModel {
         case .create(let listId):
             await createTask(listId: listId)
         case .edit(let listId, let task):
+            if requiresReschedule, let newDate = finalDueDate {
+                onRescheduleRequired?(newDate, task)
+                return
+            }
             await updateTask(listId: listId, task: task)
         }
     }

@@ -29,6 +29,12 @@ final class ListDetailViewModel {
     // MARK: - UI
 
     var nudgeMessage: String?
+    var hideCompleted: Bool {
+        didSet {
+            AppSettings.shared.hideCompletedInLists = hideCompleted
+            invalidateTaskGroupsCache()
+        }
+    }
 
     // MARK: - Callback
 
@@ -44,6 +50,7 @@ final class ListDetailViewModel {
         self.inviteService = inviteService
         self.friendService = friendService
         self.subtaskManager = subtaskManager
+        self.hideCompleted = AppSettings.shared.hideCompletedInLists
 
         // Subscribe to subtask changes and update local state
         // Guard ensures self is still alive before handling the change
@@ -204,7 +211,8 @@ final class ListDetailViewModel {
     var urgentTasks: [TaskDTO] { taskGroups.urgent }
     var starredTasks: [TaskDTO] { taskGroups.starred }
     var normalTasks: [TaskDTO] { taskGroups.normal }
-    var completedTasks: [TaskDTO] { taskGroups.completed }
+    var completedTasks: [TaskDTO] { hideCompleted ? [] : taskGroups.completed }
+    var completedCount: Int { taskGroups.completed.count }
 
     // MARK: - Task Group Enum
 

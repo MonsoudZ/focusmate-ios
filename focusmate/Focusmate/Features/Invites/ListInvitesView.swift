@@ -70,31 +70,56 @@ struct InviteRowView: View {
     let onRevoke: () -> Void
 
     @State private var showRevokeConfirmation = false
+    @State private var copied = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             HStack {
                 Text(invite.roleDisplayName)
                     .font(DS.Typography.bodyMedium)
 
                 Spacer()
 
-                if !invite.usable {
-                    Text("Expired")
-                        .font(DS.Typography.caption)
-                        .foregroundStyle(DS.Colors.error)
-                }
+                statusBadge
             }
 
+            // Invite URL (tap to copy)
+            Button {
+                UIPasteboard.general.string = invite.invite_url
+                copied = true
+                HapticManager.light()
+                Task {
+                    try? await Task.sleep(for: .seconds(2))
+                    copied = false
+                }
+            } label: {
+                HStack(spacing: DS.Spacing.xs) {
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                        .font(.caption2)
+                    Text(copied ? "Copied!" : invite.invite_url)
+                        .font(DS.Typography.caption)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .foregroundStyle(copied ? DS.Colors.success : DS.Colors.accent)
+            }
+            .buttonStyle(.plain)
+
             HStack(spacing: DS.Spacing.md) {
-                Label(invite.usageDescription, systemImage: "person.2")
+                Label("\(invite.uses_count) accepted", systemImage: "person.fill.checkmark")
                     .font(DS.Typography.caption)
                     .foregroundStyle(.secondary)
+
+                if let max = invite.max_uses {
+                    Label("\(max - invite.uses_count) remaining", systemImage: "person.badge.clock")
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(.secondary)
+                }
 
                 if let expiresDate = invite.expiresDate {
                     Label(expiresDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
                         .font(DS.Typography.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(invite.isExpired ? DS.Colors.error : .secondary)
                 }
             }
         }
@@ -122,6 +147,35 @@ struct InviteRowView: View {
             }
         } message: {
             Text("People with this link will no longer be able to join the list.")
+        }
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        if invite.isExpired {
+            Text("Expired")
+                .font(.caption2)
+                .foregroundStyle(.white)
+                .padding(.horizontal, DS.Spacing.sm)
+                .padding(.vertical, 2)
+                .background(DS.Colors.error)
+                .clipShape(Capsule())
+        } else if !invite.usable {
+            Text("Exhausted")
+                .font(.caption2)
+                .foregroundStyle(.white)
+                .padding(.horizontal, DS.Spacing.sm)
+                .padding(.vertical, 2)
+                .background(Color(.systemGray))
+                .clipShape(Capsule())
+        } else {
+            Text("Active")
+                .font(.caption2)
+                .foregroundStyle(.white)
+                .padding(.horizontal, DS.Spacing.sm)
+                .padding(.vertical, 2)
+                .background(DS.Colors.success)
+                .clipShape(Capsule())
         }
     }
 }

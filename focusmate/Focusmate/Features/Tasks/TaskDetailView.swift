@@ -16,6 +16,7 @@ struct TaskDetailView: View {
         taskService: TaskService,
         tagService: TagService,
         subtaskManager: SubtaskManager,
+        listService: ListService,
         listId: Int
     ) {
         _vm = State(initialValue: TaskDetailViewModel(
@@ -25,6 +26,7 @@ struct TaskDetailView: View {
             taskService: taskService,
             tagService: tagService,
             subtaskManager: subtaskManager,
+            listService: listService,
             onComplete: onComplete,
             onDelete: onDelete,
             onUpdate: onUpdate
@@ -47,7 +49,7 @@ struct TaskDetailView: View {
                         onCopyLink: vm.copyTaskLink,
                         onNudge: vm.nudgeTask,
                         canHide: vm.canHide,
-                        isSharedTask: vm.isSharedTask
+                        canNudge: vm.canNudge
                     )
 
                     // Info Card (progress + creator)
@@ -61,6 +63,11 @@ struct TaskDetailView: View {
                         )
                     }
 
+                    // Visibility Card (who can see this task)
+                    if !vm.listMembers.isEmpty {
+                        TaskDetailVisibilityCard(members: vm.listMembers, listName: vm.listName)
+                    }
+
                     // Details Card
                     TaskDetailDetailsCard(
                         task: vm.task,
@@ -69,11 +76,11 @@ struct TaskDetailView: View {
                     )
 
                     // Subtasks Card
-                    if vm.hasSubtasks || vm.canEdit {
+                    if vm.hasSubtasks || (vm.canEdit && !vm.task.isCompleted) {
                         TaskDetailSubtasksCard(
                             subtasks: vm.subtasks,
                             hasSubtasks: vm.hasSubtasks,
-                            canEdit: vm.canEdit,
+                            canEdit: vm.canEdit && !vm.task.isCompleted,
                             subtaskProgressText: vm.subtaskProgressText,
                             isExpanded: $vm.isSubtasksExpanded,
                             onAddSubtask: { showingAddSubtask = true },
@@ -122,7 +129,7 @@ struct TaskDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if vm.canEdit {
+                    if vm.canEdit && !vm.task.isCompleted {
                         Button("Edit") {
                             presentEditTask()
                         }
@@ -166,6 +173,9 @@ struct TaskDetailView: View {
                 .animation(.spring(duration: 0.3), value: vm.showNudgeSent || vm.showCopied)
             }
             .floatingErrorBanner($vm.error)
+            .task {
+                await vm.loadListInfo()
+            }
         }
     }
 

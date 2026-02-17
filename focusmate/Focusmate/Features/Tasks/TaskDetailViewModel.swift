@@ -26,6 +26,7 @@ final class TaskDetailViewModel {
     let taskService: TaskService
     let tagService: TagService
     let subtaskManager: SubtaskManager
+    let listService: ListService
     private let escalationService: EscalationService
 
     private var cancellables = Set<AnyCancellable>()
@@ -54,8 +55,15 @@ final class TaskDetailViewModel {
         task.can_edit ?? true
     }
 
+    var isSharedList = false
+    var listMembers: [ListMemberDTO] = []
+
     var isSharedTask: Bool {
-        task.creator != nil
+        isSharedList || task.creator != nil
+    }
+
+    var canNudge: Bool {
+        isSharedList && !task.isCompleted
     }
 
     var canHide: Bool {
@@ -98,6 +106,7 @@ final class TaskDetailViewModel {
         taskService: TaskService,
         tagService: TagService,
         subtaskManager: SubtaskManager,
+        listService: ListService,
         escalationService: EscalationService = .shared,
         onComplete: @escaping () async -> Void,
         onDelete: @escaping () async -> Void,
@@ -109,6 +118,7 @@ final class TaskDetailViewModel {
         self.taskService = taskService
         self.tagService = tagService
         self.subtaskManager = subtaskManager
+        self.listService = listService
         self.escalationService = escalationService
         self.onComplete = onComplete
         self.onDelete = onDelete
@@ -116,6 +126,37 @@ final class TaskDetailViewModel {
         self.subtasks = task.subtasks ?? []
 
         subscribeToSubtaskChanges()
+    }
+
+    /// Resolves list membership from the cached lists array.
+    ///
+    /// `fetchLists()` is cache-backed by ResponseCache with write-through —
+    /// the lists tab already populated it, so this is an actor-isolated
+    /// dictionary lookup + O(n) scan where n ≈ 10–20 lists. Zero network cost
+    /// in the common case.
+    ///
+    /// Falls back to `fetchList(id:)` only when the list isn't in cache
+    /// (deep links into a list the user hasn't browsed yet). That's a single
+    /// GET, unavoidable because we genuinely don't have the data.
+    func loadListInfo() async {
+        do {
+            let lists = try await listService.fetchLists()
+            if let list = lists.first(where: { $0.id == listId }) {
+                applyListMembers(list.members ?? [])
+                return
+            }
+            // List not in cached array — deep link or cache miss
+            let list = try await listService.fetchList(id: listId)
+            applyListMembers(list.members ?? [])
+        } catch {
+            // Non-critical — visibility card just won't show
+            Logger.debug("Could not load list info for task detail", category: .api)
+        }
+    }
+
+    private func applyListMembers(_ members: [ListMemberDTO]) {
+        self.listMembers = members
+        self.isSharedList = members.count > 1
     }
 
     // MARK: - Subtask Subscription

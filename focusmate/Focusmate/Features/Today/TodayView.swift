@@ -192,12 +192,50 @@ struct TodayView: View {
                 }
 
                 if !data.completed_today.isEmpty {
-                    taskSection(
-                        title: "Completed",
-                        icon: DS.Icon.circleChecked,
-                        iconColor: DS.Colors.success,
-                        tasks: data.completed_today
-                    )
+                    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                        HStack(spacing: DS.Spacing.xs) {
+                            Image(systemName: DS.Icon.circleChecked)
+                                .foregroundStyle(DS.Colors.success)
+                            Text("Completed")
+                                .font(DS.Typography.title3)
+                            Text("(\(data.completed_today.count))")
+                                .font(DS.Typography.subheadline)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button {
+                                withAnimation {
+                                    viewModel.hideCompleted.toggle()
+                                }
+                            } label: {
+                                Image(systemName: viewModel.hideCompleted ? "eye.slash" : "eye")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(DS.Colors.accent)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(viewModel.hideCompleted ? "Show completed tasks" : "Hide completed tasks")
+                        }
+
+                        if !viewModel.hideCompleted {
+                            ForEach(data.completed_today) { task in
+                                TaskRow(
+                                    task: task,
+                                    onComplete: { await viewModel.loadToday() },
+                                    onStar: { await viewModel.toggleStar(task) },
+                                    onTap: { presentTaskDetail(task) },
+                                    onNudge: { await viewModel.nudgeTask(task) },
+                                    onSubtaskEdit: { subtask in
+                                        presentEditSubtask(subtask, parentTask: task)
+                                    },
+                                    onAddSubtask: {
+                                        presentAddSubtask(for: task)
+                                    },
+                                    showStar: task.can_edit ?? true,
+                                    showNudge: task.creator != nil
+                                )
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 if viewModel.isAllComplete {

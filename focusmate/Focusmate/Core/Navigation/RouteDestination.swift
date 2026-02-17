@@ -28,6 +28,7 @@ struct RouteDestination: View {
                 taskService: appState.taskService,
                 tagService: appState.tagService,
                 subtaskManager: appState.subtaskManager,
+                listService: appState.listService,
                 listId: task.list_id
             )
 

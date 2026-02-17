@@ -59,6 +59,43 @@ struct TaskDetailNotesCard: View {
     }
 }
 
+// MARK: - Visibility Card
+
+struct TaskDetailVisibilityCard: View {
+    let members: [ListMemberDTO]
+    let listName: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+            HStack {
+                Image(systemName: "eye")
+                    .foregroundStyle(.secondary)
+                Text("Visible to")
+                    .font(.headline)
+                Spacer()
+                Text(listName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            FlowLayout(spacing: DS.Spacing.sm) {
+                ForEach(members) { member in
+                    HStack(spacing: DS.Spacing.xs) {
+                        Avatar(member.name ?? member.email, size: 20)
+                        Text(member.name ?? member.email)
+                            .font(.caption)
+                    }
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xs)
+                    .background(Color(.tertiarySystemFill))
+                    .clipShape(Capsule())
+                }
+            }
+        }
+        .card()
+    }
+}
+
 // MARK: - Missed Reason Card
 
 struct TaskDetailMissedReasonCard: View {

@@ -17,6 +17,9 @@ final class AppSettings: @unchecked Sendable {
         static let didRequestScreenTimePermission = "did_request_screentime_permission"
         static let calendarSyncEnabled = "calendar_sync_enabled"
 
+        static let hideCompletedToday = "hide_completed_today"
+        static let hideCompletedInLists = "hide_completed_in_lists"
+
         // ✅ NEW
         static let didCompleteAuthenticatedBoot = "did_complete_authenticated_boot"
         static let hasCompletedOnboarding = "has_completed_onboarding"
@@ -76,6 +79,18 @@ final class AppSettings: @unchecked Sendable {
     var didCompleteAuthenticatedBoot: Bool {
         get { defaults.bool(forKey: Key.didCompleteAuthenticatedBoot) }
         set { defaults.set(newValue, forKey: Key.didCompleteAuthenticatedBoot) }
+    }
+
+    // MARK: - Task Display
+
+    var hideCompletedToday: Bool {
+        get { defaults.bool(forKey: Key.hideCompletedToday) }
+        set { defaults.set(newValue, forKey: Key.hideCompletedToday) }
+    }
+
+    var hideCompletedInLists: Bool {
+        get { defaults.bool(forKey: Key.hideCompletedInLists) }
+        set { defaults.set(newValue, forKey: Key.hideCompletedInLists) }
     }
 
     // MARK: - Onboarding

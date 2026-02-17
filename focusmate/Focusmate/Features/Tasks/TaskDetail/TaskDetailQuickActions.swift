@@ -5,7 +5,7 @@ struct TaskDetailQuickActions: View {
     let task: TaskDTO
     let canEdit: Bool
     let canHide: Bool
-    let isSharedTask: Bool
+    let canNudge: Bool
     let onToggleStar: () async -> Void
     let onToggleHidden: () async -> Void
     let onReschedule: () -> Void
@@ -15,7 +15,7 @@ struct TaskDetailQuickActions: View {
     var body: some View {
         HStack(spacing: DS.Spacing.lg) {
             // Star/Unstar
-            if canEdit {
+            if canEdit && !task.isCompleted {
                 QuickActionButton(
                     icon: task.isStarred ? DS.Icon.starFilled : DS.Icon.star,
                     label: task.isStarred ? "Unstar" : "Star",
@@ -71,8 +71,8 @@ struct TaskDetailQuickActions: View {
                 onCopyLink()
             }
 
-            // Nudge (for shared tasks only, when not completed)
-            if isSharedTask && !task.isCompleted {
+            // Nudge (for shared lists with 2+ members, when not completed)
+            if canNudge {
                 QuickActionButton(
                     icon: "hand.point.right.fill",
                     label: "Nudge",

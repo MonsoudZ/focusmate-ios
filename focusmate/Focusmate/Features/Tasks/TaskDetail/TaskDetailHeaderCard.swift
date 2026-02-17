@@ -12,7 +12,7 @@ struct TaskDetailHeaderCard: View {
     let onCopyLink: () -> Void
     let onNudge: () async -> Void
     let canHide: Bool
-    let isSharedTask: Bool
+    let canNudge: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
@@ -59,7 +59,7 @@ struct TaskDetailHeaderCard: View {
                 task: task,
                 canEdit: canEdit,
                 canHide: canHide,
-                isSharedTask: isSharedTask,
+                canNudge: canNudge,
                 onToggleStar: onToggleStar,
                 onToggleHidden: onToggleHidden,
                 onReschedule: onReschedule,

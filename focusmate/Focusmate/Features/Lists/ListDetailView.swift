@@ -124,6 +124,14 @@ struct ListDetailView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        if viewModel.isSharedList && !viewModel.isOwner {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Label(viewModel.roleLabel, systemImage: viewModel.roleIcon)
+                    .font(.caption2)
+                    .foregroundStyle(viewModel.roleColor)
+            }
+        }
+
         if viewModel.isOwner {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
@@ -204,20 +212,6 @@ struct ListDetailView: View {
                 pendingCount: NetworkMonitor.shared.pendingMutationCount
             )
 
-            if viewModel.isSharedList {
-                HStack {
-                    Image(systemName: viewModel.roleIcon)
-                        .foregroundStyle(viewModel.roleColor)
-                    Text("You're a \(viewModel.roleLabel.lowercased()) of this list")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal)
-                .padding(.vertical, DS.Spacing.sm)
-                .background(viewModel.roleColor.opacity(0.1))
-            }
-
             List {
                 if !viewModel.urgentTasks.isEmpty {
                     taskSection(
@@ -243,12 +237,31 @@ struct ListDetailView: View {
                     )
                 }
 
-                if !viewModel.completedTasks.isEmpty {
-                    taskSection(
-                        tasks: viewModel.completedTasks,
-                        group: nil,
-                        header: { Text("Completed").font(.caption) }
-                    )
+                if viewModel.completedCount > 0 {
+                    Section {
+                        if !viewModel.hideCompleted {
+                            ForEach(viewModel.completedTasks, id: \.id) { task in
+                                taskRowContainer(for: task)
+                            }
+                        }
+                    } header: {
+                        HStack {
+                            Text("Completed (\(viewModel.completedCount))")
+                                .font(.caption)
+                            Spacer()
+                            Button {
+                                withAnimation {
+                                    viewModel.hideCompleted.toggle()
+                                }
+                            } label: {
+                                Image(systemName: viewModel.hideCompleted ? "eye.slash" : "eye")
+                                    .font(.caption)
+                                    .foregroundStyle(DS.Colors.accent)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(viewModel.hideCompleted ? "Show completed tasks" : "Hide completed tasks")
+                        }
+                    }
                 }
             }
             .listStyle(.plain)
@@ -273,9 +286,10 @@ struct ListDetailView: View {
     }
 
     private func taskRowContainer(for task: TaskDTO) -> TaskRowContainer {
-        TaskRowContainer(
+        let taskCanEdit = !task.isCompleted && (task.can_edit ?? viewModel.canEdit)
+        return TaskRowContainer(
             task: task,
-            canEdit: task.can_edit ?? viewModel.canEdit,
+            canEdit: taskCanEdit,
             canDelete: task.can_delete ?? viewModel.canEdit,
             isSharedList: viewModel.isSharedList,
             onComplete: { viewModel.markTaskCompleted(task.id) },

@@ -20,6 +20,9 @@ final class TodayViewModel {
     var isLoading = true
     var error: FocusmateError?
     var nudgeMessage: String?
+    var hideCompleted: Bool {
+        didSet { AppSettings.shared.hideCompletedToday = hideCompleted }
+    }
 
     var onOverdueCountChange: ((Int) -> Void)?
     private var inFlightTaskIds = Set<Int>()
@@ -161,6 +164,7 @@ final class TodayViewModel {
         self.escalationService = escalationService ?? .shared
         self.screenTimeService = screenTimeService ?? ScreenTimeService.shared
         self.notificationService = notificationService ?? .shared
+        self.hideCompleted = AppSettings.shared.hideCompletedToday
 
         // Subscribe to subtask changes and reload data.
         // Debounce coalesces rapid-fire subtask mutations (e.g. toggling several

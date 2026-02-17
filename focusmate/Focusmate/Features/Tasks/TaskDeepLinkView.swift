@@ -10,16 +10,18 @@ struct TaskDeepLinkView: View {
     private let taskService: TaskService
     private let tagService: TagService
     private let subtaskManager: SubtaskManager
+    private let listService: ListService
 
     @State private var task: TaskDTO?
     @State private var isLoading = true
     @State private var error: FocusmateError?
 
-    init(taskId: Int, taskService: TaskService, tagService: TagService, subtaskManager: SubtaskManager) {
+    init(taskId: Int, taskService: TaskService, tagService: TagService, subtaskManager: SubtaskManager, listService: ListService) {
         self.taskId = taskId
         self.taskService = taskService
         self.tagService = tagService
         self.subtaskManager = subtaskManager
+        self.listService = listService
     }
 
     var body: some View {
@@ -36,6 +38,7 @@ struct TaskDeepLinkView: View {
                     taskService: taskService,
                     tagService: tagService,
                     subtaskManager: subtaskManager,
+                    listService: listService,
                     listId: task.list_id
                 )
             } else {
