@@ -81,8 +81,8 @@ struct TaskDetailVisibilityCard: View {
             FlowLayout(spacing: DS.Spacing.sm) {
                 ForEach(members) { member in
                     HStack(spacing: DS.Spacing.xs) {
-                        Avatar(member.name ?? member.email, size: 20)
-                        Text(member.name ?? member.email)
+                        Avatar(member.displayName, size: 20)
+                        Text(member.displayName)
                             .font(.caption)
                     }
                     .padding(.horizontal, DS.Spacing.sm)

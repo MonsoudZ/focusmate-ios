@@ -154,6 +154,80 @@ final class ListServiceTests: XCTestCase {
         XCTAssertEqual(result.first?.id, 1)
     }
 
+    // MARK: - createList with listType
+
+    func testCreateListSendsListType() async throws {
+        stubSingleList()
+
+        _ = try await service.createList(name: "Habits", description: nil, color: "orange", listType: "habit_tracker")
+
+        let body = mock.lastBodyJSON
+        let listBody = body?["list"] as? [String: Any]
+        XCTAssertEqual(listBody?["list_type"] as? String, "habit_tracker")
+    }
+
+    func testCreateListOmitsListTypeWhenNil() async throws {
+        stubSingleList()
+
+        _ = try await service.createList(name: "Plain", description: nil)
+
+        let body = mock.lastBodyJSON
+        let listBody = body?["list"] as? [String: Any]
+        XCTAssertNil(listBody?["list_type"])
+    }
+
+    // MARK: - Raw JSON Decoding (backend shape fidelity)
+
+    func testFetchListsDecodesBackendMembersWithoutEmail() async throws {
+        // Real backend response: members have no email field
+        let json = """
+        {
+          "lists": [{
+            "id": 1, "name": "Test", "description": null, "visibility": "private",
+            "color": "blue", "role": "owner", "tasks_count": 0,
+            "completed_tasks_count": 0, "overdue_tasks_count": 0,
+            "members": [{"id": 1, "name": "Alice", "role": "owner"}],
+            "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z"
+          }],
+          "tombstones": []
+        }
+        """.data(using: .utf8)!
+        mock.stubbedData = json
+
+        let result = try await service.fetchLists()
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result.first?.members?.count, 1)
+        XCTAssertEqual(result.first?.members?.first?.name, "Alice")
+        XCTAssertNil(result.first?.members?.first?.email)
+        XCTAssertEqual(result.first?.members?.first?.displayName, "Alice")
+    }
+
+    func testFetchListsDecodesBackendMembersWithEmail() async throws {
+        let json = """
+        {
+          "lists": [{
+            "id": 1, "name": "Test", "description": null, "visibility": "private",
+            "color": "blue", "role": "owner", "tasks_count": 0,
+            "completed_tasks_count": 0, "overdue_tasks_count": 0,
+            "members": [{"id": 1, "name": null, "email": "alice@test.com", "role": "owner"}],
+            "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z"
+          }],
+          "tombstones": []
+        }
+        """.data(using: .utf8)!
+        mock.stubbedData = json
+
+        let result = try await service.fetchLists()
+
+        XCTAssertEqual(result.first?.members?.first?.displayName, "alice@test.com")
+    }
+
+    func testDisplayNameFallsBackToMemberWhenBothNil() {
+        let member = ListMemberDTO(id: 1, name: nil, email: nil, role: "owner")
+        XCTAssertEqual(member.displayName, "Member")
+    }
+
     // MARK: - Error Propagation
 
     func testFetchListsPropagatesNetworkError() async {

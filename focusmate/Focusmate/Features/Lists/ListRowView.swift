@@ -147,7 +147,7 @@ struct ListRowView: View {
     private var memberAvatars: some View {
         HStack(spacing: -8) {
             ForEach(Array((list.members ?? []).prefix(3).enumerated()), id: \.element.id) { index, member in
-                Avatar(member.name ?? member.email, size: 24)
+                Avatar(member.displayName, size: 24)
                     .overlay(
                         Circle()
                             .stroke(Color(.systemBackground), lineWidth: 2)

@@ -37,8 +37,12 @@ struct ListDTO: Codable, Identifiable, Hashable {
 struct ListMemberDTO: Codable, Identifiable, Hashable {
     let id: Int
     let name: String?
-    let email: String
+    let email: String?
     let role: String?
+
+    var displayName: String {
+        name ?? email ?? "Member"
+    }
 }
 
 struct ListResponse: Codable {
