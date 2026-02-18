@@ -86,7 +86,7 @@ struct SheetContent: View {
                     router.switchTab(to: .lists)
                 }
             )
-            .environmentObject(appState.auth)
+            .environment(appState.auth)
 
         case .search(let initialQuery):
             SearchView(

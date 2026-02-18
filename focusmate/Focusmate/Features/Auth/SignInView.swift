@@ -3,12 +3,13 @@ import AuthenticationServices
 
 struct SignInView: View {
     @EnvironmentObject var state: AppState
-    @EnvironmentObject var auth: AuthStore
+    @Environment(AuthStore.self) var auth
     @Environment(\.router) private var router
     @State private var email = ""
     @State private var password = ""
 
     var body: some View {
+        @Bindable var auth = auth
         ScrollView {
             VStack(spacing: DS.Spacing.xl) {
                 Spacer(minLength: DS.Spacing.xxxl)

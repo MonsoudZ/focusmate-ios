@@ -5,7 +5,7 @@ struct AcceptInviteView: View {
     let inviteService: InviteService
     let onAccepted: (ListDTO) -> Void
 
-    @EnvironmentObject var auth: AuthStore
+    @Environment(AuthStore.self) var auth
     @Environment(\.dismiss) private var dismiss
 
     @State private var preview: InvitePreviewDTO?

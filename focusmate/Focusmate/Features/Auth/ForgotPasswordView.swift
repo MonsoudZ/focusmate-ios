@@ -2,12 +2,13 @@ import SwiftUI
 
 struct ForgotPasswordView: View {
     @EnvironmentObject var state: AppState
-    @EnvironmentObject var auth: AuthStore
+    @Environment(AuthStore.self) var auth
     @Environment(\.dismiss) var dismiss
     @State private var email = ""
     @State private var submitted = false
 
     var body: some View {
+        @Bindable var auth = auth
         NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {

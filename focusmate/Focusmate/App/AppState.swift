@@ -43,16 +43,29 @@ final class AppState: ObservableObject {
         SentryService.shared.initialize()
         NetworkMonitor.shared.start()
 
-        // When auth changes, attempt any deferred setup (like device registration)
-        auth.objectWillChange
+        // React to auth lifecycle events.
+        //
+        // Previously this used auth.objectWillChange (Combine bridge) which fired on
+        // every @Published change — including isLoading toggles that were no-ops.
+        // With AuthStore migrated to @Observable, we use AuthEventBus which is more
+        // targeted: we only react to meaningful auth transitions.
+        AuthEventBus.shared.publisher
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] event in
                 guard let self else { return }
-                self.objectWillChange.send()
-                Task {
-                    await self.tryRegisterDeviceIfPossible()
-                    await self.tryAcceptPendingInvite()
-                    await self.syncTimezoneIfNeeded()
+                switch event {
+                case .signedIn, .tokenUpdated(hasToken: true):
+                    Task {
+                        await self.tryRegisterDeviceIfPossible()
+                        await self.tryAcceptPendingInvite()
+                        await self.syncTimezoneIfNeeded()
+                    }
+                case .signedOut:
+                    Task { await ResponseCache.shared.invalidateAll() }
+                    AppSettings.shared.didCompleteAuthenticatedBoot = false
+                    AppSettings.shared.hasCompletedOnboarding = false
+                default:
+                    break
                 }
             }
             .store(in: &cancellables)
@@ -69,19 +82,6 @@ final class AppState: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Keep Sentry user context in sync with auth state.
-        // Wired here (composition root) so AuthStore and SentryService stay decoupled.
-        auth.$currentUser
-            .receive(on: RunLoop.main)
-            .sink { user in
-                if let user {
-                    SentryService.shared.setUser(id: user.id, email: user.email, name: user.name ?? "Unknown")
-                } else {
-                    SentryService.shared.clearUser()
-                }
-            }
-            .store(in: &cancellables)
-
         // Sync device timezone to server when the system timezone changes at
         // runtime (e.g. user crosses a timezone boundary or changes Settings).
         // Without this, the server continues filtering "today" using the stale
@@ -94,19 +94,6 @@ final class AppState: ObservableObject {
                 Task {
                     await self.syncTimezoneIfNeeded()
                     await ResponseCache.shared.invalidate("today")
-                }
-            }
-            .store(in: &cancellables)
-
-        // Clean up cross-cutting state on sign-out.
-        // Wired here (composition root) so AuthStore stays decoupled from ResponseCache / AppSettings.
-        AuthEventBus.shared.publisher
-            .receive(on: RunLoop.main)
-            .sink { event in
-                if event == .signedOut {
-                    Task { await ResponseCache.shared.invalidateAll() }
-                    AppSettings.shared.didCompleteAuthenticatedBoot = false
-                    AppSettings.shared.hasCompletedOnboarding = false
                 }
             }
             .store(in: &cancellables)
@@ -156,12 +143,12 @@ final class AppState: ObservableObject {
 
     /// Accepts a pending invite code after the user signs in.
     ///
-    /// Called from the `objectWillChange` subscriber, which fires on every
-    /// AuthStore property change.  Three outcomes:
+    /// Called from the AuthEventBus subscriber on `.signedIn` and
+    /// `.tokenUpdated` events.  Three outcomes:
     ///
     /// 1. **Success** — code cleared, won't retry.
     /// 2. **Transient failure** (offline / 5xx) — code preserved, retries
-    ///    automatically on the next auth state change.
+    ///    automatically on the next auth event.
     /// 3. **Permanent failure** (4xx — expired, invalid, already used) — code
     ///    cleared, error shown once, won't retry.
     private var isAcceptingInvite = false

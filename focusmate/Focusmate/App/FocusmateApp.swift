@@ -53,7 +53,7 @@ struct FocusmateApp: App {
             RootView()
                 .environment(\.router, AppRouter.shared)
                 .environmentObject(state)
-                .environmentObject(state.auth)
+                .environment(state.auth)
                 .environmentObject(bootstrapper)
                 .onOpenURL { url in
                     if let route = DeepLinkRoute(url: url) {
@@ -67,7 +67,7 @@ struct FocusmateApp: App {
 
 struct RootView: View {
     @EnvironmentObject var state: AppState
-    @EnvironmentObject var auth: AuthStore
+    @Environment(AuthStore.self) var auth
     @EnvironmentObject var bootstrapper: AppBootstrapper
     @Environment(\.router) private var router
 
@@ -95,7 +95,7 @@ struct RootView: View {
                     )) { sheet in
                         SheetContent(sheet: sheet, appState: state)
                             .environmentObject(state)
-                            .environmentObject(state.auth)
+                            .environment(state.auth)
                     }
             } else if showOnboarding || (hasCheckedLists && !userHasLists) {
                 OnboardingView {
@@ -189,7 +189,7 @@ struct RootView: View {
             set: { router.activeSheet = $0 }
         )) { sheet in
             SheetContent(sheet: sheet, appState: state)
-                .environmentObject(state.auth)
+                .environment(state.auth)
         }
         .onAppear {
             // Mark router as ready and flush any pending deep links

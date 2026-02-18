@@ -2,7 +2,7 @@ import SwiftUI
 
 struct RegisterView: View {
     @EnvironmentObject var state: AppState
-    @EnvironmentObject var auth: AuthStore
+    @Environment(AuthStore.self) var auth
     @Environment(\.dismiss) var dismiss
     @State private var name = ""
     @State private var email = ""
@@ -21,6 +21,7 @@ struct RegisterView: View {
     }
 
     var body: some View {
+        @Bindable var auth = auth
         NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {

@@ -3,25 +3,32 @@ import Combine
 import Foundation
 
 @MainActor
-final class AuthStore: ObservableObject {
-    @Published var jwt: String? {
+@Observable
+final class AuthStore {
+    var jwt: String? {
         didSet {
             Logger.debug("JWT updated: \(jwt != nil ? "SET" : "CLEARED")", category: .auth)
             eventBus.send(.tokenUpdated(hasToken: jwt != nil))
         }
     }
 
-    @Published var currentUser: UserDTO? {
+    var currentUser: UserDTO? {
         didSet {
             Logger.debug("Current user updated: \(Logger.sanitizeEmail(currentUser?.email ?? "nil"))", category: .auth)
+            // Sync Sentry user context on every change.
+            if let currentUser {
+                SentryService.shared.setUser(id: currentUser.id, email: currentUser.email, name: currentUser.name ?? "Unknown")
+            } else {
+                SentryService.shared.clearUser()
+            }
         }
     }
 
-    @Published var isLoading = false
-    @Published var isValidatingSession = false
-    @Published var error: FocusmateError?
+    var isLoading = false
+    var isValidatingSession = false
+    var error: FocusmateError?
 
-    private(set) lazy var api: APIClient = {
+    @ObservationIgnored private(set) lazy var api: APIClient = {
         if let injectedNetworking {
             return APIClient(
                 tokenProvider: { [weak self] in self?.jwt },
@@ -42,19 +49,19 @@ final class AuthStore: ObservableObject {
         )
     }()
 
-    private lazy var authAPI: AuthAPI = AuthAPI(api: api)
-    private lazy var authService: AuthService = AuthService(api: api, authAPI: authAPI)
-    private let errorHandler = ErrorHandler.shared
+    @ObservationIgnored private lazy var authAPI: AuthAPI = AuthAPI(api: api)
+    @ObservationIgnored private lazy var authService: AuthService = AuthService(api: api, authAPI: authAPI)
+    @ObservationIgnored private let errorHandler = ErrorHandler.shared
 
-    private let eventBus: AuthEventBus
-    private let keychain: KeychainManaging
-    private let injectedNetworking: NetworkingProtocol?
-    private let autoValidateOnInit: Bool
-    private let escalationService: EscalationService
+    @ObservationIgnored private let eventBus: AuthEventBus
+    @ObservationIgnored private let keychain: KeychainManaging
+    @ObservationIgnored private let injectedNetworking: NetworkingProtocol?
+    @ObservationIgnored private let autoValidateOnInit: Bool
+    @ObservationIgnored private let escalationService: EscalationService
 
-    private var cancellables = Set<AnyCancellable>()
-    private var isHandlingUnauthorized = false
-    private var unauthorizedTask: Task<Void, Never>? {
+    @ObservationIgnored private var cancellables = Set<AnyCancellable>()
+    @ObservationIgnored private var isHandlingUnauthorized = false
+    @ObservationIgnored private var unauthorizedTask: Task<Void, Never>? {
         willSet { unauthorizedTask?.cancel() }
     }
 
