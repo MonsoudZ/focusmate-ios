@@ -120,20 +120,7 @@ final class InternalNetworking: NetworkingProtocol {
         idempotencyKey: String?,
         attemptRefresh: Bool
     ) async throws -> T {
-        var url = API.path(path)
-
-        if !queryParameters.isEmpty {
-            if var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
-                components.queryItems = queryParameters.map { URLQueryItem(name: $0.key, value: $0.value) }
-                if let newURL = components.url {
-                    url = newURL
-                } else {
-                    Logger.warning("Failed to construct URL with query parameters for \(path), using URL without params", category: .api)
-                }
-            } else {
-                Logger.warning("Failed to create URLComponents for \(path), query parameters will be ignored", category: .api)
-            }
-        }
+        let url = buildURL(path: path, queryParameters: queryParameters)
 
         var req = URLRequest(url: url)
         req.httpMethod = method
@@ -145,48 +132,13 @@ final class InternalNetworking: NetworkingProtocol {
 
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        // Public endpoints that don't need auth - skip Authorization header entirely.
-        // Uses hasSuffix to avoid false positives (e.g. "auth/password/change" matching "auth/password").
-        let publicEndpoints = ["auth/apple", "auth/sign_in", "auth/sign_up", "auth/refresh", "auth/password"]
-        let isPublicEndpoint = publicEndpoints.contains { path.hasSuffix($0) }
-
-        if !isPublicEndpoint, let jwt = tokenProvider() {
-            req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
-
-            // Proactive token refresh: if the JWT expires within the buffer window,
-            // refresh now instead of waiting for a 401. This eliminates the
-            // request → 401 → refresh → retry double round trip (~200-400ms).
-            // Cost: ~5μs to parse the JWT payload (base64 + JSON of ~200 bytes).
-            // The refreshCoordinator serializes concurrent proactive refreshes.
-            if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil,
-               JWTExpiry.isExpiringSoon(jwt, buffer: AppConfiguration.Auth.proactiveRefreshBufferSeconds) {
-                do {
-                    try await attemptTokenRefresh()
-                    if let freshJwt = tokenProvider() {
-                        req.setValue("Bearer \(freshJwt)", forHTTPHeaderField: "Authorization")
-                    }
-                } catch {
-                    // Proactive refresh failed — proceed with current token.
-                    // The reactive 401 path will catch it if the token is truly expired.
-                    Logger.debug("Proactive token refresh failed, proceeding with current token", category: .auth)
-                }
-            }
-        }
+        let isPublicEndpoint = await applyAuth(to: &req, path: path, attemptRefresh: attemptRefresh)
 
         if let idempotencyKey {
             req.setValue(idempotencyKey, forHTTPHeaderField: "Idempotency-Key")
         }
 
-        let data: Data
-        let resp: URLResponse
-
-        do {
-            (data, resp) = try await session.data(for: req)
-        } catch {
-            throw mapNetworkError(error)
-        }
-
-        guard let http = resp as? HTTPURLResponse else { throw APIError.badURL }
+        let (data, http) = try await executeRequest(req)
 
         sentryService.addAPIBreadcrumb(method: method, endpoint: path, statusCode: http.statusCode)
 
@@ -201,39 +153,15 @@ final class InternalNetworking: NetworkingProtocol {
             break
 
         case 401:
-            // Don't attempt token refresh for public endpoints - they don't need auth
-            if !isPublicEndpoint, attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
-                // Breadcrumb 1: Refresh triggered — which endpoint caused the 401
-                sentryService.addBreadcrumb(
-                    message: "Token refresh triggered by 401",
-                    category: "auth",
-                    level: .warning,
-                    data: ["endpoint": path, "method": method]
-                )
-                do {
-                    try await attemptTokenRefresh()
-                    // Breadcrumb 2: Refresh succeeded, retrying the original request
-                    sentryService.addBreadcrumb(
-                        message: "Token refresh succeeded, retrying request",
-                        category: "auth",
-                        level: .info,
-                        data: ["endpoint": path, "method": method]
-                    )
-                    Logger.info("Token refreshed, retrying \(method) \(path)", category: .api)
-                    return try await performRequest(method, path, body: body, queryParameters: queryParameters, idempotencyKey: idempotencyKey, attemptRefresh: false)
-                } catch {
-                    // Breadcrumb 3: Refresh failed — error type and description
-                    sentryService.addBreadcrumb(
-                        message: "Token refresh failed",
-                        category: "auth",
-                        level: .error,
-                        data: ["endpoint": path, "method": method, "error": String(describing: error)]
-                    )
-                    Logger.warning("Token refresh failed for \(method) \(path): \(error)", category: .api)
-                }
+            if let retryResult: T = await attemptRefreshAndRetry(
+                method: method, path: path,
+                isPublicEndpoint: isPublicEndpoint,
+                attemptRefresh: attemptRefresh,
+                retry: { try await self.performRequest(method, path, body: body, queryParameters: queryParameters, idempotencyKey: idempotencyKey, attemptRefresh: false) }
+            ) {
+                return retryResult
             }
             Logger.warning("401 Unauthorized for \(method) \(path)", category: .api)
-            // Don't broadcast unauthorized for public endpoints - they handle their own errors
             if !isPublicEndpoint {
                 AuthEventBus.shared.send(.unauthorized)
             }
@@ -284,87 +212,150 @@ final class InternalNetworking: NetworkingProtocol {
     }
 
     private func performGetRawResponse(endpoint: String, params: [String: String], attemptRefresh: Bool) async throws -> Data {
-        var url = API.path(endpoint)
-
-        if !params.isEmpty {
-            if var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
-                components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
-                if let newURL = components.url {
-                    url = newURL
-                } else {
-                    Logger.warning("Failed to construct URL with params for \(endpoint), using URL without params", category: .api)
-                }
-            } else {
-                Logger.warning("Failed to create URLComponents for \(endpoint), params will be ignored", category: .api)
-            }
-        }
+        let url = buildURL(path: endpoint, queryParameters: params)
 
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        if let jwt = tokenProvider() {
-            req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+        let isPublicEndpoint = await applyAuth(to: &req, path: endpoint, attemptRefresh: attemptRefresh)
 
-            if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil,
-               JWTExpiry.isExpiringSoon(jwt, buffer: AppConfiguration.Auth.proactiveRefreshBufferSeconds) {
-                do {
-                    try await attemptTokenRefresh()
-                    if let freshJwt = tokenProvider() {
-                        req.setValue("Bearer \(freshJwt)", forHTTPHeaderField: "Authorization")
-                    }
-                } catch {
-                    Logger.debug("Proactive token refresh failed, proceeding with current token", category: .auth)
-                }
-            }
-        }
-
-        let data: Data
-        let resp: URLResponse
-
-        do {
-            (data, resp) = try await session.data(for: req)
-        } catch {
-            throw mapNetworkError(error)
-        }
-
-        guard let http = resp as? HTTPURLResponse else { throw APIError.badURL }
+        let (data, http) = try await executeRequest(req)
 
         switch http.statusCode {
         case 200...299:
             return data
         case 401:
-            if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil {
-                sentryService.addBreadcrumb(
-                    message: "Token refresh triggered by 401",
-                    category: "auth",
-                    level: .warning,
-                    data: ["endpoint": endpoint, "method": "GET"]
-                )
-                do {
-                    try await attemptTokenRefresh()
-                    sentryService.addBreadcrumb(
-                        message: "Token refresh succeeded, retrying request",
-                        category: "auth",
-                        level: .info,
-                        data: ["endpoint": endpoint, "method": "GET"]
-                    )
-                    Logger.info("Token refreshed, retrying GET \(endpoint)", category: .api)
-                    return try await performGetRawResponse(endpoint: endpoint, params: params, attemptRefresh: false)
-                } catch {
-                    sentryService.addBreadcrumb(
-                        message: "Token refresh failed",
-                        category: "auth",
-                        level: .error,
-                        data: ["endpoint": endpoint, "method": "GET", "error": String(describing: error)]
-                    )
-                    Logger.warning("Token refresh failed for GET \(endpoint): \(error)", category: .api)
-                }
+            if let retryResult: Data = await attemptRefreshAndRetry(
+                method: "GET", path: endpoint,
+                isPublicEndpoint: isPublicEndpoint,
+                attemptRefresh: attemptRefresh,
+                retry: { try await self.performGetRawResponse(endpoint: endpoint, params: params, attemptRefresh: false) }
+            ) {
+                return retryResult
             }
-            AuthEventBus.shared.send(.unauthorized)
+            if !isPublicEndpoint {
+                AuthEventBus.shared.send(.unauthorized)
+            }
             throw APIError.unauthorized(nil)
         default:
             throw APIError.badStatus(http.statusCode, nil, nil)
+        }
+    }
+
+    // MARK: - Shared Request Helpers
+
+    /// Builds a URL from a path, appending query parameters if present.
+    private func buildURL(path: String, queryParameters: [String: String]) -> URL {
+        var url = API.path(path)
+        guard !queryParameters.isEmpty else { return url }
+
+        if var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+            components.queryItems = queryParameters.map { URLQueryItem(name: $0.key, value: $0.value) }
+            if let newURL = components.url {
+                url = newURL
+            } else {
+                Logger.warning("Failed to construct URL with query parameters for \(path), using URL without params", category: .api)
+            }
+        } else {
+            Logger.warning("Failed to create URLComponents for \(path), query parameters will be ignored", category: .api)
+        }
+        return url
+    }
+
+    /// Applies the Authorization header and performs proactive token refresh if needed.
+    ///
+    /// Public endpoints (auth/sign_in, etc.) skip the Authorization header entirely.
+    /// For authenticated endpoints, if the JWT expires within the buffer window,
+    /// refreshes proactively to eliminate the request → 401 → refresh → retry
+    /// double round trip (~200-400ms). Cost: ~5μs to parse the JWT payload.
+    ///
+    /// Returns whether this is a public endpoint (used by 401 handling downstream).
+    private func applyAuth(to request: inout URLRequest, path: String, attemptRefresh: Bool) async -> Bool {
+        let publicEndpoints = ["auth/apple", "auth/sign_in", "auth/sign_up", "auth/refresh", "auth/password"]
+        let isPublicEndpoint = publicEndpoints.contains { path.hasSuffix($0) }
+
+        guard !isPublicEndpoint, let jwt = tokenProvider() else {
+            return isPublicEndpoint
+        }
+
+        request.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+
+        if attemptRefresh, refreshTokenProvider != nil, onTokenRefreshed != nil,
+           JWTExpiry.isExpiringSoon(jwt, buffer: AppConfiguration.Auth.proactiveRefreshBufferSeconds) {
+            do {
+                try await attemptTokenRefresh()
+                if let freshJwt = tokenProvider() {
+                    request.setValue("Bearer \(freshJwt)", forHTTPHeaderField: "Authorization")
+                }
+            } catch {
+                // Proactive refresh failed — proceed with current token.
+                // The reactive 401 path will catch it if the token is truly expired.
+                Logger.debug("Proactive token refresh failed, proceeding with current token", category: .auth)
+            }
+        }
+
+        return isPublicEndpoint
+    }
+
+    /// Sends the request and maps transport-level errors to APIError.
+    private func executeRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let data: Data
+        let resp: URLResponse
+
+        do {
+            (data, resp) = try await session.data(for: request)
+        } catch {
+            throw mapNetworkError(error)
+        }
+
+        guard let http = resp as? HTTPURLResponse else { throw APIError.badURL }
+        return (data, http)
+    }
+
+    /// Handles a 401 by attempting token refresh and retrying the request once.
+    ///
+    /// Returns the retry result on success, or nil if refresh wasn't attempted or
+    /// failed (caller should fall through to throw unauthorized).
+    /// Emits Sentry breadcrumbs at each stage for debugging auth failures.
+    private func attemptRefreshAndRetry<T>(
+        method: String,
+        path: String,
+        isPublicEndpoint: Bool,
+        attemptRefresh: Bool,
+        retry: () async throws -> T
+    ) async -> T? {
+        guard !isPublicEndpoint, attemptRefresh,
+              refreshTokenProvider != nil, onTokenRefreshed != nil else {
+            return nil
+        }
+
+        sentryService.addBreadcrumb(
+            message: "Token refresh triggered by 401",
+            category: "auth",
+            level: .warning,
+            data: ["endpoint": path, "method": method]
+        )
+
+        do {
+            try await attemptTokenRefresh()
+            sentryService.addBreadcrumb(
+                message: "Token refresh succeeded, retrying request",
+                category: "auth",
+                level: .info,
+                data: ["endpoint": path, "method": method]
+            )
+            Logger.info("Token refreshed, retrying \(method) \(path)", category: .api)
+            return try await retry()
+        } catch {
+            sentryService.addBreadcrumb(
+                message: "Token refresh failed",
+                category: "auth",
+                level: .error,
+                data: ["endpoint": path, "method": method, "error": String(describing: error)]
+            )
+            Logger.warning("Token refresh failed for \(method) \(path): \(error)", category: .api)
+            return nil
         }
     }
 
