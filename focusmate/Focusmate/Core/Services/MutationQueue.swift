@@ -36,7 +36,7 @@ actor MutationQueue {
   private var pending: [PendingMutation] = []
   private var isFlushing = false
 
-  private init() {}
+  init() {}
 
   // MARK: - Public API
 
