@@ -1,6 +1,10 @@
 import Foundation
 import Combine
 
+#if !targetEnvironment(simulator)
+import DeviceActivity
+#endif
+
 @MainActor
 final class EscalationService: ObservableObject {
     static let shared = EscalationService()
@@ -21,8 +25,12 @@ final class EscalationService: ObservableObject {
     private var gracePeriodMinutes: Int { AppConfiguration.Escalation.gracePeriodMinutes }
     private var warningMinutes: Int { AppConfiguration.Escalation.warningMinutes }
 
-    private let gracePeriodStartKey = "Escalation_GracePeriodStart"
-    private let overdueTaskIdsKey = "Escalation_OverdueTaskIds"
+    private let gracePeriodStartKey = SharedDefaults.gracePeriodStartTimeKey
+    private let overdueTaskIdsKey = SharedDefaults.overdueTaskIdsKey
+
+    // Legacy keys for one-time migration from UserDefaults.standard
+    private let legacyGracePeriodStartKey = "Escalation_GracePeriodStart"
+    private let legacyOverdueTaskIdsKey = "Escalation_OverdueTaskIds"
 
     private let screenTimeService: ScreenTimeManaging
     private let notificationService: NotificationService
@@ -33,10 +41,11 @@ final class EscalationService: ObservableObject {
     ) {
         self.screenTimeService = screenTimeService ?? ScreenTimeService.shared
         self.notificationService = notificationService ?? .shared
+        migrateFromStandardDefaultsIfNeeded()
         loadState()
 
         // Only start periodic check if there's persisted escalation state
-        if !overdueTaskIds.isEmpty || UserDefaults.standard.object(forKey: gracePeriodStartKey) != nil {
+        if !overdueTaskIds.isEmpty || SharedDefaults.store.object(forKey: gracePeriodStartKey) != nil {
             checkGracePeriodStatus()
             startPeriodicCheck()
         }
@@ -99,14 +108,20 @@ final class EscalationService: ObservableObject {
     // MARK: - Grace Period
 
     private func startGracePeriod() {
-        let endTime = Date().addingTimeInterval(TimeInterval(gracePeriodMinutes * 60))
+        let now = Date()
+        let endTime = now.addingTimeInterval(TimeInterval(gracePeriodMinutes * 60))
         gracePeriodEndTime = endTime
         isInGracePeriod = true
 
-        UserDefaults.standard.set(Date(), forKey: gracePeriodStartKey)
+        SharedDefaults.store.set(now, forKey: gracePeriodStartKey)
         saveState()
 
         scheduleGracePeriodTimer(interval: TimeInterval(gracePeriodMinutes * 60))
+
+        // Schedule out-of-process monitor as failsafe.
+        // If the user kills the app, the OS still fires intervalDidEnd
+        // in the IntentiaMonitor extension to activate blocking.
+        scheduleDeviceActivityMonitor(endTime: endTime)
 
         Logger.info("Grace period started. Ends at \(endTime)", category: .general)
     }
@@ -194,6 +209,12 @@ final class EscalationService: ObservableObject {
         checkTimer?.invalidate()
         checkTimer = nil
 
+        // Cancel the out-of-process failsafe. If the extension's intervalDidEnd
+        // is already queued, it will check overdueTaskIds (now empty) and skip.
+        #if !targetEnvironment(simulator)
+        DeviceActivityCenter().stopMonitoring([.gracePeriod])
+        #endif
+
         // Stop blocking
         screenTimeService.stopBlocking()
 
@@ -201,7 +222,7 @@ final class EscalationService: ObservableObject {
         overdueTaskIds.removeAll()
 
         // Clear persisted state
-        UserDefaults.standard.removeObject(forKey: gracePeriodStartKey)
+        SharedDefaults.store.removeObject(forKey: gracePeriodStartKey)
         saveState()
     }
 
@@ -298,8 +319,10 @@ final class EscalationService: ObservableObject {
     }
 
     private func checkGracePeriodStatus() {
-        // Restore grace period state if app was killed
-        if let startTime = UserDefaults.standard.object(forKey: gracePeriodStartKey) as? Date {
+        // Restore grace period state if app was killed.
+        // If the extension already activated blocking while the app was dead,
+        // this path idempotently re-writes the same tokens to ManagedSettingsStore.
+        if let startTime = SharedDefaults.store.object(forKey: gracePeriodStartKey) as? Date {
             let endTime = startTime.addingTimeInterval(TimeInterval(gracePeriodMinutes * 60))
 
             if Date() >= endTime {
@@ -318,17 +341,91 @@ final class EscalationService: ObservableObject {
         }
     }
 
+    // MARK: - DeviceActivity Scheduling
+
+    /// Schedules an out-of-process monitor that fires `intervalDidEnd` when
+    /// the grace period expires, even if the app is killed or backgrounded.
+    ///
+    /// **System design:** `DeviceActivitySchedule` uses time-of-day
+    /// `DateComponents` (hour/minute/second only), not absolute dates.
+    /// The OS manages a per-app daemon that fires the callback in the
+    /// IntentiaMonitor extension process. This is the intended third leg
+    /// of Apple's FamilyControls + ManagedSettings + DeviceActivity triad.
+    private func scheduleDeviceActivityMonitor(endTime: Date) {
+        #if !targetEnvironment(simulator)
+        let calendar = Calendar.current
+        let now = Date()
+
+        // DeviceActivity requires a minimum ~15-minute interval.
+        // For shorter grace periods (e.g., testing), skip scheduling —
+        // the in-app timer still works when the app is foreground.
+        let interval = endTime.timeIntervalSince(now)
+        guard interval >= 15 * 60 else {
+            Logger.info("Escalation: Grace period too short for DeviceActivity (\(Int(interval))s), skipping", category: .general)
+            return
+        }
+
+        // Time-of-day components only — using year/month/day causes
+        // silent callback failures because the schedule engine treats
+        // them as recurring daily windows, not absolute timestamps.
+        let startComponents = calendar.dateComponents([.hour, .minute, .second], from: now)
+        let endComponents = calendar.dateComponents([.hour, .minute, .second], from: endTime)
+
+        let schedule = DeviceActivitySchedule(
+            intervalStart: startComponents,
+            intervalEnd: endComponents,
+            repeats: false
+        )
+
+        do {
+            try DeviceActivityCenter().startMonitoring(.gracePeriod, during: schedule)
+            Logger.info("Escalation: DeviceActivity monitor scheduled until \(endTime)", category: .general)
+        } catch {
+            // Non-fatal: the in-app timer is the primary path.
+            // The extension is a failsafe for the app-killed case.
+            Logger.error("Escalation: Failed to schedule DeviceActivity monitor: \(error)", category: .general)
+        }
+        #endif
+    }
+
     // MARK: - Persistence
 
     private func saveState() {
         let ids = Array(overdueTaskIds)
-        UserDefaults.standard.set(ids, forKey: overdueTaskIdsKey)
+        SharedDefaults.store.set(ids, forKey: overdueTaskIdsKey)
     }
 
     private func loadState() {
-        if let ids = UserDefaults.standard.array(forKey: overdueTaskIdsKey) as? [Int] {
+        if let ids = SharedDefaults.store.array(forKey: overdueTaskIdsKey) as? [Int] {
             overdueTaskIds = Set(ids)
         }
+    }
+
+    /// One-time migration from `UserDefaults.standard` to the App Group container.
+    /// Existing users may have escalation state stored in standard defaults.
+    private func migrateFromStandardDefaultsIfNeeded() {
+        let shared = SharedDefaults.store
+        let standard = UserDefaults.standard
+
+        // Skip if shared defaults already have escalation data
+        if shared.object(forKey: overdueTaskIdsKey) != nil { return }
+
+        let hasLegacyIds = standard.array(forKey: legacyOverdueTaskIdsKey) != nil
+        let hasLegacyStart = standard.object(forKey: legacyGracePeriodStartKey) != nil
+
+        guard hasLegacyIds || hasLegacyStart else { return }
+
+        if let ids = standard.array(forKey: legacyOverdueTaskIdsKey) {
+            shared.set(ids, forKey: overdueTaskIdsKey)
+        }
+        if let startTime = standard.object(forKey: legacyGracePeriodStartKey) {
+            shared.set(startTime, forKey: gracePeriodStartKey)
+        }
+
+        standard.removeObject(forKey: legacyOverdueTaskIdsKey)
+        standard.removeObject(forKey: legacyGracePeriodStartKey)
+
+        Logger.info("EscalationService: Migrated state from standard to shared defaults", category: .general)
     }
 
     // MARK: - Task Tracking

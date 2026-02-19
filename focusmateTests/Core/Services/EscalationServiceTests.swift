@@ -7,22 +7,22 @@ final class EscalationServiceTests: XCTestCase {
     private var sut: EscalationService!
     private var mockScreenTime: MockScreenTimeService!
 
-    private let gracePeriodStartKey = "Escalation_GracePeriodStart"
-    private let overdueTaskIdsKey = "Escalation_OverdueTaskIds"
+    private let gracePeriodStartKey = SharedDefaults.gracePeriodStartTimeKey
+    private let overdueTaskIdsKey = SharedDefaults.overdueTaskIdsKey
 
     override func setUp() {
         super.setUp()
         // Clear persisted state before creating service (loadState reads these on init)
-        UserDefaults.standard.removeObject(forKey: gracePeriodStartKey)
-        UserDefaults.standard.removeObject(forKey: overdueTaskIdsKey)
+        SharedDefaults.store.removeObject(forKey: gracePeriodStartKey)
+        SharedDefaults.store.removeObject(forKey: overdueTaskIdsKey)
         mockScreenTime = MockScreenTimeService()
         sut = EscalationService(screenTimeService: mockScreenTime)
     }
 
     override func tearDown() {
         sut.resetAll()
-        UserDefaults.standard.removeObject(forKey: gracePeriodStartKey)
-        UserDefaults.standard.removeObject(forKey: overdueTaskIdsKey)
+        SharedDefaults.store.removeObject(forKey: gracePeriodStartKey)
+        SharedDefaults.store.removeObject(forKey: overdueTaskIdsKey)
         super.tearDown()
     }
 
@@ -50,7 +50,7 @@ final class EscalationServiceTests: XCTestCase {
 
         sut.resetAll()
 
-        let persistedIds = UserDefaults.standard.array(forKey: overdueTaskIdsKey) as? [Int]
+        let persistedIds = SharedDefaults.store.array(forKey: overdueTaskIdsKey) as? [Int]
         XCTAssertTrue(persistedIds?.isEmpty ?? true)
     }
 
@@ -83,7 +83,7 @@ final class EscalationServiceTests: XCTestCase {
         let task = TestFactories.makeSampleTask(id: 15)
         sut.taskBecameOverdue(task)
 
-        let persistedIds = UserDefaults.standard.array(forKey: overdueTaskIdsKey) as? [Int]
+        let persistedIds = SharedDefaults.store.array(forKey: overdueTaskIdsKey) as? [Int]
         XCTAssertNotNil(persistedIds)
         XCTAssertTrue(persistedIds?.contains(15) ?? false)
     }

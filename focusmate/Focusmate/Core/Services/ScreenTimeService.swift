@@ -18,10 +18,15 @@ final class ScreenTimeService: ObservableObject, ScreenTimeManaging {
   @Published var selectedCategories: Set<ActivityCategoryToken> = []
   @Published var isBlocking: Bool = false
 
-  private let appsKey = "ScreenTime_SelectedApps"
-  private let categoriesKey = "ScreenTime_SelectedCategories"
+  private let appsKey = SharedDefaults.selectedAppsKey
+  private let categoriesKey = SharedDefaults.selectedCategoriesKey
+
+  // Legacy keys for one-time migration from UserDefaults.standard
+  private let legacyAppsKey = "ScreenTime_SelectedApps"
+  private let legacyCategoriesKey = "ScreenTime_SelectedCategories"
 
   private init() {
+    migrateFromStandardDefaultsIfNeeded()
     loadSelections()
     updateAuthorizationStatus()
   }
@@ -91,25 +96,55 @@ final class ScreenTimeService: ObservableObject, ScreenTimeManaging {
       return
     }
 
-    UserDefaults.standard.set(appsData, forKey: appsKey)
-    UserDefaults.standard.set(categoriesData, forKey: categoriesKey)
+    SharedDefaults.store.set(appsData, forKey: appsKey)
+    SharedDefaults.store.set(categoriesData, forKey: categoriesKey)
   }
 
   private func loadSelections() {
-    if let appsData = UserDefaults.standard.data(forKey: appsKey) {
+    if let appsData = SharedDefaults.store.data(forKey: appsKey) {
       do {
         selectedApps = try JSONDecoder().decode(Set<ApplicationToken>.self, from: appsData)
       } catch {
         Logger.error("Failed to decode selected apps: \(error)", category: .general)
       }
     }
-    if let categoriesData = UserDefaults.standard.data(forKey: categoriesKey) {
+    if let categoriesData = SharedDefaults.store.data(forKey: categoriesKey) {
       do {
         selectedCategories = try JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: categoriesData)
       } catch {
         Logger.error("Failed to decode selected categories: \(error)", category: .general)
       }
     }
+  }
+
+  /// One-time migration from `UserDefaults.standard` to the App Group container.
+  /// Existing users have their app selections stored in standard defaults;
+  /// we need to copy them to the shared suite so the IntentiaMonitor extension
+  /// can read them. After migration, the legacy keys are removed.
+  private func migrateFromStandardDefaultsIfNeeded() {
+    let shared = SharedDefaults.store
+
+    // Skip if shared defaults already have data (migration already done)
+    if shared.data(forKey: appsKey) != nil { return }
+
+    let standard = UserDefaults.standard
+    let hasLegacyApps = standard.data(forKey: legacyAppsKey) != nil
+    let hasLegacyCategories = standard.data(forKey: legacyCategoriesKey) != nil
+
+    guard hasLegacyApps || hasLegacyCategories else { return }
+
+    if let appsData = standard.data(forKey: legacyAppsKey) {
+      shared.set(appsData, forKey: appsKey)
+    }
+    if let categoriesData = standard.data(forKey: legacyCategoriesKey) {
+      shared.set(categoriesData, forKey: categoriesKey)
+    }
+
+    // Clean up legacy keys
+    standard.removeObject(forKey: legacyAppsKey)
+    standard.removeObject(forKey: legacyCategoriesKey)
+
+    Logger.info("ScreenTimeService: Migrated selections from standard to shared defaults", category: .general)
   }
 
   var hasSelections: Bool {
