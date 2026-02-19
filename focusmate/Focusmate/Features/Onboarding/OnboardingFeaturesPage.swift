@@ -1,28 +1,37 @@
 import SwiftUI
 
+private struct Feature: Identifiable {
+    let icon: String
+    let color: Color
+    let title: String
+    let description: String
+
+    var id: String { title }
+}
+
 struct OnboardingFeaturesPage: View {
     let onNext: () -> Void
 
-    private let features: [(icon: String, color: Color, title: String, description: String)] = [
-        (
+    private let features: [Feature] = [
+        Feature(
             icon: "checklist",
             color: DS.Colors.accent,
             title: "Tasks & Lists",
             description: "Organize your tasks with due dates. Overdue tasks trigger accountability."
         ),
-        (
+        Feature(
             icon: "shield.fill",
             color: DS.Colors.error,
             title: "2-Hour Grace Period",
             description: "When a task is overdue, you get 2 hours. After that, distracting apps are blocked."
         ),
-        (
+        Feature(
             icon: "sun.max.fill",
             color: DS.Colors.morning,
             title: "Daily Focus",
             description: "Start each day with a clear view of what needs your attention."
         ),
-        (
+        Feature(
             icon: "person.2.fill",
             color: DS.Colors.accent,
             title: "Shared Lists",
@@ -44,7 +53,7 @@ struct OnboardingFeaturesPage: View {
             }
 
             VStack(spacing: DS.Spacing.lg) {
-                ForEach(features, id: \.title) { feature in
+                ForEach(features) { feature in
                     HStack(spacing: DS.Spacing.lg) {
                         Image(systemName: feature.icon)
                             .font(DS.Typography.title2)
