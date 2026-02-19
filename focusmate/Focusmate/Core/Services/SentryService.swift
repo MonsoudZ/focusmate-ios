@@ -195,8 +195,16 @@ final class SentryService {
 
   // MARK: - Breadcrumbs
 
-  /// Add a breadcrumb for tracking user actions
-  func addBreadcrumb(message: String, category: String, level: SentryLevel = .info, data: [String: Any]? = nil) {
+  /// Add a breadcrumb for tracking user actions.
+  /// `nonisolated` because this only calls `SentrySDK.addBreadcrumb` (thread-safe)
+  /// and doesn't touch any mutable instance state. Avoids requiring `await` from
+  /// non-MainActor callers like `InternalNetworking`.
+  nonisolated func addBreadcrumb(
+    message: String,
+    category: String,
+    level: SentryLevel = .info,
+    data: [String: Any]? = nil
+  ) {
     #if canImport(Sentry)
       let breadcrumb = Breadcrumb(level: level, category: category)
       breadcrumb.message = message
@@ -213,7 +221,7 @@ final class SentryService {
   }
 
   /// Add navigation breadcrumb
-  func addNavigationBreadcrumb(from: String, to: String) {
+  nonisolated func addNavigationBreadcrumb(from: String, to: String) {
     self.addBreadcrumb(
       message: "Navigation: \(from) → \(to)",
       category: "navigation",
@@ -223,7 +231,7 @@ final class SentryService {
   }
 
   /// Add API call breadcrumb
-  func addAPIBreadcrumb(method: String, endpoint: String, statusCode: Int? = nil) {
+  nonisolated func addAPIBreadcrumb(method: String, endpoint: String, statusCode: Int? = nil) {
     var data: [String: Any] = ["method": method, "endpoint": endpoint]
     if let statusCode {
       data["status_code"] = statusCode
@@ -238,7 +246,7 @@ final class SentryService {
   }
 
   /// Add user action breadcrumb
-  func addUserActionBreadcrumb(action: String, details: [String: Any]? = nil) {
+  nonisolated func addUserActionBreadcrumb(action: String, details: [String: Any]? = nil) {
     self.addBreadcrumb(
       message: "User action: \(action)",
       category: "user",
