@@ -99,7 +99,11 @@ final class TaskService {
         return response.task
     }
 
-    func updateTask(listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?, color: String? = nil, priority: TaskPriority? = nil, starred: Bool? = nil, hidden: Bool? = nil, tagIds: [Int]? = nil) async throws -> TaskDTO {
+    func updateTask(
+        listId: Int, taskId: Int, title: String?, note: String?, dueAt: String?,
+        color: String? = nil, priority: TaskPriority? = nil, starred: Bool? = nil,
+        hidden: Bool? = nil, tagIds: [Int]? = nil
+    ) async throws -> TaskDTO {
         try InputValidation.requirePositive(listId, fieldName: "list_id")
         try InputValidation.requirePositive(taskId, fieldName: "task_id")
         if let title, title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

@@ -11,6 +11,7 @@ import XCTest
 /// output, catching mismatches at the service boundary.
 ///
 /// Each test is named after the Rails serializer it validates against.
+// swiftlint:disable:next type_body_length
 final class APIContractTests: XCTestCase {
 
   private let decoder = APIClient.decoder

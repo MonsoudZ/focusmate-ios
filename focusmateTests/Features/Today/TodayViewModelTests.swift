@@ -2,6 +2,7 @@ import XCTest
 @testable import focusmate
 
 @MainActor
+// swiftlint:disable:next type_body_length
 final class TodayViewModelTests: XCTestCase {
 
     private var mockNetworking: MockNetworking!

@@ -11,6 +11,7 @@
 
 import XCTest
 
+// swiftlint:disable:next type_name
 final class focusmateUITests: XCTestCase {
   var app: XCUIApplication!
   

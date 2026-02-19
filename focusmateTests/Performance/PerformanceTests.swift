@@ -291,6 +291,7 @@ final class PerformanceTests: XCTestCase {
     }
 
     /// Replicates the groupedTasks logic from TodayViewModel for isolated testing
+    // swiftlint:disable:next large_tuple
     private func groupTasks(from data: TodayResponse) -> (anytime: [TaskDTO], morning: [TaskDTO], afternoon: [TaskDTO], evening: [TaskDTO]) {
         var anytime: [TaskDTO] = [], morning: [TaskDTO] = []
         var afternoon: [TaskDTO] = [], evening: [TaskDTO] = []

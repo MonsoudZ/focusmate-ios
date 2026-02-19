@@ -9,6 +9,7 @@ final class JWTExpiryTests: XCTestCase {
     /// happens in JWTExpiry, so the signature segment can be anything.
     private func makeJWT(claims: [String: Any]) -> String {
         let header = #"{"alg":"HS256","typ":"JWT"}"#
+        // swiftlint:disable:next force_try
         let payload = try! JSONSerialization.data(withJSONObject: claims)
 
         func base64url(_ data: Data) -> String {

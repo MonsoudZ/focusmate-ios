@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import XCTest
 @testable import focusmate
 
@@ -7,6 +8,7 @@ import XCTest
 // Each section is labeled with the QA item number it covers.
 
 @MainActor
+// swiftlint:disable:next type_body_length
 final class QAUnitTests: XCTestCase {
 
   // MARK: - Shared Test Infrastructure
