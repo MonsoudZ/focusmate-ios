@@ -102,7 +102,7 @@ final class ListDetailViewModel {
   // MARK: - Computed: Permissions
 
   var isOwner: Bool {
-    self.list.role == "owner"
+    self.list.role == "owner" || self.list.role == nil
   }
 
   var isEditor: Bool {

@@ -32,18 +32,42 @@ jobs:
       
     - name: Build and Test
       run: |
-        xcodebuild -scheme "focusmate" -project "focusmate/focusmate.xcodeproj" -destination "platform=iOS Simulator,name=iPhone 16" clean test -enableCodeCoverage YES
+        xcodebuild -scheme "focusmate" -project "focusmate.xcodeproj" -destination "platform=iOS Simulator,name=iPhone 16" -derivedDataPath build clean test -enableCodeCoverage YES
         
     - name: Check for Raw Networking
-      run: bash Scripts/check_no_raw_networking.sh
-      
+      run: |
+        # Ensure no Swift files use URLSession directly (must go through APIClient)
+        HITS=$(grep -rn 'URLSession\.\(shared\|init\)' focusmate/Focusmate --include='*.swift' \
+          | grep -v 'InternalNetworking.swift' \
+          | grep -v 'MockURLProtocol.swift' \
+          | grep -v '// swiftlint:' || true)
+        if [ -n "$HITS" ]; then
+          echo "❌ Raw URLSession usage found — use APIClient instead:"
+          echo "$HITS"
+          exit 1
+        fi
+        echo "✅ No raw URLSession usage detected"
+
     - name: Coverage Gate (>=40%)
       run: |
         xcrun xccov view --report --json build/Logs/Test/*.xcresult > coverage.json
         python3 - <<'PY'
-        import json,sys
-        d=json.load(open('coverage.json'))
-        pct=d['targets'][0]['lineCoverage']['percentage']
+        import json, sys
+        d = json.load(open('coverage.json'))
+        # Find the main app target (skip test bundles)
+        target = None
+        for t in d.get('targets', []):
+            if t['name'].endswith('.app'):
+                target = t
+                break
+        if target is None:
+            target = d['targets'][0] if d.get('targets') else None
+        if target is None:
+            print("No coverage targets found")
+            sys.exit(1)
+        # lineCoverage is a float 0.0-1.0
+        pct = target['lineCoverage'] * 100
+        print(f"Target: {target['name']}")
         print(f"Coverage: {pct:.1f}%")
         sys.exit(0 if pct >= 40 else 1)
         PY
