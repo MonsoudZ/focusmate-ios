@@ -11,6 +11,16 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+
+        // Re-register for remote notifications on every cold launch.
+        // Apple can rotate the APNs device token at any time (OS updates,
+        // token expiry). Without this, the backend holds a stale token and
+        // pushes silently fail. The existing didRegisterForRemoteNotifications
+        // handler will forward any new token to the backend via AppState.
+        if AppSettings.shared.didRequestPushPermission {
+            application.registerForRemoteNotifications()
+        }
+
         return true
     }
 

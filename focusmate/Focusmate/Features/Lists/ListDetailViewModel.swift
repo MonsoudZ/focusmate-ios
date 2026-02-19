@@ -91,7 +91,7 @@ final class ListDetailViewModel {
     // MARK: - Computed: Permissions
 
     var isOwner: Bool {
-        list.role == "owner" || list.role == nil
+        list.role == "owner"
     }
 
     var isEditor: Bool {
@@ -112,16 +112,16 @@ final class ListDetailViewModel {
 
     var roleLabel: String {
         switch list.role {
-        case "owner", nil: return "Owner"
+        case "owner": return "Owner"
         case "editor": return "Editor"
         case "viewer": return "Viewer"
-        default: return list.role ?? "Member"
+        default: return list.role?.capitalized ?? "Member"
         }
     }
 
     var roleIcon: String {
         switch list.role {
-        case "owner", nil: return "crown.fill"
+        case "owner": return "crown.fill"
         case "editor": return DS.Icon.edit
         case "viewer": return "eye"
         default: return "person"
@@ -130,10 +130,9 @@ final class ListDetailViewModel {
 
     var roleColor: Color {
         switch list.role {
-        case "owner", nil: return .yellow
+        case "owner": return .yellow
         case "editor": return DS.Colors.accent
-        case "viewer": return Color(.secondaryLabel)
-        default: return DS.Colors.accent
+        default: return Color(.secondaryLabel)
         }
     }
 
@@ -393,11 +392,25 @@ final class ListDetailViewModel {
     }
 
     func nudgeAboutTask(_ task: TaskDTO) async {
+        let cooldown = NudgeCooldownManager.shared
+        guard !cooldown.isOnCooldown(taskId: task.id) else {
+            withAnimation {
+                nudgeMessage = "Already nudged recently"
+            }
+            return
+        }
+
         do {
             try await taskService.nudgeTask(listId: task.list_id, taskId: task.id)
+            cooldown.recordNudge(taskId: task.id)
             HapticManager.success()
             withAnimation {
                 nudgeMessage = "Nudge sent!"
+            }
+        } catch let error as FocusmateError where error.isRateLimited {
+            cooldown.recordNudge(taskId: task.id)
+            withAnimation {
+                nudgeMessage = "Already nudged recently"
             }
         } catch {
             Logger.error("Failed to nudge: \(error)", category: .api)

@@ -237,7 +237,13 @@ final class TodayViewModel {
         guard inFlightTaskIds.insert(task.id).inserted else { return }
         defer { inFlightTaskIds.remove(task.id) }
 
+        // Snapshot for rollback
+        let snapshot = todayData
+
         if task.isCompleted {
+            // Optimistic: move from completed back to due_today
+            applyOptimisticReopen(task)
+
             do {
                 _ = try await taskService.reopenTask(listId: task.list_id, taskId: task.id)
                 await reloadAfterMutation()
@@ -248,31 +254,76 @@ final class TodayViewModel {
                     _ = try await svc.reopenTask(listId: listId, taskId: taskId)
                 }
             } catch {
+                todayData = snapshot
+                recomputeGroupedTasks()
                 Logger.error("Failed to reopen task", error: error, category: .api)
                 self.error = ErrorHandler.shared.handle(error, context: "Reopening task")
             }
         } else {
+            // Optimistic: move from due_today/overdue to completed
+            applyOptimisticComplete(task)
+            HapticManager.success()
+
             do {
                 _ = try await taskService.completeTask(listId: task.list_id, taskId: task.id, reason: reason)
-                HapticManager.success()
                 await reloadAfterMutation()
             } catch where NetworkMonitor.isOfflineError(error) {
-                HapticManager.success()
                 let svc = self.taskService
                 let listId = task.list_id, taskId = task.id
                 await MutationQueue.shared.enqueue(description: "Complete task") {
                     _ = try await svc.completeTask(listId: listId, taskId: taskId, reason: reason)
                 }
             } catch {
+                todayData = snapshot
+                recomputeGroupedTasks()
                 Logger.error("Failed to complete task", error: error, category: .api)
                 self.error = ErrorHandler.shared.handle(error, context: "Completing task")
             }
         }
     }
 
+    // MARK: - Optimistic Updates
+
+    /// Move a task from due_today/overdue to completed_today locally.
+    /// The server is the source of truth — this is a UI-only update to
+    /// make the app feel responsive. The subsequent reloadAfterMutation()
+    /// will reconcile with the server state.
+    private func applyOptimisticComplete(_ task: TaskDTO) {
+        guard var data = todayData else { return }
+        var completedTask = task
+        completedTask.completed_at = ISO8601Utils.formatDateNoFrac(Date())
+        data.overdue.removeAll { $0.id == task.id }
+        data.due_today.removeAll { $0.id == task.id }
+        data.completed_today.insert(completedTask, at: 0)
+        todayData = data
+        recomputeGroupedTasks()
+        onOverdueCountChange?(data.overdue.count)
+    }
+
+    /// Move a task from completed_today back to due_today locally.
+    private func applyOptimisticReopen(_ task: TaskDTO) {
+        guard var data = todayData else { return }
+        var reopenedTask = task
+        reopenedTask.completed_at = nil
+        data.completed_today.removeAll { $0.id == task.id }
+        data.due_today.append(reopenedTask)
+        todayData = data
+        recomputeGroupedTasks()
+    }
+
     func deleteTask(_ task: TaskDTO) async {
         guard inFlightTaskIds.insert(task.id).inserted else { return }
         defer { inFlightTaskIds.remove(task.id) }
+
+        // Optimistic: remove the task from all arrays immediately
+        let snapshot = todayData
+        if var data = todayData {
+            data.overdue.removeAll { $0.id == task.id }
+            data.due_today.removeAll { $0.id == task.id }
+            data.completed_today.removeAll { $0.id == task.id }
+            todayData = data
+            recomputeGroupedTasks()
+        }
 
         do {
             try await taskService.deleteTask(listId: task.list_id, taskId: task.id)
@@ -284,6 +335,8 @@ final class TodayViewModel {
                 try await svc.deleteTask(listId: listId, taskId: taskId)
             }
         } catch {
+            todayData = snapshot
+            recomputeGroupedTasks()
             Logger.error("Failed to delete task", error: error, category: .api)
             self.error = ErrorHandler.shared.handle(error, context: "Deleting task")
         }
@@ -311,11 +364,25 @@ final class TodayViewModel {
     }
 
     func nudgeTask(_ task: TaskDTO) async {
+        let cooldown = NudgeCooldownManager.shared
+        guard !cooldown.isOnCooldown(taskId: task.id) else {
+            withAnimation {
+                nudgeMessage = "Already nudged recently"
+            }
+            return
+        }
+
         do {
             try await taskService.nudgeTask(listId: task.list_id, taskId: task.id)
+            cooldown.recordNudge(taskId: task.id)
             HapticManager.success()
             withAnimation {
                 nudgeMessage = "Nudge sent!"
+            }
+        } catch let error as FocusmateError where error.isRateLimited {
+            cooldown.recordNudge(taskId: task.id)
+            withAnimation {
+                nudgeMessage = "Already nudged recently"
             }
         } catch {
             Logger.error("Failed to nudge: \(error)", category: .api)

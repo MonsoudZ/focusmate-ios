@@ -6,8 +6,6 @@ struct EditProfileView: View {
 
     @State private var viewModel: EditProfileViewModel
 
-    private let timezones = TimeZone.knownTimeZoneIdentifiers.sorted()
-
     init(user: UserDTO, apiClient: APIClient) {
         _viewModel = State(initialValue: EditProfileViewModel(user: user, apiClient: apiClient))
     }
@@ -25,13 +23,6 @@ struct EditProfileView: View {
                             .textContentType(.name)
                             .textInputAutocapitalization(.words)
                     }
-
-                    Picker("Timezone", selection: $viewModel.timezone) {
-                        ForEach(timezones, id: \.self) { tz in
-                            Text(tz).tag(tz)
-                        }
-                    }
-                    .pickerStyle(.navigationLink)
                 }
             }
             .surfaceFormBackground()

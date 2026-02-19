@@ -58,8 +58,8 @@ struct NotificationSettingsView: View {
                 }
                 
                 Section {
-                    Text("Due Soon: 15 minutes before task is due")
-                    Text("Overdue: When a task becomes overdue")
+                    Text("Due Soon: 1 hour before task is due")
+                    Text("Overdue: 1 hour after task is due")
                     Text("Morning Briefing: Daily at 8:00 AM")
                 }
                 .font(.footnote)

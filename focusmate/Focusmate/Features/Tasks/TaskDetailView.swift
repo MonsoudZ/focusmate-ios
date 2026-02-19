@@ -49,7 +49,8 @@ struct TaskDetailView: View {
                         onCopyLink: vm.copyTaskLink,
                         onNudge: vm.nudgeTask,
                         canHide: vm.canHide,
-                        canNudge: vm.canNudge
+                        canNudge: vm.canNudge,
+                        isNudgeOnCooldown: vm.isNudgeOnCooldown
                     )
 
                     // Info Card (progress + creator)

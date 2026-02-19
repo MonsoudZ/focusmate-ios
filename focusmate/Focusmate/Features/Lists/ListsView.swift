@@ -70,7 +70,7 @@ struct ListsView: View {
                             }
                             .buttonStyle(.plain)
                             .contextMenu {
-                                if list.role == "owner" || list.role == nil {
+                                if list.role == "owner" {
                                     Button(role: .destructive) {
                                         viewModel.listToDelete = list
                                         viewModel.showingDeleteConfirmation = true
@@ -80,7 +80,7 @@ struct ListsView: View {
                                 }
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                if list.role == "owner" || list.role == nil {
+                                if list.role == "owner" {
                                     Button(role: .destructive) {
                                         viewModel.listToDelete = list
                                         viewModel.showingDeleteConfirmation = true

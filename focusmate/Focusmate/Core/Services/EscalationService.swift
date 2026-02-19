@@ -45,7 +45,10 @@ final class EscalationService: ObservableObject {
     // MARK: - Task Became Overdue
 
     func taskBecameOverdue(_ task: TaskDTO) {
-        guard !overdueTaskIds.contains(task.id) else { return }
+        guard !overdueTaskIds.contains(task.id) else {
+            Logger.debug("Escalation: Task \(task.id) already tracked, skipping", category: .general)
+            return
+        }
 
         overdueTaskIds.insert(task.id)
         saveState()
@@ -53,15 +56,27 @@ final class EscalationService: ObservableObject {
         startPeriodicCheck()
 
         // Start grace period if not already running and blocking is possible
-        if !isInGracePeriod && !screenTimeService.isBlocking
-            && screenTimeService.isAuthorized && screenTimeService.hasSelections {
+        let authorized = screenTimeService.isAuthorized
+        let hasApps = screenTimeService.hasSelections
+        let alreadyBlocking = screenTimeService.isBlocking
+
+        Logger.info(
+            "Escalation: Task \(task.id) became overdue. "
+            + "authorized=\(authorized), hasSelections=\(hasApps), "
+            + "isBlocking=\(alreadyBlocking), isInGracePeriod=\(isInGracePeriod)",
+            category: .general
+        )
+
+        if !isInGracePeriod && !alreadyBlocking && authorized && hasApps {
             startGracePeriod()
+        } else if !authorized {
+            Logger.warning("Escalation: Cannot start grace period — Screen Time not authorized", category: .general)
+        } else if !hasApps {
+            Logger.warning("Escalation: Cannot start grace period — no apps selected for blocking", category: .general)
         }
 
         // Schedule notifications
         scheduleGracePeriodNotifications(for: task)
-
-        Logger.info("Task \(task.id) became overdue. Grace period active: \(isInGracePeriod)", category: .general)
     }
 
     // MARK: - Task Completed
@@ -114,6 +129,12 @@ final class EscalationService: ObservableObject {
     }
 
     private func gracePeriodEnded() {
+        Logger.info(
+            "Escalation: Grace period ended. Overdue tasks: \(overdueTaskIds.count), "
+            + "authorized=\(screenTimeService.isAuthorized), hasSelections=\(screenTimeService.hasSelections)",
+            category: .general
+        )
+
         isInGracePeriod = false
         gracePeriodEndTime = nil
         gracePeriodTimer?.invalidate()
@@ -122,14 +143,20 @@ final class EscalationService: ObservableObject {
         // Start blocking if there are still overdue tasks
         if !overdueTaskIds.isEmpty {
             startBlocking()
+        } else {
+            Logger.info("Escalation: No overdue tasks remaining, skipping blocking", category: .general)
         }
-
-        Logger.info("Grace period ended. Overdue tasks: \(overdueTaskIds.count)", category: .general)
     }
 
     private func startBlocking() {
+        Logger.info(
+            "Escalation: startBlocking called. authorized=\(screenTimeService.isAuthorized), "
+            + "hasSelections=\(screenTimeService.hasSelections), overdueCount=\(overdueTaskIds.count)",
+            category: .general
+        )
+
         guard screenTimeService.isAuthorized else {
-            Logger.warning("Cannot block - Screen Time authorization revoked", category: .general)
+            Logger.warning("Escalation: Cannot block — Screen Time authorization revoked", category: .general)
             authorizationWasRevoked = true
             sendAuthorizationRevokedNotification()
             resetAll()
@@ -137,7 +164,7 @@ final class EscalationService: ObservableObject {
         }
 
         guard screenTimeService.hasSelections else {
-            Logger.warning("Cannot block - no apps selected", category: .general)
+            Logger.warning("Escalation: Cannot block — no apps selected for blocking", category: .general)
             sendBlockingSkippedNotification()
             resetAll()
             return
@@ -146,7 +173,7 @@ final class EscalationService: ObservableObject {
         screenTimeService.startBlocking()
         sendBlockingStartedNotification()
 
-        Logger.info("App blocking started", category: .general)
+        Logger.info("Escalation: App blocking ACTIVATED", category: .general)
     }
 
     private func stopEscalation() {
@@ -183,15 +210,12 @@ final class EscalationService: ObservableObject {
     private func scheduleGracePeriodNotifications(for task: TaskDTO) {
         let now = Date()
 
-        // Immediate notification
-        notificationService.scheduleEscalationNotification(
-            id: "escalation-\(task.id)-start",
-            title: "Task Overdue",
-            body: "⏰ \"\(task.title)\" is overdue. Complete it within 2 hours to avoid app blocking.",
-            date: now.addingTimeInterval(1)
-        )
+        // The immediate "overdue" notification is handled by
+        // NotificationService (task-{id}-overdue, 1 hour after due).
+        // Only schedule the 30-minute-before-blocking warning here
+        // to avoid duplicate overdue alerts.
 
-        // 30-minute warning
+        // 30-minute warning before app blocking
         let warningTime = now.addingTimeInterval(TimeInterval((gracePeriodMinutes - warningMinutes) * 60))
         notificationService.scheduleEscalationNotification(
             id: "escalation-\(task.id)-warning",

@@ -132,17 +132,6 @@ struct ListDetailView: View {
             }
         }
 
-        if viewModel.isOwner {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    presentInvites()
-                } label: {
-                    Image(systemName: "person.badge.plus")
-                }
-                .accessibilityLabel("Invite to list")
-            }
-        }
-
         ToolbarItem(placement: .navigationBarTrailing) {
             Menu {
                 if viewModel.canEdit {
@@ -162,6 +151,12 @@ struct ListDetailView: View {
                 }
 
                 if viewModel.isOwner {
+                    Button {
+                        presentInvites()
+                    } label: {
+                        Label("Invite Links", systemImage: "link.badge.plus")
+                    }
+
                     Button {
                         presentEditList()
                     } label: {
@@ -205,12 +200,63 @@ struct ListDetailView: View {
 
     // MARK: - Task List
 
+    // MARK: - List Header
+
+    private var listHeaderView: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+            if let description = viewModel.list.description, !description.isEmpty {
+                Text(description)
+                    .font(DS.Typography.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: DS.Spacing.lg) {
+                // Task progress
+                let totalTasks = viewModel.urgentTasks.count + viewModel.starredTasks.count
+                    + viewModel.normalTasks.count + viewModel.completedCount
+                if totalTasks > 0 {
+                    HStack(spacing: DS.Spacing.xs) {
+                        Image(systemName: "checkmark.circle")
+                            .font(.caption)
+                            .foregroundStyle(DS.Colors.success)
+                        Text("\(viewModel.completedCount)/\(totalTasks)")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // Member count
+                if let members = viewModel.list.members, members.count > 1 {
+                    HStack(spacing: DS.Spacing.xs) {
+                        Image(systemName: "person.2")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("\(members.count) members")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // List type
+                if let listType = viewModel.list.list_type, listType != "tasks" {
+                    Text(listType == "habit_tracker" ? "Habit Tracker" : listType.capitalized)
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(DS.Colors.accent)
+                }
+            }
+        }
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.vertical, DS.Spacing.sm)
+    }
+
     private var taskListView: some View {
         VStack(spacing: 0) {
             OfflineBanner(
                 isConnected: NetworkMonitor.shared.isConnected,
                 pendingCount: NetworkMonitor.shared.pendingMutationCount
             )
+
+            listHeaderView
 
             List {
                 if !viewModel.urgentTasks.isEmpty {
@@ -266,7 +312,7 @@ struct ListDetailView: View {
             }
             .listStyle(.plain)
             .surfaceFormBackground()
-            .environment(\.editMode, viewModel.canEdit ? .constant(.active) : .constant(.inactive))
+            .environment(\.editMode, .constant(viewModel.canEdit ? .active : .inactive))
         }
     }
 

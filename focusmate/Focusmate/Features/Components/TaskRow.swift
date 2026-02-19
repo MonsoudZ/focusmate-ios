@@ -25,7 +25,9 @@ struct TaskRow: View {
     private var isTrackedForEscalation: Bool { escalationService.isTaskTracked(task.id) }
     private var canEdit: Bool { task.can_edit ?? true }
     private var canDelete: Bool { task.can_delete ?? true }
-    private var canNudge: Bool { showNudge && !task.isCompleted }
+    private var canNudge: Bool {
+        showNudge && !task.isCompleted && !NudgeCooldownManager.shared.isOnCooldown(taskId: task.id)
+    }
 
     init(
         task: TaskDTO,
@@ -69,7 +71,7 @@ struct TaskRow: View {
                 // Subtasks section
                 if task.hasSubtasks && isExpanded {
                     subtasksList
-                } else if !task.hasSubtasks && canEdit {
+                } else if !task.hasSubtasks && canEdit && !task.isCompleted {
                     Divider()
                         .padding(.horizontal, DS.Spacing.md)
                     addSubtaskButton
@@ -205,7 +207,7 @@ struct TaskRow: View {
                     }
                 }
 
-                if canEdit {
+                if canEdit && !task.isCompleted {
                     Divider()
                         .padding(.leading, 52)
                     addSubtaskButton

@@ -8,13 +8,13 @@ struct OnboardingFeaturesPage: View {
             icon: "checklist",
             color: DS.Colors.accent,
             title: "Tasks & Lists",
-            description: "Organize your tasks into lists with priorities and due dates."
+            description: "Organize your tasks with due dates. Overdue tasks trigger accountability."
         ),
         (
             icon: "shield.fill",
             color: DS.Colors.error,
-            title: "Accountability",
-            description: "Block distracting apps until you complete your tasks."
+            title: "2-Hour Grace Period",
+            description: "When a task is overdue, you get 2 hours. After that, distracting apps are blocked."
         ),
         (
             icon: "sun.max.fill",
@@ -25,8 +25,8 @@ struct OnboardingFeaturesPage: View {
         (
             icon: "person.2.fill",
             color: DS.Colors.accent,
-            title: "Collaborate",
-            description: "Share lists with friends or partners to stay accountable together."
+            title: "Shared Lists",
+            description: "Share lists and nudge friends to finish their tasks."
         ),
     ]
 
@@ -38,7 +38,7 @@ struct OnboardingFeaturesPage: View {
                 Text("How It Works")
                     .font(DS.Typography.largeTitle)
 
-                Text("Four pillars to keep you on track.")
+                Text("Accountability that actually works.")
                     .font(DS.Typography.subheadline)
                     .foregroundStyle(.secondary)
             }

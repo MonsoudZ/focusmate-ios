@@ -32,6 +32,7 @@ final class AppState: ObservableObject {
     private struct PushTokenState {
         var lastKnownToken: String?
         var lastRegisteredToken: String?
+        var lastRegisteredDeviceId: Int?
         var hasRegistered = false
         var isRegistering = false
     }
@@ -128,13 +129,39 @@ final class AppState: ObservableObject {
         defer { pushState.isRegistering = false }
 
         do {
-            _ = try await deviceService.registerDevice(pushToken: tokenToRegister)
+            let response = try await deviceService.registerDevice(pushToken: tokenToRegister)
             pushState.lastRegisteredToken = tokenToRegister
+            pushState.lastRegisteredDeviceId = response.id
             pushState.hasRegistered = true
             Logger.info("Device registered successfully (push: \(tokenToRegister != nil))", category: .api)
         } catch {
             Logger.warning("Device registration skipped: \(error)", category: .api)
         }
+    }
+
+    /// Removes the device record from the backend so the user stops
+    /// receiving push notifications for this account after sign-out.
+    /// Must be called while the JWT is still valid.
+    func unregisterDevice() async {
+        guard let deviceId = pushState.lastRegisteredDeviceId else { return }
+
+        do {
+            try await deviceService.removeDevice(id: deviceId)
+            Logger.info("Device \(deviceId) unregistered on sign-out", category: .api)
+        } catch {
+            Logger.warning("Device unregistration failed (stale pushes possible): \(error)", category: .api)
+        }
+
+        pushState.lastRegisteredDeviceId = nil
+        pushState.lastRegisteredToken = nil
+        pushState.hasRegistered = false
+    }
+
+    /// Orchestrates sign-out: unregisters the device (while JWT is still
+    /// valid) then delegates to AuthStore for session cleanup.
+    func signOut() async {
+        await unregisterDevice()
+        await auth.signOut()
     }
 
     func clearError() {

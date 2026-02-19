@@ -3,6 +3,7 @@ import SwiftUI
 struct TodayView: View {
     @State private var viewModel: TodayViewModel
     @Environment(\.router) private var router
+    @EnvironmentObject private var appState: AppState
 
     init(
         taskService: TaskService,
@@ -41,7 +42,7 @@ struct TodayView: View {
                 TodayEmptyView()
             }
         }
-        .navigationTitle("Today")
+        .navigationTitle("Today, \(Date().formatted(.dateTime.month(.abbreviated).day()))")
         .refreshable {
             await viewModel.loadToday()
         }
@@ -71,6 +72,16 @@ struct TodayView: View {
             viewModel.initializeServiceIfNeeded()
             await viewModel.loadToday()
         }
+    }
+
+    // MARK: - Helpers
+
+    /// Only show nudge if the task has a creator who is NOT the current user.
+    /// Nudging your own tasks is meaningless — nudge is for reminding others.
+    private func shouldShowNudge(for task: TaskDTO) -> Bool {
+        guard let creator = task.creator else { return false }
+        guard let currentUserId = appState.auth.currentUser?.id else { return false }
+        return creator.id != currentUserId
     }
 
     // MARK: - Sheet Presentation
@@ -219,7 +230,7 @@ struct TodayView: View {
                             ForEach(data.completed_today) { task in
                                 TaskRow(
                                     task: task,
-                                    onComplete: { await viewModel.loadToday() },
+                                    onComplete: { await viewModel.toggleComplete(task) },
                                     onStar: { await viewModel.toggleStar(task) },
                                     onTap: { presentTaskDetail(task) },
                                     onNudge: { await viewModel.nudgeTask(task) },
@@ -230,7 +241,7 @@ struct TodayView: View {
                                         presentAddSubtask(for: task)
                                     },
                                     showStar: task.can_edit ?? true,
-                                    showNudge: task.creator != nil
+                                    showNudge: shouldShowNudge(for: task)
                                 )
                             }
                         }
@@ -266,7 +277,7 @@ struct TodayView: View {
             ForEach(tasks) { task in
                 TaskRow(
                     task: task,
-                    onComplete: { await viewModel.loadToday() },
+                    onComplete: { await viewModel.toggleComplete(task) },
                     onStar: { await viewModel.toggleStar(task) },
                     onTap: { presentTaskDetail(task) },
                     onNudge: { await viewModel.nudgeTask(task) },
@@ -277,7 +288,7 @@ struct TodayView: View {
                         presentAddSubtask(for: task)
                     },
                     showStar: task.can_edit ?? true,
-                    showNudge: task.creator != nil
+                    showNudge: shouldShowNudge(for: task)
                 )
             }
         }

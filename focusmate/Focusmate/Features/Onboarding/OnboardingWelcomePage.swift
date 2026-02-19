@@ -12,22 +12,28 @@ struct OnboardingWelcomePage: View {
                     .font(.system(size: DS.Size.logo))
                     .foregroundStyle(DS.Colors.accent)
 
-                VStack(spacing: DS.Spacing.sm) {
+                VStack(spacing: DS.Spacing.md) {
                     Text("Welcome to Intentia")
                         .font(DS.Typography.largeTitle)
                         .multilineTextAlignment(.center)
 
-                    Text("Intentional productivity.\nFocus on what matters most.")
+                    Text("The to-do list that holds you accountable.")
                         .font(DS.Typography.title3)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+
+                    Text("Miss a deadline? Intentia blocks your distracting apps until you finish the task.")
+                        .font(DS.Typography.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, DS.Spacing.xs)
                 }
             }
 
             Spacer()
 
             Button(action: onNext) {
-                Text("Next")
+                Text("Get Started")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(IntentiaPrimaryButtonStyle())

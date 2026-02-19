@@ -12,10 +12,27 @@ struct ListInvitesView: View {
         List {
             // Create invite section
             Section {
-                Button {
-                    presentCreateInvite()
-                } label: {
-                    Label("Create Invite Link", systemImage: "link.badge.plus")
+                let activeCount = viewModel.invites.filter { $0.usable && !$0.isExpired }.count
+                if activeCount >= 3 {
+                    HStack {
+                        Label("Create Invite Link", systemImage: "link.badge.plus")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("Max reached")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Button {
+                        presentCreateInvite()
+                    } label: {
+                        Label("Create Invite Link", systemImage: "link.badge.plus")
+                    }
+                }
+            } footer: {
+                let activeCount = viewModel.invites.filter { $0.usable && !$0.isExpired }.count
+                if activeCount > 0 {
+                    Text("\(activeCount) of 3 links active")
                 }
             }
 
@@ -137,11 +154,8 @@ struct InviteRowView: View {
                 .tint(DS.Colors.accent)
             }
         }
-        .confirmationDialog(
-            "Revoke Invite",
-            isPresented: $showRevokeConfirmation,
-            titleVisibility: .visible
-        ) {
+        .alert("Revoke Invite", isPresented: $showRevokeConfirmation) {
+            Button("Cancel", role: .cancel) {}
             Button("Revoke", role: .destructive) {
                 onRevoke()
             }
@@ -189,7 +203,7 @@ struct CreateInviteView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var role = "viewer"
-    @State private var hasExpiry = false
+    @State private var hasExpiry = true
     @State private var expiresAt = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date().addingTimeInterval(7 * 24 * 60 * 60)
     @State private var hasMaxUses = false
     @State private var maxUses = 10

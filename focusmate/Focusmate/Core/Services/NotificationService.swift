@@ -21,18 +21,7 @@ final class NotificationService: @unchecked Sendable {
     }
     
     // MARK: - Permission
-    
-    func requestPermission() async -> Bool {
-        do {
-            let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
-            Logger.info("Notification permission: \(granted ? "granted" : "denied")", category: .general)
-            return granted
-        } catch {
-            Logger.error("Notification permission error", error: error, category: .general)
-            return false
-        }
-    }
-    
+
     func checkPermission() async -> Bool {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         return settings.authorizationStatus == .authorized
@@ -97,7 +86,6 @@ final class NotificationService: @unchecked Sendable {
             "task-\(taskId)-due-soon",
             "task-\(taskId)-due-now",
             "task-\(taskId)-overdue",
-            "escalation-\(taskId)-start",
             "escalation-\(taskId)-warning"
         ]
         let center = UNUserNotificationCenter.current()

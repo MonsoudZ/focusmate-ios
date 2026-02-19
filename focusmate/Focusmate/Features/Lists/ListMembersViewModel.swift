@@ -18,7 +18,7 @@ final class ListMembersViewModel {
     let friendService: FriendService
 
     var isOwner: Bool {
-        list.role == "owner" || list.role == nil
+        list.role == "owner"
     }
 
     init(list: ListDTO, apiClient: APIClient, inviteService: InviteService, friendService: FriendService) {
@@ -77,6 +77,38 @@ final class ListMembersViewModel {
         } catch {
             // Silently fail - friends are optional enhancement
             Logger.warning("Failed to load friends: \(error)", category: .api)
+        }
+    }
+
+    func updateMemberRole(_ membership: MembershipDTO, newRole: String) async {
+        let originalMemberships = memberships
+
+        // Optimistic update
+        if let idx = memberships.firstIndex(where: { $0.id == membership.id }) {
+            let updated = MembershipDTO(
+                id: membership.id,
+                user: membership.user,
+                role: newRole,
+                created_at: membership.created_at,
+                updated_at: membership.updated_at
+            )
+            memberships[idx] = updated
+        }
+
+        do {
+            let response: MembershipResponse = try await apiClient.request(
+                "PATCH",
+                API.Lists.membership(String(list.id), String(membership.id)),
+                body: UpdateMembershipRequest(membership: UpdateMembershipParams(role: newRole))
+            )
+            if let idx = memberships.firstIndex(where: { $0.id == response.membership.id }) {
+                memberships[idx] = response.membership
+            }
+            HapticManager.success()
+        } catch {
+            memberships = originalMemberships
+            self.error = ErrorHandler.shared.handle(error, context: "Updating member role")
+            HapticManager.error()
         }
     }
 

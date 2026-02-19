@@ -27,14 +27,20 @@ struct ListMembersView: View {
                         if !viewModel.memberships.isEmpty {
                             Section {
                                 ForEach(viewModel.memberships) { membership in
-                                    MemberRowView(membership: membership)
-                                        .swipeActions(edge: .trailing) {
-                                            if viewModel.isOwner && !membership.isOwner {
-                                                Button("Remove", role: .destructive) {
-                                                    viewModel.memberToRemove = membership
-                                                }
+                                    MemberRowView(
+                                        membership: membership,
+                                        allowRoleEdit: viewModel.isOwner && !membership.isOwner,
+                                        onRoleChange: { newRole in
+                                            Task { await viewModel.updateMemberRole(membership, newRole: newRole) }
+                                        }
+                                    )
+                                    .swipeActions(edge: .trailing) {
+                                        if viewModel.isOwner && !membership.isOwner {
+                                            Button("Remove", role: .destructive) {
+                                                viewModel.memberToRemove = membership
                                             }
                                         }
+                                    }
                                 }
                             } header: {
                                 HStack {
@@ -141,6 +147,8 @@ struct ListMembersView: View {
 
 struct MemberRowView: View {
     let membership: MembershipDTO
+    var allowRoleEdit: Bool = false
+    var onRoleChange: ((String) -> Void)?
 
     var body: some View {
         HStack(spacing: DS.Spacing.md) {
@@ -163,7 +171,31 @@ struct MemberRowView: View {
 
             Spacer()
 
-            RoleBadge(role: membership.role, isEditor: membership.isEditor)
+            if allowRoleEdit {
+                Menu {
+                    Button {
+                        onRoleChange?("editor")
+                    } label: {
+                        Label("Editor", systemImage: "pencil")
+                        if membership.isEditor { Image(systemName: "checkmark") }
+                    }
+                    Button {
+                        onRoleChange?("viewer")
+                    } label: {
+                        Label("Viewer", systemImage: "eye")
+                        if membership.role == "viewer" { Image(systemName: "checkmark") }
+                    }
+                } label: {
+                    HStack(spacing: DS.Spacing.xxs) {
+                        RoleBadge(role: membership.role, isEditor: membership.isEditor)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            } else {
+                RoleBadge(role: membership.role, isEditor: membership.isEditor)
+            }
         }
         .padding(.vertical, DS.Spacing.xs)
     }

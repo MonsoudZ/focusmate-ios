@@ -13,6 +13,7 @@ struct TaskDetailHeaderCard: View {
     let onNudge: () async -> Void
     let canHide: Bool
     let canNudge: Bool
+    var isNudgeOnCooldown: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
@@ -60,6 +61,7 @@ struct TaskDetailHeaderCard: View {
                 canEdit: canEdit,
                 canHide: canHide,
                 canNudge: canNudge,
+                isNudgeOnCooldown: isNudgeOnCooldown,
                 onToggleStar: onToggleStar,
                 onToggleHidden: onToggleHidden,
                 onReschedule: onReschedule,

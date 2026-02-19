@@ -38,3 +38,11 @@ struct MembershipParams: Codable {
 struct MembershipResponse: Codable {
     let membership: MembershipDTO
 }
+
+struct UpdateMembershipRequest: Codable {
+    let membership: UpdateMembershipParams
+}
+
+struct UpdateMembershipParams: Codable {
+    let role: String
+}

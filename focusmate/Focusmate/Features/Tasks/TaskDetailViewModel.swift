@@ -229,12 +229,22 @@ final class TaskDetailViewModel {
         }
     }
 
+    var isNudgeOnCooldown: Bool {
+        NudgeCooldownManager.shared.isOnCooldown(taskId: task.id)
+    }
+
     func nudgeTask() async {
+        let cooldown = NudgeCooldownManager.shared
+        guard !cooldown.isOnCooldown(taskId: task.id) else { return }
+
         do {
             try await taskService.nudgeTask(listId: listId, taskId: task.id)
+            cooldown.recordNudge(taskId: task.id)
             HapticManager.success()
             showNudgeSent = true
             scheduleNudgeToastDismiss()
+        } catch let error as FocusmateError where error.isRateLimited {
+            cooldown.recordNudge(taskId: task.id)
         } catch {
             Logger.error("Failed to nudge task", error: error, category: .api)
             HapticManager.error()

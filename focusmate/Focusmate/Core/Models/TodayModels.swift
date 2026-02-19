@@ -1,10 +1,10 @@
 import Foundation
 
 struct TodayResponse: Codable {
-    let overdue: [TaskDTO]
+    var overdue: [TaskDTO]
     let has_more_overdue: Bool?
-    let due_today: [TaskDTO]
-    let completed_today: [TaskDTO]
+    var due_today: [TaskDTO]
+    var completed_today: [TaskDTO]
     let stats: TodayStats?
     let streak: StreakInfo?
 }

@@ -6,6 +6,7 @@ struct TaskDetailQuickActions: View {
     let canEdit: Bool
     let canHide: Bool
     let canNudge: Bool
+    let isNudgeOnCooldown: Bool
     let onToggleStar: () async -> Void
     let onToggleHidden: () async -> Void
     let onReschedule: () -> Void
@@ -74,12 +75,13 @@ struct TaskDetailQuickActions: View {
             // Nudge (for shared lists with 2+ members, when not completed)
             if canNudge {
                 QuickActionButton(
-                    icon: "hand.point.right.fill",
-                    label: "Nudge",
-                    iconColor: DS.Colors.accent
+                    icon: isNudgeOnCooldown ? "checkmark.circle" : "hand.point.right.fill",
+                    label: isNudgeOnCooldown ? "Nudged" : "Nudge",
+                    iconColor: isNudgeOnCooldown ? .secondary : DS.Colors.accent
                 ) {
                     Task { await onNudge() }
                 }
+                .disabled(isNudgeOnCooldown)
             }
 
             Spacer()

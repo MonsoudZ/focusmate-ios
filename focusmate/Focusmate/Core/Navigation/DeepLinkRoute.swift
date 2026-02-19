@@ -61,8 +61,8 @@ enum DeepLinkRoute: Equatable {
     /// Supports:
     ///   - intentia://invite/ABC123
     ///   - intentia://task/123
-    ///   - https://focusmate.app/invite/ABC123
-    ///   - https://focusmate.app/task/123
+    ///   - https://intentia.app/invite/ABC123
+    ///   - https://intentia.app/task/123
     ///   - https://focusmate-api-production.up.railway.app/invite/ABC123
     init?(url: URL) {
         let pathComponents = url.pathComponents

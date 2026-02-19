@@ -136,6 +136,11 @@ enum FocusmateError: LocalizedError, Equatable {
 
     // MARK: - Retry Properties
 
+    var isRateLimited: Bool {
+        if case .rateLimited = self { return true }
+        return false
+    }
+
     var isRetryable: Bool {
         switch self {
         case .network, .timeout, .rateLimited, .serverError:

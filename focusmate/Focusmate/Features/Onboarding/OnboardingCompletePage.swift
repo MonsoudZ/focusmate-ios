@@ -27,7 +27,7 @@ struct OnboardingCompletePage: View {
                     Text("You're All Set")
                         .font(DS.Typography.largeTitle)
 
-                    Text("Time to focus on what matters.")
+                    Text("Add a task with a due date and see accountability in action.")
                         .font(DS.Typography.title3)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

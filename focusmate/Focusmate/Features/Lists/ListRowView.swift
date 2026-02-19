@@ -23,20 +23,42 @@ struct ListRowView: View {
                     Text(list.name)
                         .font(DS.Typography.bodyMedium)
 
+                    if let listType = list.list_type, listType != "tasks" {
+                        Text(listType == "habit_tracker" ? "Habit" : listType.capitalized)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(DS.Colors.accent)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(DS.Colors.accent.opacity(0.12))
+                            .clipShape(Capsule())
+                    }
+
+                    if hasMembers {
+                        Image(systemName: "person.2.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+
                     if list.hasOverdue {
                         overdueBadge
                     }
                 }
 
                 HStack(spacing: DS.Spacing.sm) {
-                    let count = list.parent_tasks_count ?? list.tasks_count
-                    if let count {
+                    let total = list.parent_tasks_count ?? list.tasks_count
+                    if let total {
                         if let completed = list.completed_tasks_count {
-                            Text("\(completed)/\(count) done")
+                            // API contract mismatch: `completed_tasks_count` includes subtask
+                            // completions, but `parent_tasks_count`/`tasks_count` only counts
+                            // parent tasks. Until the Rails serializer aligns the scopes
+                            // (e.g. COUNT(*) WHERE parent_id IS NULL for both), clamp here
+                            // to prevent displaying "7/5 done".
+                            let clamped = min(completed, total)
+                            Text("\(clamped)/\(total) done")
                                 .font(DS.Typography.caption)
                                 .foregroundStyle(.secondary)
                         } else {
-                            Text(count == 1 ? "1 task" : "\(count) tasks")
+                            Text(total == 1 ? "1 task" : "\(total) tasks")
                                 .font(DS.Typography.caption)
                                 .foregroundStyle(.secondary)
                         }

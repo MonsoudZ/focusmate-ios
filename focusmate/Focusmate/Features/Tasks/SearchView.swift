@@ -48,11 +48,20 @@ struct SearchView: View {
 
     // MARK: - Sheet Presentation
 
-    private func presentEditTask(_ task: TaskDTO) {
-        router.sheetCallbacks.onTaskSaved = {
-            Task { await viewModel.search() }
+    private func presentTask(_ task: TaskDTO) {
+        if task.isCompleted {
+            // Completed tasks open in read-only detail view
+            router.sheetCallbacks.onTaskUpdated = {
+                Task { await viewModel.search() }
+            }
+            router.present(.taskDetail(task, listName: task.list_name ?? "Unknown"))
+        } else {
+            // Active tasks open in edit view
+            router.sheetCallbacks.onTaskSaved = {
+                Task { await viewModel.search() }
+            }
+            router.present(.editTask(task, listId: task.list_id))
         }
-        router.present(.editTask(task, listId: task.list_id))
     }
 
     @ViewBuilder
@@ -81,7 +90,7 @@ struct SearchView: View {
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     HapticManager.selection()
-                                    presentEditTask(task)
+                                    presentTask(task)
                                 }
                         }
                     } header: {

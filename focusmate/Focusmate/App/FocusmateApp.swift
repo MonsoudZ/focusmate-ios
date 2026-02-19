@@ -72,7 +72,7 @@ struct RootView: View {
     @Environment(\.router) private var router
 
     @State private var overdueCount: Int = 0
-    @State private var showOnboarding: Bool = !AppSettings.shared.hasCompletedOnboarding
+    @AppStorage("has_completed_onboarding") private var hasCompletedOnboarding = false
     @State private var hasCheckedLists: Bool = false
     @State private var userHasLists: Bool = true  // Assume true until checked
     @Environment(\.scenePhase) private var scenePhase
@@ -97,12 +97,11 @@ struct RootView: View {
                             .environmentObject(state)
                             .environment(state.auth)
                     }
-            } else if showOnboarding || (hasCheckedLists && !userHasLists) {
+            } else if !hasCompletedOnboarding || (hasCheckedLists && !userHasLists) {
                 OnboardingView {
-                    AppSettings.shared.hasCompletedOnboarding = true
                     userHasLists = true  // After onboarding, assume they created a list
                     withAnimation {
-                        showOnboarding = false
+                        hasCompletedOnboarding = true
                     }
                 }
                 .environmentObject(state)
@@ -134,10 +133,9 @@ struct RootView: View {
         }
         .onChange(of: auth.jwt) { oldJWT, newJWT in
             if oldJWT == nil, newJWT != nil {
-                // Fresh login — re-sync onboarding flag from persistent store.
-                // @State was initialized once at view creation and is now stale
-                // after sign-out reset hasCompletedOnboarding = false.
-                showOnboarding = !AppSettings.shared.hasCompletedOnboarding
+                // Fresh login — reset list-check state so we re-evaluate
+                // whether onboarding should show (hasCompletedOnboarding is
+                // already reactive via @AppStorage).
                 hasCheckedLists = false
                 userHasLists = true
             }

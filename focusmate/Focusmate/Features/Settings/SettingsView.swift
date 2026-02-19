@@ -24,15 +24,6 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                             Text(user?.name ?? "No Name")
                                 .font(DS.Typography.headline)
-                            if user?.hasPassword == false {
-                                Text("Signed in with Apple")
-                                    .font(DS.Typography.subheadline)
-                                    .foregroundStyle(.secondary)
-                            } else if let email = user?.email {
-                                Text(email)
-                                    .font(DS.Typography.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
                         }
 
                         Spacer()
@@ -101,6 +92,12 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Button {
+                    replayOnboarding()
+                } label: {
+                    SettingsRow("Replay Onboarding", icon: "arrow.counterclockwise")
+                }
+
                 if let privacyURL = URL(string: "https://intentia.app/privacy") {
                     Link(destination: privacyURL) {
                         SettingsRow("Privacy Policy", icon: "hand.raised", external: true)
@@ -113,17 +110,6 @@ struct SettingsView: View {
                     }
                 }
             }
-
-            #if DEBUG
-            // MARK: - Debug
-            Section("Debug") {
-                Button {
-                    router.push(.debugNotifications, in: .settings)
-                } label: {
-                    SettingsRow("Notification Testing", icon: "ant")
-                }
-            }
-            #endif
 
             // MARK: - Sign Out
             Section {
@@ -160,7 +146,7 @@ struct SettingsView: View {
         .alert("Sign Out", isPresented: $showingSignOutConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Sign Out", role: .destructive) {
-                Task { await appState.auth.signOut() }
+                Task { await appState.signOut() }
             }
         } message: {
             Text("Are you sure you want to sign out?")
@@ -188,6 +174,13 @@ struct SettingsView: View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "\(version) (\(build))"
+    }
+
+    private func replayOnboarding() {
+        // @AppStorage in RootView observes the same UserDefaults key,
+        // so flipping this directly triggers the onboarding flow — no
+        // notification side-channel needed.
+        AppSettings.shared.hasCompletedOnboarding = false
     }
 
     private func requestCalendarAccess() {

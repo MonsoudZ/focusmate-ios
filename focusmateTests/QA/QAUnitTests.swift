@@ -866,8 +866,7 @@ final class QAUnitTests: XCTestCase {
     let vm = EditProfileViewModel(user: user, apiClient: apiClient)
 
     XCTAssertEqual(vm.name, "Jane", "Edit profile should show name")
-    XCTAssertEqual(vm.timezone, "UTC", "Edit profile should show timezone")
-    // EditProfileView has no email field — only name and timezone. Correct.
+    // Timezone is auto-sent from device — no longer editable in UI.
   }
 
   // MARK: - 14. BRANDING: No "focusmate" references in user-facing strings

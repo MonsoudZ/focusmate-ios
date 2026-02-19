@@ -31,7 +31,7 @@ struct ListDTO: Codable, Identifiable, Hashable {
     var progress: Double {
         let total = parent_tasks_count ?? tasks_count ?? 0
         guard total > 0 else { return 0 }
-        let completed = completed_tasks_count ?? 0
+        let completed = min(completed_tasks_count ?? 0, total)
         return Double(completed) / Double(total)
     }
 

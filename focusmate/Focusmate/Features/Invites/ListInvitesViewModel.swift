@@ -62,15 +62,23 @@ final class ListInvitesViewModel {
     }
 
     func revokeInvite(_ invite: InviteDTO) async {
+        // Optimistic: remove immediately for responsive UI
+        let snapshot = invites
+        invites.removeAll { $0.id == invite.id }
+        HapticManager.medium()
+
         do {
             try await inviteService.revokeInvite(listId: list.id, inviteId: invite.id)
-            invites.removeAll { $0.id == invite.id }
-            HapticManager.medium()
-        } catch let err as FocusmateError {
-            error = err
-            HapticManager.error()
+            // Reload to ensure server state consistency
+            await loadInvites()
         } catch {
-            self.error = ErrorHandler.shared.handle(error, context: "Revoking invite")
+            // Revert optimistic removal on failure
+            invites = snapshot
+            if let err = error as? FocusmateError {
+                self.error = err
+            } else {
+                self.error = ErrorHandler.shared.handle(error, context: "Revoking invite")
+            }
             HapticManager.error()
         }
     }
