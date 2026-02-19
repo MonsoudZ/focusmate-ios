@@ -55,7 +55,10 @@ final class AuthStoreTests: XCTestCase {
       if method == "GET", path == API.Users.profile {
         switch self.mode {
         case let .successUser(user):
-          guard let typed = user as? T else { throw APIError.decoding }
+          // AuthStore.validateSession() expects UserResponse, not raw UserDTO.
+          // Swift 5.10 strictly rejects UserDTO as? UserResponse; Swift 6 is lenient.
+          let response = UserResponse(user: user)
+          guard let typed = response as? T else { throw APIError.decoding }
           return typed
         case let .failure(error):
           throw error

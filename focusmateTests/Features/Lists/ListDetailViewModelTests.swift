@@ -93,11 +93,15 @@ final class ListDetailViewModelTests: XCTestCase {
   }
 
   func testIsSharedList() {
-    let ownedList = TestFactories.makeSampleList(role: "owner")
-    let sharedList = TestFactories.makeSampleList(role: "editor")
+    // Personal lists have role == nil — not shared
+    let personalList = TestFactories.makeSampleList(role: nil)
+    XCTAssertFalse(self.makeViewModel(list: personalList).isSharedList)
 
-    XCTAssertFalse(self.makeViewModel(list: ownedList).isSharedList)
-    XCTAssertTrue(self.makeViewModel(list: sharedList).isSharedList)
+    // Shared lists always have an explicit role — owner, editor, or viewer
+    let sharedAsOwner = TestFactories.makeSampleList(role: "owner")
+    let sharedAsEditor = TestFactories.makeSampleList(role: "editor")
+    XCTAssertTrue(self.makeViewModel(list: sharedAsOwner).isSharedList)
+    XCTAssertTrue(self.makeViewModel(list: sharedAsEditor).isSharedList)
   }
 
   func testRoleLabelAndIcon() {

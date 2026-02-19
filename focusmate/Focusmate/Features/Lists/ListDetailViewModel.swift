@@ -118,7 +118,7 @@ final class ListDetailViewModel {
   }
 
   var isSharedList: Bool {
-    (self.list.members?.count ?? 0) > 1
+    self.list.role != nil
   }
 
   var roleLabel: String {
