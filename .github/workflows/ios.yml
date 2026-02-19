@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-test:
-    runs-on: macos-14
+    runs-on: macos-15
     
     steps:
     - name: Checkout code
@@ -32,7 +32,7 @@ jobs:
       
     - name: Build and Test
       run: |
-        xcodebuild -scheme "focusmate" -project "focusmate.xcodeproj" -destination "platform=iOS Simulator,name=iPhone 16" clean test -enableCodeCoverage YES
+        xcodebuild -scheme "focusmate" -project "focusmate/focusmate.xcodeproj" -destination "platform=iOS Simulator,name=iPhone 16" clean test -enableCodeCoverage YES
         
     - name: Check for Raw Networking
       run: bash Scripts/check_no_raw_networking.sh
