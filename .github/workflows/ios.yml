@@ -30,6 +30,17 @@ jobs:
         echo "Skipping periphery scan - project configuration needs adjustment"
         # periphery scan --workspace focusmate.xcodeproj --schemes "focusmate" --retain-public
       
+    - name: Prepare Simulator
+      run: |
+        # Xcode 16+ ships simulator runtimes as optional downloads.
+        # Download the iOS platform if no runtimes are installed.
+        if ! xcrun simctl list runtimes | grep -q 'iOS'; then
+          echo "Downloading iOS simulator runtime..."
+          xcodebuild -downloadPlatform iOS
+        fi
+        # List available simulators for debugging
+        xcrun simctl list devices available | head -20
+
     - name: Build and Test
       run: |
         xcodebuild -scheme "focusmate" -project "focusmate.xcodeproj" -destination "platform=iOS Simulator,name=iPhone 16" -derivedDataPath build clean test -enableCodeCoverage YES
