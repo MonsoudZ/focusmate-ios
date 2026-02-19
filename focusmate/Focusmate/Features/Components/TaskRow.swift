@@ -8,11 +8,13 @@ struct TaskRow: View {
     let onTap: () -> Void
     let onNudge: () async -> Void
     let onHide: () async -> Void
+    let onDelete: () async -> Void
     let onSubtaskEdit: (SubtaskDTO) -> Void
     let onAddSubtask: () -> Void
     let showStar: Bool
     let showNudge: Bool
     let showHide: Bool
+    let showDelete: Bool
 
     @EnvironmentObject var state: AppState
     @Environment(\.router) private var router
@@ -37,11 +39,13 @@ struct TaskRow: View {
         onTap: @escaping () -> Void = {},
         onNudge: @escaping () async -> Void = {},
         onHide: @escaping () async -> Void = {},
+        onDelete: @escaping () async -> Void = {},
         onSubtaskEdit: @escaping (SubtaskDTO) -> Void = { _ in },
         onAddSubtask: @escaping () -> Void = {},
         showStar: Bool = true,
         showNudge: Bool = false,
-        showHide: Bool = false
+        showHide: Bool = false,
+        showDelete: Bool = false
     ) {
         self.task = task
         self.escalationService = escalationService
@@ -50,11 +54,13 @@ struct TaskRow: View {
         self.onTap = onTap
         self.onNudge = onNudge
         self.onHide = onHide
+        self.onDelete = onDelete
         self.onSubtaskEdit = onSubtaskEdit
         self.onAddSubtask = onAddSubtask
         self.showStar = showStar
         self.showNudge = showNudge
         self.showHide = showHide
+        self.showDelete = showDelete
     }
 
     var body: some View {
@@ -93,15 +99,25 @@ struct TaskRow: View {
             }
         }
         .floatingErrorBanner($completionError)
-        .if(showHide) { view in
+        .if(showHide || showDelete) { view in
             view.contextMenu {
-                Button {
-                    Task { await onHide() }
-                } label: {
-                    Label(
-                        task.isHidden ? "Show to Members" : "Hide from Members",
-                        systemImage: task.isHidden ? "eye" : "eye.slash"
-                    )
+                if showHide {
+                    Button {
+                        Task { await onHide() }
+                    } label: {
+                        Label(
+                            task.isHidden ? "Show to Members" : "Hide from Members",
+                            systemImage: task.isHidden ? "eye" : "eye.slash"
+                        )
+                    }
+                }
+
+                if showDelete {
+                    Button(role: .destructive) {
+                        Task { await onDelete() }
+                    } label: {
+                        Label("Delete", systemImage: DS.Icon.trash)
+                    }
                 }
             }
         }

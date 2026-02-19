@@ -480,11 +480,18 @@ final class ListDetailViewModel {
 
         let originalTasks = tasks
 
+        // Batch position updates into a single array replacement so that
+        // tasks.didSet (→ invalidateTaskGroupsCache) fires exactly once.
+        // The previous code mutated tasks[idx].position in a loop, triggering
+        // didSet on every iteration. SwiftUI could re-render the ForEach
+        // mid-loop with partially-updated positions, breaking the drag state.
+        var updated = tasks
         for (id, position) in updates {
-            if let idx = tasks.firstIndex(where: { $0.id == id }) {
-                tasks[idx].position = position
+            if let idx = updated.firstIndex(where: { $0.id == id }) {
+                updated[idx].position = position
             }
         }
+        tasks = updated
 
         HapticManager.selection()
 

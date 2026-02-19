@@ -234,6 +234,7 @@ struct TodayView: View {
                                     onStar: { await viewModel.toggleStar(task) },
                                     onTap: { presentTaskDetail(task) },
                                     onNudge: { await viewModel.nudgeTask(task) },
+                                    onDelete: { await viewModel.deleteTask(task) },
                                     onSubtaskEdit: { subtask in
                                         presentEditSubtask(subtask, parentTask: task)
                                     },
@@ -241,7 +242,8 @@ struct TodayView: View {
                                         presentAddSubtask(for: task)
                                     },
                                     showStar: task.can_edit ?? true,
-                                    showNudge: shouldShowNudge(for: task)
+                                    showNudge: shouldShowNudge(for: task),
+                                    showDelete: task.can_delete ?? true
                                 )
                             }
                         }
@@ -281,6 +283,7 @@ struct TodayView: View {
                     onStar: { await viewModel.toggleStar(task) },
                     onTap: { presentTaskDetail(task) },
                     onNudge: { await viewModel.nudgeTask(task) },
+                    onDelete: { await viewModel.deleteTask(task) },
                     onSubtaskEdit: { subtask in
                         presentEditSubtask(subtask, parentTask: task)
                     },
@@ -288,7 +291,8 @@ struct TodayView: View {
                         presentAddSubtask(for: task)
                     },
                     showStar: task.can_edit ?? true,
-                    showNudge: shouldShowNudge(for: task)
+                    showNudge: shouldShowNudge(for: task),
+                    showDelete: task.can_delete ?? true
                 )
             }
         }
