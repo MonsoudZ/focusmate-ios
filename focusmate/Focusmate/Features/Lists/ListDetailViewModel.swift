@@ -4,6 +4,7 @@ import SwiftUI
 
 @MainActor
 @Observable
+// swiftlint:disable:next type_body_length
 final class ListDetailViewModel {
     let list: ListDTO
     let taskService: TaskService

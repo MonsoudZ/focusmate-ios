@@ -49,7 +49,14 @@ final class TodayViewModel {
         return data.overdue.isEmpty && data.due_today.isEmpty && !data.completed_today.isEmpty
     }
 
-    private(set) var groupedTasks: (anytime: [TaskDTO], morning: [TaskDTO], afternoon: [TaskDTO], evening: [TaskDTO]) = ([], [], [], [])
+    struct GroupedTasks {
+        var anytime: [TaskDTO] = []
+        var morning: [TaskDTO] = []
+        var afternoon: [TaskDTO] = []
+        var evening: [TaskDTO] = []
+    }
+
+    private(set) var groupedTasks = GroupedTasks()
 
     // MARK: - Private Helpers
 
@@ -58,7 +65,7 @@ final class TodayViewModel {
     /// redundant O(n) Calendar lookups during SwiftUI render cycles.
     private func recomputeGroupedTasks() {
         guard let data = todayData else {
-            groupedTasks = ([], [], [], [])
+            groupedTasks = GroupedTasks()
             return
         }
         var anytime: [TaskDTO] = [], morning: [TaskDTO] = []
@@ -73,7 +80,7 @@ final class TodayViewModel {
             else if hour < 17 { afternoon.append(task) }
             else { evening.append(task) }
         }
-        groupedTasks = (anytime, morning, afternoon, evening)
+        groupedTasks = GroupedTasks(anytime: anytime, morning: morning, afternoon: afternoon, evening: evening)
     }
 
     // MARK: - Timezone Guard

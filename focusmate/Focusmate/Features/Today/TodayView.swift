@@ -125,6 +125,7 @@ struct TodayView: View {
 
     // MARK: - Content Views
 
+    // swiftlint:disable:next function_body_length
     private func contentView(_ data: TodayResponse) -> some View {
         let grouped = viewModel.groupedTasks
         return ScrollView {

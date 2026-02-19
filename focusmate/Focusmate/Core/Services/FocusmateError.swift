@@ -169,18 +169,18 @@ enum FocusmateError: LocalizedError, Equatable {
 
     static func == (lhs: FocusmateError, rhs: FocusmateError) -> Bool {
         switch (lhs, rhs) {
-        case let (.network(l), .network(r)):
-            return l.localizedDescription == r.localizedDescription
-        case let (.unauthorized(l), .unauthorized(r)):
-            return l == r
+        case let (.network(lhs), .network(rhs)):
+            return lhs.localizedDescription == rhs.localizedDescription
+        case let (.unauthorized(lhs), .unauthorized(rhs)):
+            return lhs == rhs
         case let (.badRequest(lMsg, lCtx), .badRequest(rMsg, rCtx)):
             return lMsg == rMsg && lCtx == rCtx
-        case let (.notFound(l), .notFound(r)):
-            return l == r
+        case let (.notFound(lhs), .notFound(rhs)):
+            return lhs == rhs
         case let (.serverError(lCode, lMsg, lCtx), .serverError(rCode, rMsg, rCtx)):
             return lCode == rCode && lMsg == rMsg && lCtx == rCtx
-        case let (.decoding(l), .decoding(r)):
-            return l == r
+        case let (.decoding(lhs), .decoding(rhs)):
+            return lhs == rhs
         case let (.validation(lFields, lMsg), .validation(rFields, rMsg)):
             return lFields == rFields && lMsg == rMsg
         case let (.rateLimited(lSec, lMsg), .rateLimited(rSec, rMsg)):

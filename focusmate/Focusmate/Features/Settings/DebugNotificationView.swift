@@ -183,23 +183,23 @@ struct DebugNotificationView: View {
 
     private func fireNotification(_ type: NotificationType) {
         let id = taskId
-        let d = delay
+        let delaySeconds = delay
 
         switch type {
         case .dueSoon:
-            helper.scheduleDueSoonTest(taskId: id, delaySeconds: d)
+            helper.scheduleDueSoonTest(taskId: id, delaySeconds: delaySeconds)
         case .dueNow:
-            helper.scheduleDueNowTest(taskId: id, delaySeconds: d)
+            helper.scheduleDueNowTest(taskId: id, delaySeconds: delaySeconds)
         case .overdue:
-            helper.scheduleOverdueTest(taskId: id, delaySeconds: d)
+            helper.scheduleOverdueTest(taskId: id, delaySeconds: delaySeconds)
         case .escalationStart:
-            helper.scheduleEscalationStartTest(taskId: id, delaySeconds: d)
+            helper.scheduleEscalationStartTest(taskId: id, delaySeconds: delaySeconds)
         case .escalationWarning:
-            helper.scheduleEscalationWarningTest(taskId: id, delaySeconds: d)
+            helper.scheduleEscalationWarningTest(taskId: id, delaySeconds: delaySeconds)
         case .morningBriefing:
-            helper.scheduleMorningBriefingTest(delaySeconds: d)
+            helper.scheduleMorningBriefingTest(delaySeconds: delaySeconds)
         case .nudge:
-            helper.scheduleNudgeTest(taskId: id, delaySeconds: d)
+            helper.scheduleNudgeTest(taskId: id, delaySeconds: delaySeconds)
         }
     }
 }

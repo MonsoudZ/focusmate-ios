@@ -65,23 +65,23 @@ actor MutationQueue {
 
     var completed: [UUID] = []
 
-    for i in pending.indices {
+    for idx in pending.indices {
       do {
-        try await pending[i].operation()
-        completed.append(pending[i].id)
-        Logger.info("MutationQueue: Replayed — \(pending[i].description)", category: .api)
+        try await pending[idx].operation()
+        completed.append(pending[idx].id)
+        Logger.info("MutationQueue: Replayed — \(pending[idx].description)", category: .api)
       } catch {
-        pending[i].retryCount += 1
+        pending[idx].retryCount += 1
 
         if NetworkMonitor.isOfflineError(error) {
           Logger.info("MutationQueue: Still offline — stopping flush", category: .api)
           break
         }
 
-        if pending[i].retryCount >= Self.maxRetries {
-          completed.append(pending[i].id)
+        if pending[idx].retryCount >= Self.maxRetries {
+          completed.append(pending[idx].id)
           Logger.warning(
-            "MutationQueue: Dropped after \(Self.maxRetries) retries — \(pending[i].description): \(error)",
+            "MutationQueue: Dropped after \(Self.maxRetries) retries — \(pending[idx].description): \(error)",
             category: .api
           )
         }
