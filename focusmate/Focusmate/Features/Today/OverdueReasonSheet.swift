@@ -1,120 +1,120 @@
 import SwiftUI
 
 struct OverdueReasonSheet: View {
-    let task: TaskDTO
-    let onSubmit: (String) -> Void
-    
-    @Environment(\.dismiss) var dismiss
-    @State private var selectedReason: String?
-    @State private var customReason: String = ""
-    
-    private let reasons = [
-        ("forgot", "I forgot"),
-        ("too_busy", "Too busy"),
-        ("blocked", "Waiting on someone/something"),
-        ("deprioritized", "Deprioritized"),
-        ("didnt_feel_like_it", "Didn't feel like it"),
-        ("other", "Other")
-    ]
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: DS.Spacing.lg) {
-                // Header
-                VStack(spacing: DS.Spacing.sm) {
-                    Image(systemName: "clock.badge.exclamationmark.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(DS.Colors.warning)
-                    
-                    Text("Why was this task late?")
-                        .font(DS.Typography.title2)
-                    
-                    Text(task.title)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.top, DS.Spacing.lg)
-                
-                // Reason options
-                VStack(spacing: DS.Spacing.sm) {
-                    ForEach(reasons, id: \.0) { reason in
-                        ReasonButton(
-                            title: reason.1,
-                            isSelected: selectedReason == reason.0,
-                            action: { selectedReason = reason.0 }
-                        )
-                    }
-                }
-                
-                // Custom reason field (if "other" selected)
-                if selectedReason == "other" {
-                    TextField("Explain briefly...", text: $customReason)
-                        .textFieldStyle(.roundedBorder)
-                        .padding(.horizontal)
-                }
-                
-                Spacer()
-                
-                // Submit button
-                Button {
-                    let reason = selectedReason == "other" ? customReason : (selectedReason ?? "")
-                    onSubmit(reason)
-                } label: {
-                    Text("Complete Task")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(IntentiaPrimaryButtonStyle())
-                .disabled(!canSubmit)
-                .padding(.horizontal)
-                .padding(.bottom, DS.Spacing.lg)
-            }
-            .navigationTitle("Overdue Task")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-            }
+  let task: TaskDTO
+  let onSubmit: (String) -> Void
+
+  @Environment(\.dismiss) var dismiss
+  @State private var selectedReason: String?
+  @State private var customReason: String = ""
+
+  private let reasons = [
+    ("forgot", "I forgot"),
+    ("too_busy", "Too busy"),
+    ("blocked", "Waiting on someone/something"),
+    ("deprioritized", "Deprioritized"),
+    ("didnt_feel_like_it", "Didn't feel like it"),
+    ("other", "Other"),
+  ]
+
+  var body: some View {
+    NavigationStack {
+      VStack(spacing: DS.Spacing.lg) {
+        // Header
+        VStack(spacing: DS.Spacing.sm) {
+          Image(systemName: "clock.badge.exclamationmark.fill")
+            .font(.system(size: 50))
+            .foregroundStyle(DS.Colors.warning)
+
+          Text("Why was this task late?")
+            .font(DS.Typography.title2)
+
+          Text(self.task.title)
+            .font(.body)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
         }
-    }
-    
-    private var canSubmit: Bool {
-        guard let selected = selectedReason else { return false }
-        if selected == "other" {
-            return !customReason.trimmingCharacters(in: .whitespaces).isEmpty
+        .padding(.top, DS.Spacing.lg)
+
+        // Reason options
+        VStack(spacing: DS.Spacing.sm) {
+          ForEach(self.reasons, id: \.0) { reason in
+            ReasonButton(
+              title: reason.1,
+              isSelected: self.selectedReason == reason.0,
+              action: { self.selectedReason = reason.0 }
+            )
+          }
         }
-        return true
+
+        // Custom reason field (if "other" selected)
+        if self.selectedReason == "other" {
+          TextField("Explain briefly...", text: self.$customReason)
+            .textFieldStyle(.roundedBorder)
+            .padding(.horizontal)
+        }
+
+        Spacer()
+
+        // Submit button
+        Button {
+          let reason = self.selectedReason == "other" ? self.customReason : (self.selectedReason ?? "")
+          self.onSubmit(reason)
+        } label: {
+          Text("Complete Task")
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(IntentiaPrimaryButtonStyle())
+        .disabled(!self.canSubmit)
+        .padding(.horizontal)
+        .padding(.bottom, DS.Spacing.lg)
+      }
+      .navigationTitle("Overdue Task")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            self.dismiss()
+          }
+        }
+      }
     }
+  }
+
+  private var canSubmit: Bool {
+    guard let selected = selectedReason else { return false }
+    if selected == "other" {
+      return !self.customReason.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+    return true
+  }
 }
 
 struct ReasonButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                    .font(.body)
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(DS.Colors.accent)
-                }
-            }
-            .padding(DS.Spacing.md)
-            .background(isSelected ? DS.Colors.accent.opacity(0.1) : Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous)
-                    .stroke(isSelected ? DS.Colors.accent : .clear, lineWidth: 2)
-            )
+  let title: String
+  let isSelected: Bool
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: self.action) {
+      HStack {
+        Text(self.title)
+          .font(.body)
+        Spacer()
+        if self.isSelected {
+          Image(systemName: "checkmark.circle.fill")
+            .foregroundStyle(DS.Colors.accent)
         }
-        .buttonStyle(.plain)
-        .padding(.horizontal)
+      }
+      .padding(DS.Spacing.md)
+      .background(self.isSelected ? DS.Colors.accent.opacity(0.1) : Color(.secondarySystemBackground))
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
+      .overlay(
+        RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous)
+          .stroke(self.isSelected ? DS.Colors.accent : .clear, lineWidth: 2)
+      )
     }
+    .buttonStyle(.plain)
+    .padding(.horizontal)
+  }
 }

@@ -9,87 +9,86 @@ import Foundation
 /// x ~1-2KB = negligible), and we give up automatic locale-change reactivity (acceptable
 /// because iOS restarts the process on locale change anyway).
 enum DueDateFormatter {
+  // MARK: - Cached Formatters
 
-    // MARK: - Cached Formatters
+  private static let timeFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "h:mm a"
+    return f
+  }()
 
-    private static let timeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f
-    }()
+  private static let dateFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "MMM d"
+    return f
+  }()
 
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d"
-        return f
-    }()
+  private static let dateTimeFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "MMM d, h:mm a"
+    return f
+  }()
 
-    private static let dateTimeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d, h:mm a"
-        return f
-    }()
+  private static let fullDateFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "MMM d, yyyy"
+    return f
+  }()
 
-    private static let fullDateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d, yyyy"
-        return f
-    }()
+  private static let fullDateTimeFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "MMM d, yyyy 'at' h:mm a"
+    return f
+  }()
 
-    private static let fullDateTimeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d, yyyy 'at' h:mm a"
-        return f
-    }()
+  // MARK: - Public API
 
-    // MARK: - Public API
+  /// Compact format for task rows — no year, "Today 3:30 PM", includes "Yesterday".
+  static func compact(_ date: Date, isAnytime: Bool) -> String {
+    let calendar = Calendar.current
 
-    /// Compact format for task rows — no year, "Today 3:30 PM", includes "Yesterday".
-    static func compact(_ date: Date, isAnytime: Bool) -> String {
-        let calendar = Calendar.current
-
-        if isAnytime {
-            if calendar.isDateInToday(date) { return "Today" }
-            if calendar.isDateInTomorrow(date) { return "Tomorrow" }
-            if calendar.isDateInYesterday(date) { return "Yesterday" }
-            return dateFormatter.string(from: date)
-        }
-
-        if calendar.isDateInToday(date) {
-            return "Today \(timeFormatter.string(from: date))"
-        }
-        if calendar.isDateInTomorrow(date) {
-            return "Tomorrow \(timeFormatter.string(from: date))"
-        }
-        if calendar.isDateInYesterday(date) {
-            return "Yesterday \(timeFormatter.string(from: date))"
-        }
-        return dateTimeFormatter.string(from: date)
+    if isAnytime {
+      if calendar.isDateInToday(date) { return "Today" }
+      if calendar.isDateInTomorrow(date) { return "Tomorrow" }
+      if calendar.isDateInYesterday(date) { return "Yesterday" }
+      return self.dateFormatter.string(from: date)
     }
 
-    /// Full format for detail views — includes year, "Today at 3:30 PM".
-    static func full(_ date: Date, isAnytime: Bool) -> String {
-        let calendar = Calendar.current
+    if calendar.isDateInToday(date) {
+      return "Today \(self.timeFormatter.string(from: date))"
+    }
+    if calendar.isDateInTomorrow(date) {
+      return "Tomorrow \(self.timeFormatter.string(from: date))"
+    }
+    if calendar.isDateInYesterday(date) {
+      return "Yesterday \(self.timeFormatter.string(from: date))"
+    }
+    return self.dateTimeFormatter.string(from: date)
+  }
 
-        if isAnytime {
-            if calendar.isDateInToday(date) { return "Today" }
-            if calendar.isDateInTomorrow(date) { return "Tomorrow" }
-            return fullDateFormatter.string(from: date)
-        }
+  /// Full format for detail views — includes year, "Today at 3:30 PM".
+  static func full(_ date: Date, isAnytime: Bool) -> String {
+    let calendar = Calendar.current
 
-        if calendar.isDateInToday(date) {
-            return "Today at \(timeFormatter.string(from: date))"
-        }
-        if calendar.isDateInTomorrow(date) {
-            return "Tomorrow at \(timeFormatter.string(from: date))"
-        }
-        return fullDateTimeFormatter.string(from: date)
+    if isAnytime {
+      if calendar.isDateInToday(date) { return "Today" }
+      if calendar.isDateInTomorrow(date) { return "Tomorrow" }
+      return self.fullDateFormatter.string(from: date)
     }
 
-    /// Human-readable overdue duration string.
-    static func formatOverdue(_ minutes: Int) -> String {
-        if minutes < 60 { return "\(minutes)m overdue" }
-        if minutes < 1440 { return "\(minutes / 60)h overdue" }
-        return "\(minutes / 1440)d overdue"
+    if calendar.isDateInToday(date) {
+      return "Today at \(self.timeFormatter.string(from: date))"
     }
+    if calendar.isDateInTomorrow(date) {
+      return "Tomorrow at \(self.timeFormatter.string(from: date))"
+    }
+    return self.fullDateTimeFormatter.string(from: date)
+  }
+
+  /// Human-readable overdue duration string.
+  static func formatOverdue(_ minutes: Int) -> String {
+    if minutes < 60 { return "\(minutes)m overdue" }
+    if minutes < 1440 { return "\(minutes / 60)h overdue" }
+    return "\(minutes / 1440)d overdue"
+  }
 }

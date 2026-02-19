@@ -1,15 +1,15 @@
 import Foundation
 
 actor RequestContext {
-    static let shared = RequestContext()
+  static let shared = RequestContext()
 
-    private var latestRequestId: String?
+  private var latestRequestId: String?
 
-    func setLatestRequestId(_ requestId: String?) {
-        latestRequestId = requestId
-    }
+  func setLatestRequestId(_ requestId: String?) {
+    self.latestRequestId = requestId
+  }
 
-    func getLatestRequestId() -> String? {
-        latestRequestId
-    }
+  func getLatestRequestId() -> String? {
+    self.latestRequestId
+  }
 }

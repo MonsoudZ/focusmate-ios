@@ -1,7 +1,7 @@
 #if !targetEnvironment(simulator)
-import DeviceActivity
+  import DeviceActivity
 
-extension DeviceActivityName {
-  static let gracePeriod = DeviceActivityName("com.focusmate.gracePeriod")
-}
+  extension DeviceActivityName {
+    static let gracePeriod = DeviceActivityName("com.focusmate.gracePeriod")
+  }
 #endif

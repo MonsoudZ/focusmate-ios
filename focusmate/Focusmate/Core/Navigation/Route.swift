@@ -2,15 +2,15 @@ import Foundation
 
 /// NavigationStack destination routes
 enum Route: Hashable {
-    // Lists tab routes
-    case listDetail(ListDTO)
-    case taskDetail(TaskDTO, listName: String)
-    case listInvites(ListDTO)
+  // Lists tab routes
+  case listDetail(ListDTO)
+  case taskDetail(TaskDTO, listName: String)
+  case listInvites(ListDTO)
 
-    // Settings tab routes
-    case notificationSettings
-    case appBlockingSettings
-    #if DEBUG
+  // Settings tab routes
+  case notificationSettings
+  case appBlockingSettings
+  #if DEBUG
     case debugNotifications
-    #endif
+  #endif
 }

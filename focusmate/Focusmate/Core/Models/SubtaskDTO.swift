@@ -1,21 +1,21 @@
 import Foundation
 
 struct SubtaskDTO: Codable, Identifiable, Hashable {
-    let id: Int
-    let parent_task_id: Int?
-    let title: String
-    let note: String?
-    let status: String?
-    let completed_at: String?
-    let position: Int?
-    let created_at: String?
-    let updated_at: String?
+  let id: Int
+  let parent_task_id: Int?
+  let title: String
+  let note: String?
+  let status: String?
+  let completed_at: String?
+  let position: Int?
+  let created_at: String?
+  let updated_at: String?
 
-    var isCompleted: Bool {
-        completed_at != nil
-    }
+  var isCompleted: Bool {
+    self.completed_at != nil
+  }
 }
 
 struct SubtaskResponse: Codable {
-    let subtask: SubtaskDTO
+  let subtask: SubtaskDTO
 }

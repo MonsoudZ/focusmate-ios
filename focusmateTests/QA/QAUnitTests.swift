@@ -1,8 +1,10 @@
-// swiftlint:disable file_length
-import XCTest
 @testable import focusmate
 
+// swiftlint:disable file_length
+import XCTest
+
 // MARK: - QA Test Plan: Unit Tests
+
 //
 // These tests cover the QA test plan items 1-14 at the ViewModel/Service/Model level.
 // Each section is labeled with the QA item number it covers.
@@ -10,7 +12,6 @@ import XCTest
 @MainActor
 // swiftlint:disable:next type_body_length
 final class QAUnitTests: XCTestCase {
-
   // MARK: - Shared Test Infrastructure
 
   private var mockNetworking: MockNetworking!
@@ -24,13 +25,13 @@ final class QAUnitTests: XCTestCase {
   override func setUp() async throws {
     try await super.setUp()
     await ResponseCache.shared.invalidateAll()
-    mockNetworking = MockNetworking()
-    apiClient = APIClient(tokenProvider: { nil }, networking: mockNetworking)
-    taskService = TaskService(apiClient: apiClient, sideEffects: NoOpSideEffects())
-    listService = ListService(apiClient: apiClient)
-    tagService = TagService(apiClient: apiClient)
-    subtaskManager = SubtaskManager(taskService: taskService)
-    mockScreenTimeService = MockScreenTimeService()
+    self.mockNetworking = MockNetworking()
+    self.apiClient = APIClient(tokenProvider: { nil }, networking: self.mockNetworking)
+    self.taskService = TaskService(apiClient: self.apiClient, sideEffects: NoOpSideEffects())
+    self.listService = ListService(apiClient: self.apiClient)
+    self.tagService = TagService(apiClient: self.apiClient)
+    self.subtaskManager = SubtaskManager(taskService: self.taskService)
+    self.mockScreenTimeService = MockScreenTimeService()
   }
 
   override func tearDown() async throws {
@@ -81,7 +82,7 @@ final class QAUnitTests: XCTestCase {
       ),
       streak: streak
     )
-    mockNetworking.stubJSON(response)
+    self.mockNetworking.stubJSON(response)
   }
 
   // MARK: - 1. TODAY VIEW FILTERING
@@ -92,9 +93,9 @@ final class QAUnitTests: XCTestCase {
       id: 1, title: "Today Task",
       dueAt: TestFactories.isoString(daysFromNow: 0, hour: 14, minute: 0)
     )
-    stubTodayResponse(dueToday: [todayTask])
+    self.stubTodayResponse(dueToday: [todayTask])
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertEqual(vm.todayData?.due_today.count, 1)
@@ -107,9 +108,9 @@ final class QAUnitTests: XCTestCase {
       id: 1, title: "Future Task",
       dueAt: TestFactories.isoString(daysFromNow: 3, hour: 10, minute: 0)
     )
-    stubTodayResponse(dueToday: [futureTask])
+    self.stubTodayResponse(dueToday: [futureTask])
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertEqual(
@@ -123,9 +124,9 @@ final class QAUnitTests: XCTestCase {
       id: 1, title: "Tomorrow",
       dueAt: TestFactories.isoString(daysFromNow: 1, hour: 9, minute: 0)
     )
-    stubTodayResponse(dueToday: [tomorrowTask])
+    self.stubTodayResponse(dueToday: [tomorrowTask])
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertEqual(
@@ -141,9 +142,9 @@ final class QAUnitTests: XCTestCase {
       dueAt: TestFactories.isoString(daysFromNow: -1, hour: 10, minute: 0),
       overdue: true
     )
-    stubTodayResponse(overdue: [overdueTask])
+    self.stubTodayResponse(overdue: [overdueTask])
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertEqual(
@@ -158,9 +159,9 @@ final class QAUnitTests: XCTestCase {
       id: 1, title: "Midnight Anytime",
       dueAt: TestFactories.midnightISOString(daysFromNow: 0)
     )
-    stubTodayResponse(dueToday: [midnightTask])
+    self.stubTodayResponse(dueToday: [midnightTask])
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertEqual(vm.groupedTasks.anytime.count, 1, "Midnight tasks should be in anytime group")
@@ -185,9 +186,9 @@ final class QAUnitTests: XCTestCase {
       dueAt: TestFactories.isoString(daysFromNow: 0, hour: 19, minute: 0)
     )
 
-    stubTodayResponse(dueToday: [anytime, morning, afternoon, evening])
+    self.stubTodayResponse(dueToday: [anytime, morning, afternoon, evening])
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertEqual(vm.groupedTasks.anytime.count, 1)
@@ -431,31 +432,32 @@ final class QAUnitTests: XCTestCase {
   func testQuickAddSetsEndOfDayDueDate() async {
     // Verify the hardcoded 23:59 due date
     let createdTask = TestFactories.makeSampleTask(id: 100, listId: 1, title: "Quick Task")
-    mockNetworking.stubJSON(SingleTaskResponse(task: createdTask))
+    self.mockNetworking.stubJSON(SingleTaskResponse(task: createdTask))
 
     // Stub lists response first
     let listsResponse = ListsResponse(lists: [TestFactories.makeSampleList()], tombstones: nil)
-    mockNetworking.stubJSON(listsResponse)
+    self.mockNetworking.stubJSON(listsResponse)
 
     let vm = QuickAddViewModel(listService: listService, taskService: taskService)
     await vm.loadLists()
 
     // Reset to stub task creation
-    mockNetworking.stubJSON(SingleTaskResponse(task: createdTask))
+    self.mockNetworking.stubJSON(SingleTaskResponse(task: createdTask))
     vm.title = "Quick Task"
 
     let success = await vm.createTask()
 
     // Check that the API was called with a due_at that includes 23:59
-    let createCall = mockNetworking.calls.first { $0.method == "POST" && $0.path.contains("tasks") }
+    let createCall = self.mockNetworking.calls.first { $0.method == "POST" && $0.path.contains("tasks") }
     XCTAssertNotNil(createCall, "Create task API should have been called")
 
     if let body = createCall?.body,
        let json = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
        let taskJson = json["task"] as? [String: Any],
-       let dueAt = taskJson["due_at"] as? String {
+       let dueAt = taskJson["due_at"] as? String
+    {
       XCTAssertTrue(dueAt.contains("T23:59") || dueAt.contains("T22:59") || dueAt.contains("T"),
-                     "Quick add due date should be set to near end of day, got: \(dueAt)")
+                    "Quick add due date should be set to near end of day, got: \(dueAt)")
     }
   }
 
@@ -532,12 +534,12 @@ final class QAUnitTests: XCTestCase {
       dueAt: TestFactories.isoString(daysFromNow: 0, hour: 14, minute: 0)
     )
 
-    stubTodayResponse(
+    self.stubTodayResponse(
       dueToday: [active],
       completedToday: [completed1, completed2]
     )
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertEqual(vm.completedCount, 2)
@@ -634,7 +636,7 @@ final class QAUnitTests: XCTestCase {
       TestFactories.makeSampleTask(id: 1, listId: 1, title: "Buy groceries"),
       TestFactories.makeSampleTask(id: 2, listId: 1, title: "Buy birthday gift"),
     ]
-    mockNetworking.stubJSON(TasksResponse(tasks: matchingTasks, tombstones: nil))
+    self.mockNetworking.stubJSON(TasksResponse(tasks: matchingTasks, tombstones: nil))
 
     let vm = SearchViewModel(taskService: taskService, listService: listService)
     vm.query = "Buy"
@@ -673,7 +675,7 @@ final class QAUnitTests: XCTestCase {
       TestFactories.makeSampleTask(id: 2, listId: 2, title: "Task B"),
       TestFactories.makeSampleTask(id: 3, listId: 1, title: "Task C"),
     ]
-    mockNetworking.stubJSON(TasksResponse(tasks: tasks, tombstones: nil))
+    self.mockNetworking.stubJSON(TasksResponse(tasks: tasks, tombstones: nil))
 
     let vm = SearchViewModel(taskService: taskService, listService: listService)
     vm.query = "Task"
@@ -685,14 +687,14 @@ final class QAUnitTests: XCTestCase {
 
   func testSearchTruncatesLongQuery() async {
     let longQuery = String(repeating: "a", count: 300)
-    mockNetworking.stubJSON(TasksResponse(tasks: [], tombstones: nil))
+    self.mockNetworking.stubJSON(TasksResponse(tasks: [], tombstones: nil))
 
     let vm = SearchViewModel(taskService: taskService, listService: listService)
     vm.query = longQuery
     await vm.search()
 
     // Verify the search call was made (query gets truncated to 255 in search())
-    let searchCall = mockNetworking.calls.first { $0.path.contains("search") }
+    let searchCall = self.mockNetworking.calls.first { $0.path.contains("search") }
     XCTAssertNotNil(searchCall, "Search API should be called even with long query")
     XCTAssertTrue(vm.hasSearched)
   }
@@ -701,7 +703,7 @@ final class QAUnitTests: XCTestCase {
 
   func testStreakInfoFromTodayResponse() async {
     let streak = StreakInfo(current: 5, longest: 12)
-    stubTodayResponse(
+    self.stubTodayResponse(
       dueToday: [TestFactories.makeSampleTask(
         id: 1, title: "T",
         dueAt: TestFactories.isoString(daysFromNow: 0, hour: 12, minute: 0)
@@ -709,7 +711,7 @@ final class QAUnitTests: XCTestCase {
       streak: streak
     )
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertEqual(vm.todayData?.streak?.current, 5, "Current streak should be 5")
@@ -717,14 +719,14 @@ final class QAUnitTests: XCTestCase {
   }
 
   func testStreakNilWhenNotProvided() async {
-    stubTodayResponse(
+    self.stubTodayResponse(
       dueToday: [TestFactories.makeSampleTask(
         id: 1, title: "T",
         dueAt: TestFactories.isoString(daysFromNow: 0, hour: 12, minute: 0)
       )]
     )
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertNil(vm.todayData?.streak, "Streak should be nil when server doesn't provide it")
@@ -732,7 +734,7 @@ final class QAUnitTests: XCTestCase {
 
   // MARK: - 11. AUTH TOKEN REFRESH
 
-  func testTokenRefreshOnUnauthorized() async {
+  func testTokenRefreshOnUnauthorized() {
     // InternalNetworking does automatic token refresh on 401.
     // The TokenRefreshCoordinator serializes concurrent 401s so only one
     // refresh request fires (prevents thundering herd).
@@ -787,6 +789,7 @@ final class QAUnitTests: XCTestCase {
   }
 
   // MARK: - 12. APP BLOCKING AUTHORIZATION
+
   //
   // ScreenTimeService.shared crashes in test environment because its private init()
   // accesses AuthorizationCenter.shared (FamilyControls framework), which triggers
@@ -818,9 +821,9 @@ final class QAUnitTests: XCTestCase {
     //
     // MockScreenTimeService conforms to ScreenTimeManaging protocol, enabling
     // full escalation flow testing without FamilyControls framework.
-    XCTAssertTrue(mockScreenTimeService.isAuthorized, "Mock defaults to authorized")
-    mockScreenTimeService.isAuthorized = false
-    XCTAssertFalse(mockScreenTimeService.isAuthorized, "Mock authorization can be toggled")
+    XCTAssertTrue(self.mockScreenTimeService.isAuthorized, "Mock defaults to authorized")
+    self.mockScreenTimeService.isAuthorized = false
+    XCTAssertFalse(self.mockScreenTimeService.isAuthorized, "Mock authorization can be toggled")
   }
 
   // MARK: - 13. SETTINGS VIEW: NO PRIVATE RELAY EMAIL
@@ -873,14 +876,14 @@ final class QAUnitTests: XCTestCase {
 
   // MARK: - 14. BRANDING: No "focusmate" references in user-facing strings
 
-  func testNoBrandingLeaks() {
+  func testNoBrandingLeaks() throws {
     // Verify DeepLinkRoute parses intentia:// URLs (primary scheme)
-    let taskURL = URL(string: "intentia://task/123")!
+    let taskURL = try XCTUnwrap(URL(string: "intentia://task/123"))
     let taskRoute = DeepLinkRoute(url: taskURL)
     XCTAssertNotNil(taskRoute, "DeepLinkRoute should parse intentia://task/ URLs")
     XCTAssertEqual(taskRoute, .openTask(taskId: 123))
 
-    let inviteURL = URL(string: "intentia://invite/ABC123")!
+    let inviteURL = try XCTUnwrap(URL(string: "intentia://invite/ABC123"))
     let inviteRoute = DeepLinkRoute(url: inviteURL)
     XCTAssertNotNil(inviteRoute, "DeepLinkRoute should parse intentia://invite/ URLs")
     XCTAssertEqual(inviteRoute, .openInvite(code: "ABC123"))
@@ -888,7 +891,7 @@ final class QAUnitTests: XCTestCase {
     // Both intentia:// and focusmate:// schemes are registered in Info.plists.
     // DeepLinkRoute.init?(url:) parses by host/path, not scheme,
     // so legacy focusmate:// links continue working without code changes.
-    let legacyTaskURL = URL(string: "focusmate://task/456")!
+    let legacyTaskURL = try XCTUnwrap(URL(string: "focusmate://task/456"))
     let legacyRoute = DeepLinkRoute(url: legacyTaskURL)
     XCTAssertNotNil(legacyRoute, "DeepLinkRoute should also parse legacy focusmate:// URLs")
     XCTAssertEqual(legacyRoute, .openTask(taskId: 456))
@@ -942,9 +945,9 @@ final class QAUnitTests: XCTestCase {
       id: 1, title: "Latest",
       dueAt: TestFactories.isoString(daysFromNow: 0, hour: 12, minute: 0)
     )
-    stubTodayResponse(dueToday: [task1])
+    self.stubTodayResponse(dueToday: [task1])
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
 
     // Simulate two rapid loads — version counter ensures only latest response is used
     await vm.loadToday()
@@ -964,9 +967,9 @@ final class QAUnitTests: XCTestCase {
       dueAt: TestFactories.isoString(daysFromNow: 0, hour: 14, minute: 0)
     )
 
-    stubTodayResponse(dueToday: [active], completedToday: [completed])
+    self.stubTodayResponse(dueToday: [active], completedToday: [completed])
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertEqual(vm.progress, 0.5, accuracy: 0.01, "1/2 tasks completed = 50%")
@@ -977,9 +980,9 @@ final class QAUnitTests: XCTestCase {
     let completed = TestFactories.makeSampleTask(
       id: 1, title: "Done", completedAt: Date().ISO8601Format()
     )
-    stubTodayResponse(completedToday: [completed])
+    self.stubTodayResponse(completedToday: [completed])
 
-    let vm = makeTodayViewModel()
+    let vm = self.makeTodayViewModel()
     await vm.loadToday()
 
     XCTAssertTrue(vm.isAllComplete, "All tasks should be marked complete")
@@ -991,17 +994,36 @@ final class QAUnitTests: XCTestCase {
   private final class FakeKeychain: KeychainManaging {
     var token: String?
     var refreshToken: String?
-    @discardableResult func save(token: String) -> Bool { self.token = token; return true }
-    func load() -> String? { token }
-    func clear() { token = nil }
-    @discardableResult func save(refreshToken: String) -> Bool { self.refreshToken = refreshToken; return true }
-    func loadRefreshToken() -> String? { refreshToken }
-    func clearRefreshToken() { refreshToken = nil }
+    @discardableResult func save(token: String) -> Bool {
+      self.token = token; return true
+    }
+
+    func load() -> String? {
+      self.token
+    }
+
+    func clear() {
+      self.token = nil
+    }
+
+    @discardableResult func save(refreshToken: String) -> Bool {
+      self.refreshToken = refreshToken; return true
+    }
+
+    func loadRefreshToken() -> String? {
+      self.refreshToken
+    }
+
+    func clearRefreshToken() {
+      self.refreshToken = nil
+    }
   }
 
   private final class FailingNetworking: NetworkingProtocol {
     let error: Error
-    init(error: Error) { self.error = error }
+    init(error: Error) {
+      self.error = error
+    }
 
     func request<T: Decodable>(
       _ method: String,
@@ -1010,11 +1032,11 @@ final class QAUnitTests: XCTestCase {
       queryParameters: [String: String],
       idempotencyKey: String?
     ) async throws -> T {
-      throw error
+      throw self.error
     }
 
     func getRawResponse(endpoint: String, params: [String: String]) async throws -> Data {
-      throw error
+      throw self.error
     }
   }
 }

@@ -40,12 +40,14 @@ actor MutationQueue {
 
   // MARK: - Public API
 
-  var pendingCount: Int { pending.count }
+  var pendingCount: Int {
+    self.pending.count
+  }
 
   func enqueue(description: String, operation: @escaping @Sendable () async throws -> Void) {
     let mutation = PendingMutation(description: description, operation: operation)
-    pending.append(mutation)
-    let count = pendingCount
+    self.pending.append(mutation)
+    let count = self.pendingCount
     Logger.info("MutationQueue: Enqueued — \(description) (\(count) pending)", category: .api)
     Task { @MainActor in NetworkMonitor.shared.pendingMutationCount = count }
   }
@@ -56,50 +58,50 @@ actor MutationQueue {
   /// Stops on offline error (will retry on next reconnect).
   /// Drops mutations after maxRetries non-offline failures.
   func flush() async {
-    guard !isFlushing, !pending.isEmpty else { return }
+    guard !self.isFlushing, !self.pending.isEmpty else { return }
 
-    isFlushing = true
+    self.isFlushing = true
     defer { isFlushing = false }
 
-    Logger.info("MutationQueue: Flushing \(pendingCount) pending mutations", category: .api)
+    Logger.info("MutationQueue: Flushing \(self.pendingCount) pending mutations", category: .api)
 
     var completed: [UUID] = []
 
-    for idx in pending.indices {
+    for idx in self.pending.indices {
       do {
-        try await pending[idx].operation()
-        completed.append(pending[idx].id)
-        Logger.info("MutationQueue: Replayed — \(pending[idx].description)", category: .api)
+        try await self.pending[idx].operation()
+        completed.append(self.pending[idx].id)
+        Logger.info("MutationQueue: Replayed — \(self.pending[idx].description)", category: .api)
       } catch {
-        pending[idx].retryCount += 1
+        self.pending[idx].retryCount += 1
 
         if NetworkMonitor.isOfflineError(error) {
           Logger.info("MutationQueue: Still offline — stopping flush", category: .api)
           break
         }
 
-        if pending[idx].retryCount >= Self.maxRetries {
-          completed.append(pending[idx].id)
+        if self.pending[idx].retryCount >= Self.maxRetries {
+          completed.append(self.pending[idx].id)
           Logger.warning(
-            "MutationQueue: Dropped after \(Self.maxRetries) retries — \(pending[idx].description): \(error)",
+            "MutationQueue: Dropped after \(Self.maxRetries) retries — \(self.pending[idx].description): \(error)",
             category: .api
           )
         }
       }
     }
 
-    pending.removeAll { mutation in completed.contains(mutation.id) }
-    let count = pendingCount
+    self.pending.removeAll { mutation in completed.contains(mutation.id) }
+    let count = self.pendingCount
     Task { @MainActor in NetworkMonitor.shared.pendingMutationCount = count }
 
-    if pending.isEmpty {
+    if self.pending.isEmpty {
       Logger.info("MutationQueue: All mutations flushed successfully", category: .api)
     }
   }
 
   /// Remove all pending mutations (e.g. on sign-out)
   func clearAll() {
-    pending.removeAll()
+    self.pending.removeAll()
     Task { @MainActor in NetworkMonitor.shared.pendingMutationCount = 0 }
   }
 }

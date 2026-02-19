@@ -33,15 +33,15 @@ struct ErrorResponse: Codable {
   }
 
   var errorMessage: String {
-    error?.message ?? message ?? "Unknown error"
+    self.error?.message ?? self.message ?? "Unknown error"
   }
-  
+
   var validationDetails: [String: [String]]? {
-    error?.details ?? details
+    self.error?.details ?? self.details
   }
-  
+
   var errorCode: String? {
-    error?.code ?? code
+    self.error?.code ?? self.code
   }
 
   enum CodingKeys: String, CodingKey {

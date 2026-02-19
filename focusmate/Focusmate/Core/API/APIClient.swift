@@ -1,61 +1,61 @@
 import Foundation
 
 final class APIClient {
-    private let networking: NetworkingProtocol
-    private let tokenProvider: () -> String?
+  private let networking: NetworkingProtocol
+  private let tokenProvider: () -> String?
 
-    // MARK: - Initializers
+  // MARK: - Initializers
 
-    /// Production init
-    init(tokenProvider: @escaping () -> String?) {
-        self.tokenProvider = tokenProvider
-        self.networking = InternalNetworking(tokenProvider: tokenProvider)
-    }
+  /// Production init
+  init(tokenProvider: @escaping () -> String?) {
+    self.tokenProvider = tokenProvider
+    self.networking = InternalNetworking(tokenProvider: tokenProvider)
+  }
 
-    /// DI init (used for tests, previews, and swapping transport implementations cleanly)
-    init(tokenProvider: @escaping () -> String?, networking: NetworkingProtocol) {
-        self.tokenProvider = tokenProvider
-        self.networking = networking
-    }
+  /// DI init (used for tests, previews, and swapping transport implementations cleanly)
+  init(tokenProvider: @escaping () -> String?, networking: NetworkingProtocol) {
+    self.tokenProvider = tokenProvider
+    self.networking = networking
+  }
 
-    func getToken() -> String? {
-        return tokenProvider()
-    }
+  func getToken() -> String? {
+    return self.tokenProvider()
+  }
 
-    // MARK: - JSON Coding
+  // MARK: - JSON Coding
 
-    static let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }()
+  static let decoder: JSONDecoder = {
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    return decoder
+  }()
 
-    static let encoder: JSONEncoder = {
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-        encoder.dateEncodingStrategy = .iso8601
-        return encoder
-    }()
+  static let encoder: JSONEncoder = {
+    let encoder = JSONEncoder()
+    encoder.keyEncodingStrategy = .convertToSnakeCase
+    encoder.dateEncodingStrategy = .iso8601
+    return encoder
+  }()
 
-    // MARK: - Requests
+  // MARK: - Requests
 
-    func request<T: Decodable>(
-        _ method: String,
-        _ path: String,
-        body: (some Encodable)? = nil,
-        queryParameters: [String: String] = [:],
-        idempotencyKey: String? = nil
-    ) async throws -> T {
-        return try await networking.request(
-            method,
-            path,
-            body: body,
-            queryParameters: queryParameters,
-            idempotencyKey: idempotencyKey
-        )
-    }
+  func request<T: Decodable>(
+    _ method: String,
+    _ path: String,
+    body: (some Encodable)? = nil,
+    queryParameters: [String: String] = [:],
+    idempotencyKey: String? = nil
+  ) async throws -> T {
+    return try await self.networking.request(
+      method,
+      path,
+      body: body,
+      queryParameters: queryParameters,
+      idempotencyKey: idempotencyKey
+    )
+  }
 
-    func getRawResponse(endpoint: String, params: [String: String] = [:]) async throws -> Data {
-        return try await networking.getRawResponse(endpoint: endpoint, params: params)
-    }
+  func getRawResponse(endpoint: String, params: [String: String] = [:]) async throws -> Data {
+    return try await self.networking.getRawResponse(endpoint: endpoint, params: params)
+  }
 }

@@ -1,313 +1,325 @@
 import SwiftUI
 
 struct TaskRow: View {
-    let task: TaskDTO
-    let escalationService: EscalationService
-    let onComplete: () async -> Void
-    let onStar: () async -> Void
-    let onTap: () -> Void
-    let onNudge: () async -> Void
-    let onHide: () async -> Void
-    let onDelete: () async -> Void
-    let onSubtaskEdit: (SubtaskDTO) -> Void
-    let onAddSubtask: () -> Void
-    let showStar: Bool
-    let showNudge: Bool
-    let showHide: Bool
-    let showDelete: Bool
+  let task: TaskDTO
+  let escalationService: EscalationService
+  let onComplete: () async -> Void
+  let onStar: () async -> Void
+  let onTap: () -> Void
+  let onNudge: () async -> Void
+  let onHide: () async -> Void
+  let onDelete: () async -> Void
+  let onSubtaskEdit: (SubtaskDTO) -> Void
+  let onAddSubtask: () -> Void
+  let showStar: Bool
+  let showNudge: Bool
+  let showHide: Bool
+  let showDelete: Bool
 
-    @EnvironmentObject var state: AppState
-    @Environment(\.router) private var router
-    @State private var isNudging = false
-    @State private var isExpanded = false
-    @State private var isCompleting = false
-    @State private var completionError: FocusmateError?
+  @EnvironmentObject var state: AppState
+  @Environment(\.router) private var router
+  @State private var isNudging = false
+  @State private var isExpanded = false
+  @State private var isCompleting = false
+  @State private var completionError: FocusmateError?
 
-    private var isOverdue: Bool { task.isActuallyOverdue }
-    private var isTrackedForEscalation: Bool { escalationService.isTaskTracked(task.id) }
-    private var canEdit: Bool { task.can_edit ?? true }
-    private var canDelete: Bool { task.can_delete ?? true }
-    private var canNudge: Bool {
-        showNudge && !task.isCompleted && !NudgeCooldownManager.shared.isOnCooldown(taskId: task.id)
-    }
+  private var isOverdue: Bool {
+    self.task.isActuallyOverdue
+  }
 
-    init(
-        task: TaskDTO,
-        escalationService: EscalationService = .shared,
-        onComplete: @escaping () async -> Void,
-        onStar: @escaping () async -> Void = {},
-        onTap: @escaping () -> Void = {},
-        onNudge: @escaping () async -> Void = {},
-        onHide: @escaping () async -> Void = {},
-        onDelete: @escaping () async -> Void = {},
-        onSubtaskEdit: @escaping (SubtaskDTO) -> Void = { _ in },
-        onAddSubtask: @escaping () -> Void = {},
-        showStar: Bool = true,
-        showNudge: Bool = false,
-        showHide: Bool = false,
-        showDelete: Bool = false
-    ) {
-        self.task = task
-        self.escalationService = escalationService
-        self.onComplete = onComplete
-        self.onStar = onStar
-        self.onTap = onTap
-        self.onNudge = onNudge
-        self.onHide = onHide
-        self.onDelete = onDelete
-        self.onSubtaskEdit = onSubtaskEdit
-        self.onAddSubtask = onAddSubtask
-        self.showStar = showStar
-        self.showNudge = showNudge
-        self.showHide = showHide
-        self.showDelete = showDelete
-    }
+  private var isTrackedForEscalation: Bool {
+    self.escalationService.isTaskTracked(self.task.id)
+  }
 
-    var body: some View {
-        HStack(spacing: 0) {
-            // List color indicator
-            RoundedRectangle(cornerRadius: 2)
-                .fill(task.taskColor)
-                .frame(width: 4)
-                .padding(.vertical, DS.Spacing.sm)
+  private var canEdit: Bool {
+    self.task.can_edit ?? true
+  }
 
-            VStack(spacing: 0) {
-                mainTaskRow
+  private var canDelete: Bool {
+    self.task.can_delete ?? true
+  }
 
-                // Subtasks section
-                if task.hasSubtasks && isExpanded {
-                    subtasksList
-                } else if !task.hasSubtasks && canEdit && !task.isCompleted {
-                    Divider()
-                        .padding(.horizontal, DS.Spacing.md)
-                    addSubtaskButton
-                }
-            }
-        }
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous)
-                .stroke(isOverdue ? DS.Colors.error.opacity(0.3) : Color.clear, lineWidth: 1)
-        )
-        .opacity(task.isCompleted ? 0.6 : 1.0)
-        .onAppear {
-            if isOverdue && !task.isCompleted {
-                Task { @MainActor in
-                    escalationService.taskBecameOverdue(task)
-                }
-            }
-        }
-        .floatingErrorBanner($completionError)
-        .if(showHide || showDelete) { view in
-            view.contextMenu {
-                if showHide {
-                    Button {
-                        Task { await onHide() }
-                    } label: {
-                        Label(
-                            task.isHidden ? "Show to Members" : "Hide from Members",
-                            systemImage: task.isHidden ? "eye" : "eye.slash"
-                        )
-                    }
-                }
+  private var canNudge: Bool {
+    self.showNudge && !self.task.isCompleted && !NudgeCooldownManager.shared.isOnCooldown(taskId: self.task.id)
+  }
 
-                if showDelete {
-                    Button(role: .destructive) {
-                        Task { await onDelete() }
-                    } label: {
-                        Label("Delete", systemImage: DS.Icon.trash)
-                    }
-                }
-            }
-        }
-    }
+  init(
+    task: TaskDTO,
+    escalationService: EscalationService = .shared,
+    onComplete: @escaping () async -> Void,
+    onStar: @escaping () async -> Void = {},
+    onTap: @escaping () -> Void = {},
+    onNudge: @escaping () async -> Void = {},
+    onHide: @escaping () async -> Void = {},
+    onDelete: @escaping () async -> Void = {},
+    onSubtaskEdit: @escaping (SubtaskDTO) -> Void = { _ in },
+    onAddSubtask: @escaping () -> Void = {},
+    showStar: Bool = true,
+    showNudge: Bool = false,
+    showHide: Bool = false,
+    showDelete: Bool = false
+  ) {
+    self.task = task
+    self.escalationService = escalationService
+    self.onComplete = onComplete
+    self.onStar = onStar
+    self.onTap = onTap
+    self.onNudge = onNudge
+    self.onHide = onHide
+    self.onDelete = onDelete
+    self.onSubtaskEdit = onSubtaskEdit
+    self.onAddSubtask = onAddSubtask
+    self.showStar = showStar
+    self.showNudge = showNudge
+    self.showHide = showHide
+    self.showDelete = showDelete
+  }
 
-    // MARK: - Main Task Row
+  var body: some View {
+    HStack(spacing: 0) {
+      // List color indicator
+      RoundedRectangle(cornerRadius: 2)
+        .fill(self.task.taskColor)
+        .frame(width: 4)
+        .padding(.vertical, DS.Spacing.sm)
 
-    private var mainTaskRow: some View {
-        HStack(alignment: .top, spacing: DS.Spacing.sm) {
-            TaskRowCheckbox(
-                task: task,
-                canEdit: canEdit,
-                isCompleting: isCompleting,
-                isOverdue: isOverdue,
-                onTap: handleCompleteTap
-            )
-            .padding(.top, 2)
+      VStack(spacing: 0) {
+        self.mainTaskRow
 
-            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-                TaskRowTitle(task: task, canEdit: canEdit, isOverdue: isOverdue)
-
-                TaskRowMetadata(
-                    task: task,
-                    isOverdue: isOverdue,
-                    isExpanded: isExpanded,
-                    onExpandToggle: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            isExpanded.toggle()
-                        }
-                        HapticManager.selection()
-                    }
-                )
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                HapticManager.selection()
-                onTap()
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Task: \(task.title)")
-            .accessibilityHint("Double tap to view details")
-            .accessibilityAddTraits(.isButton)
-
-            Spacer(minLength: DS.Spacing.sm)
-
-            TaskRowActions(
-                task: task,
-                showStar: showStar,
-                canEdit: canEdit,
-                canNudge: canNudge,
-                isNudging: isNudging,
-                onStar: onStar,
-                onNudge: {
-                    Task {
-                        isNudging = true
-                        await onNudge()
-                        isNudging = false
-                    }
-                }
-            )
-        }
-        .padding(DS.Spacing.md)
-    }
-
-    // MARK: - Subtasks List
-
-    private var subtasksList: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .padding(.horizontal, DS.Spacing.md)
-
-            VStack(spacing: 0) {
-                if let subtasks = task.subtasks {
-                    ForEach(subtasks) { subtask in
-                        SubtaskRow(
-                            subtask: subtask,
-                            canEdit: canEdit,
-                            onComplete: {
-                                do {
-                                    _ = try await state.subtaskManager.toggleComplete(subtask: subtask, parentTask: task)
-                                } catch {
-                                    Logger.error("Failed to toggle subtask: \(error)", category: .api)
-                                    HapticManager.error()
-                                }
-                            },
-                            onDelete: {
-                                do {
-                                    try await state.subtaskManager.delete(subtask: subtask, parentTask: task)
-                                } catch {
-                                    Logger.error("Failed to delete subtask: \(error)", category: .api)
-                                    HapticManager.error()
-                                }
-                            },
-                            onTap: {
-                                onSubtaskEdit(subtask)
-                            }
-                        )
-
-                        if subtask.id != subtasks.last?.id {
-                            Divider()
-                                .padding(.leading, 52)
-                        }
-                    }
-                }
-
-                if canEdit && !task.isCompleted {
-                    Divider()
-                        .padding(.leading, 52)
-                    addSubtaskButton
-                }
-            }
-            .padding(.leading, 36)
-        }
-        .background(Color(.tertiarySystemBackground))
-    }
-
-    private var addSubtaskButton: some View {
-        Button {
-            HapticManager.selection()
-            onAddSubtask()
-        } label: {
-            HStack(spacing: DS.Spacing.sm) {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: DS.Size.iconMedium))
-
-                Text("Add subtask")
-                    .font(DS.Typography.caption)
-
-                Spacer()
-            }
-            .foregroundStyle(DS.Colors.accent)
+        // Subtasks section
+        if self.task.hasSubtasks, self.isExpanded {
+          self.subtasksList
+        } else if !self.task.hasSubtasks, self.canEdit, !self.task.isCompleted {
+          Divider()
             .padding(.horizontal, DS.Spacing.md)
-            .padding(.vertical, DS.Spacing.sm)
+          self.addSubtaskButton
         }
-        .buttonStyle(.plain)
+      }
     }
+    .background(Color(.secondarySystemGroupedBackground))
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
+    .overlay(
+      RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous)
+        .stroke(self.isOverdue ? DS.Colors.error.opacity(0.3) : Color.clear, lineWidth: 1)
+    )
+    .opacity(self.task.isCompleted ? 0.6 : 1.0)
+    .onAppear {
+      if self.isOverdue, !self.task.isCompleted {
+        Task { @MainActor in
+          self.escalationService.taskBecameOverdue(self.task)
+        }
+      }
+    }
+    .floatingErrorBanner(self.$completionError)
+    .if(self.showHide || self.showDelete) { view in
+      view.contextMenu {
+        if self.showHide {
+          Button {
+            Task { await self.onHide() }
+          } label: {
+            Label(
+              self.task.isHidden ? "Show to Members" : "Hide from Members",
+              systemImage: self.task.isHidden ? "eye" : "eye.slash"
+            )
+          }
+        }
 
-    // MARK: - Actions
+        if self.showDelete {
+          Button(role: .destructive) {
+            Task { await self.onDelete() }
+          } label: {
+            Label("Delete", systemImage: DS.Icon.trash)
+          }
+        }
+      }
+    }
+  }
 
-    private func handleCompleteTap() {
-        guard canEdit else { return }
+  // MARK: - Main Task Row
+
+  private var mainTaskRow: some View {
+    HStack(alignment: .top, spacing: DS.Spacing.sm) {
+      TaskRowCheckbox(
+        task: self.task,
+        canEdit: self.canEdit,
+        isCompleting: self.isCompleting,
+        isOverdue: self.isOverdue,
+        onTap: self.handleCompleteTap
+      )
+      .padding(.top, 2)
+
+      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        TaskRowTitle(task: self.task, canEdit: self.canEdit, isOverdue: self.isOverdue)
+
+        TaskRowMetadata(
+          task: self.task,
+          isOverdue: self.isOverdue,
+          isExpanded: self.isExpanded,
+          onExpandToggle: {
+            withAnimation(.easeInOut(duration: 0.2)) {
+              self.isExpanded.toggle()
+            }
+            HapticManager.selection()
+          }
+        )
+      }
+      .contentShape(Rectangle())
+      .onTapGesture {
         HapticManager.selection()
+        self.onTap()
+      }
+      .accessibilityElement(children: .combine)
+      .accessibilityLabel("Task: \(self.task.title)")
+      .accessibilityHint("Double tap to view details")
+      .accessibilityAddTraits(.isButton)
 
-        if task.isCompleted {
-            isCompleting = true
-            Task {
-                defer { isCompleting = false }
-                await onComplete()
-            }
-        } else if isOverdue || isTrackedForEscalation {
-            // Require reason if task is overdue OR if it was overdue and user edited the due date
-            // This prevents gaming the escalation by pushing the due date forward
-            presentOverdueReasonSheet()
-        } else {
-            isCompleting = true
-            Task {
-                await completeTask(reason: nil)
-            }
+      Spacer(minLength: DS.Spacing.sm)
+
+      TaskRowActions(
+        task: self.task,
+        showStar: self.showStar,
+        canEdit: self.canEdit,
+        canNudge: self.canNudge,
+        isNudging: self.isNudging,
+        onStar: self.onStar,
+        onNudge: {
+          Task {
+            self.isNudging = true
+            await self.onNudge()
+            self.isNudging = false
+          }
         }
+      )
     }
+    .padding(DS.Spacing.md)
+  }
 
-    private func presentOverdueReasonSheet() {
-        router.sheetCallbacks.onOverdueReasonSubmitted = { reason in
-            Task {
-                await completeTask(reason: reason)
-                router.dismissSheet()
-            }
-        }
-        router.present(.overdueReason(task))
-    }
+  // MARK: - Subtasks List
 
-    private func completeTask(reason: String?) async {
-        defer { isCompleting = false }
-        do {
-            _ = try await state.taskService.completeTask(
-                listId: task.list_id,
-                taskId: task.id,
-                reason: reason
+  private var subtasksList: some View {
+    VStack(spacing: 0) {
+      Divider()
+        .padding(.horizontal, DS.Spacing.md)
+
+      VStack(spacing: 0) {
+        if let subtasks = task.subtasks {
+          ForEach(subtasks) { subtask in
+            SubtaskRow(
+              subtask: subtask,
+              canEdit: self.canEdit,
+              onComplete: {
+                do {
+                  _ = try await self.state.subtaskManager.toggleComplete(subtask: subtask, parentTask: self.task)
+                } catch {
+                  Logger.error("Failed to toggle subtask: \(error)", category: .api)
+                  HapticManager.error()
+                }
+              },
+              onDelete: {
+                do {
+                  try await self.state.subtaskManager.delete(subtask: subtask, parentTask: self.task)
+                } catch {
+                  Logger.error("Failed to delete subtask: \(error)", category: .api)
+                  HapticManager.error()
+                }
+              },
+              onTap: {
+                self.onSubtaskEdit(subtask)
+              }
             )
 
-            await MainActor.run {
-                escalationService.taskCompleted(task.id)
+            if subtask.id != subtasks.last?.id {
+              Divider()
+                .padding(.leading, 52)
             }
-
-            HapticManager.success()
-            await onComplete()
-        } catch {
-            Logger.error("Failed to complete task", error: error, category: .api)
-            HapticManager.error()
-            completionError = ErrorHandler.shared.handle(error, context: "Completing task")
+          }
         }
+
+        if self.canEdit, !self.task.isCompleted {
+          Divider()
+            .padding(.leading, 52)
+          self.addSubtaskButton
+        }
+      }
+      .padding(.leading, 36)
     }
+    .background(Color(.tertiarySystemBackground))
+  }
+
+  private var addSubtaskButton: some View {
+    Button {
+      HapticManager.selection()
+      self.onAddSubtask()
+    } label: {
+      HStack(spacing: DS.Spacing.sm) {
+        Image(systemName: "plus.circle")
+          .font(.system(size: DS.Size.iconMedium))
+
+        Text("Add subtask")
+          .font(DS.Typography.caption)
+
+        Spacer()
+      }
+      .foregroundStyle(DS.Colors.accent)
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, DS.Spacing.sm)
+    }
+    .buttonStyle(.plain)
+  }
+
+  // MARK: - Actions
+
+  private func handleCompleteTap() {
+    guard self.canEdit else { return }
+    HapticManager.selection()
+
+    if self.task.isCompleted {
+      self.isCompleting = true
+      Task {
+        defer { isCompleting = false }
+        await self.onComplete()
+      }
+    } else if self.isOverdue || self.isTrackedForEscalation {
+      // Require reason if task is overdue OR if it was overdue and user edited the due date
+      // This prevents gaming the escalation by pushing the due date forward
+      self.presentOverdueReasonSheet()
+    } else {
+      self.isCompleting = true
+      Task {
+        await self.completeTask(reason: nil)
+      }
+    }
+  }
+
+  private func presentOverdueReasonSheet() {
+    self.router.sheetCallbacks.onOverdueReasonSubmitted = { reason in
+      Task {
+        await self.completeTask(reason: reason)
+        self.router.dismissSheet()
+      }
+    }
+    self.router.present(.overdueReason(self.task))
+  }
+
+  private func completeTask(reason: String?) async {
+    defer { isCompleting = false }
+    do {
+      _ = try await self.state.taskService.completeTask(
+        listId: self.task.list_id,
+        taskId: self.task.id,
+        reason: reason
+      )
+
+      await MainActor.run {
+        self.escalationService.taskCompleted(self.task.id)
+      }
+
+      HapticManager.success()
+      await self.onComplete()
+    } catch {
+      Logger.error("Failed to complete task", error: error, category: .api)
+      HapticManager.error()
+      self.completionError = ErrorHandler.shared.handle(error, context: "Completing task")
+    }
+  }
 }

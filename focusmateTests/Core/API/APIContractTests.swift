@@ -1,5 +1,5 @@
-import XCTest
 @testable import focusmate
+import XCTest
 
 /// Tests that iOS DTOs correctly decode real backend JSON shapes.
 ///
@@ -13,7 +13,6 @@ import XCTest
 /// Each test is named after the Rails serializer it validates against.
 // swiftlint:disable:next type_body_length
 final class APIContractTests: XCTestCase {
-
   private let decoder = APIClient.decoder
 
   // MARK: - ListSerializer

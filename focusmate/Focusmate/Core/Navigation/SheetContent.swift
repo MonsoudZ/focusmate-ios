@@ -2,195 +2,199 @@ import SwiftUI
 
 /// View builder for sheet content based on Sheet type
 struct SheetContent: View {
-    let sheet: Sheet
-    let appState: AppState
+  let sheet: Sheet
+  let appState: AppState
 
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.router) private var router
+  @Environment(\.dismiss) private var dismiss
+  @Environment(\.router) private var router
 
-    var body: some View {
-        switch sheet {
-        // MARK: - Today Tab Sheets
-        case .quickAddTask:
-            QuickAddTaskView(
-                listService: appState.listService,
-                taskService: appState.taskService,
-                onTaskCreated: {
-                    await router.sheetCallbacks.onTaskCreated?()
-                }
-            )
+  var body: some View {
+    switch self.sheet {
+    // MARK: - Today Tab Sheets
 
-        case .taskDetail(let task, let listName):
-            TaskDetailView(
-                task: task,
-                listName: listName,
-                onComplete: {
-                    await router.sheetCallbacks.onTaskCompleted?(task)
-                },
-                onDelete: {
-                    await router.sheetCallbacks.onTaskDeleted?(task)
-                },
-                onUpdate: {
-                    await router.sheetCallbacks.onTaskUpdated?()
-                },
-                taskService: appState.taskService,
-                tagService: appState.tagService,
-                subtaskManager: appState.subtaskManager,
-                listService: appState.listService,
-                listId: task.list_id
-            )
-
-        case .addSubtask(let parentTask):
-            AddSubtaskSheet(parentTask: parentTask) { title in
-                await router.sheetCallbacks.onSubtaskCreated?(parentTask, title)
-            }
-
-        case .editSubtask(let info):
-            EditSubtaskSheet(subtask: info.subtask) { newTitle in
-                await router.sheetCallbacks.onSubtaskUpdated?(info, newTitle)
-            }
-
-        // MARK: - Lists Tab Sheets
-        case .templatePicker:
-            TemplatePickerView(
-                listService: appState.listService,
-                taskService: appState.taskService,
-                onCreated: { list in
-                    Task { await router.sheetCallbacks.onListCreated?() }
-                    router.navigateToList(list)
-                }
-            )
-
-        case .createList:
-            CreateListView(listService: appState.listService, tagService: appState.tagService)
-
-        case .editList(let list):
-            EditListView(list: list, listService: appState.listService, tagService: appState.tagService)
-
-        case .enterInviteCode:
-            EnterInviteCodeView(
-                inviteService: appState.inviteService,
-                onAccepted: { list in
-                    router.sheetCallbacks.onListJoined?(list)
-                    router.navigateToList(list)
-                }
-            )
-
-        case .acceptInvite(let code):
-            AcceptInviteView(
-                code: code,
-                inviteService: appState.inviteService,
-                onAccepted: { list in
-                    router.sheetCallbacks.onListJoined?(list)
-                    router.navigateToList(list)
-                    router.switchTab(to: .lists)
-                }
-            )
-            .environment(appState.auth)
-
-        case .search(let initialQuery):
-            SearchView(
-                taskService: appState.taskService,
-                listService: appState.listService,
-                tagService: appState.tagService,
-                onSelectList: { list in
-                    router.navigateToList(list)
-                },
-                initialQuery: initialQuery
-            )
-
-        case .listMembers(let list):
-            ListMembersView(
-                list: list,
-                apiClient: appState.auth.api,
-                inviteService: appState.inviteService,
-                friendService: appState.friendService
-            )
-
-        case .createTask(let listId):
-            CreateTaskView(
-                listId: listId,
-                taskService: appState.taskService,
-                tagService: appState.tagService
-            )
-
-        case .editTask(let task, let listId):
-            EditTaskView(
-                listId: listId,
-                task: task,
-                taskService: appState.taskService,
-                tagService: appState.tagService,
-                onSave: router.sheetCallbacks.onTaskSaved
-            )
-
-        case .createTag:
-            CreateTagView(tagService: appState.tagService) { _ in
-                Task { await router.sheetCallbacks.onTagCreated?() }
-            }
-
-        case .overdueReason(let task):
-            OverdueReasonSheet(task: task) { reason in
-                router.sheetCallbacks.onOverdueReasonSubmitted?(reason)
-            }
-
-        case .rescheduleTask(let task):
-            RescheduleSheet(task: task) { newDate, reason in
-                await router.sheetCallbacks.onRescheduleSubmitted?(newDate, reason)
-            }
-
-        case .taskDeepLink(let taskId):
-            TaskDeepLinkView(
-                taskId: taskId,
-                taskService: appState.taskService,
-                tagService: appState.tagService,
-                subtaskManager: appState.subtaskManager,
-                listService: appState.listService
-            )
-
-        case .inviteMember(let list):
-            InviteMemberView(
-                list: list,
-                apiClient: appState.auth.api,
-                onInvited: {
-                    router.sheetCallbacks.onMemberInvited?()
-                }
-            )
-
-        case .createInviteLink(let list):
-            CreateInviteView(
-                viewModel: ListInvitesViewModel(list: list, inviteService: appState.inviteService)
-            ) { invite in
-                router.sheetCallbacks.onInviteCreated?(invite)
-            }
-
-        case .shareInvite(let invite):
-            ShareInviteSheet(invite: invite)
-
-        // MARK: - Settings Tab Sheets
-        case .editProfile(let user):
-            EditProfileView(user: user, apiClient: appState.auth.api)
-
-        case .changePassword:
-            ChangePasswordView(apiClient: appState.auth.api)
-
-        case .deleteAccount:
-            DeleteAccountView(apiClient: appState.auth.api, authStore: appState.auth)
-
-        // MARK: - Auth Sheets
-        case .register:
-            RegisterView()
-
-        case .forgotPassword:
-            ForgotPasswordView()
-
-        case .preAuthInviteCode:
-            PreAuthInviteCodeView(
-                code: .constant(""),
-                onCodeEntered: { code in
-                    router.sheetCallbacks.onPreAuthInviteCodeEntered?(code)
-                    router.dismissSheet()
-                }
-            )
+    case .quickAddTask:
+      QuickAddTaskView(
+        listService: self.appState.listService,
+        taskService: self.appState.taskService,
+        onTaskCreated: {
+          await self.router.sheetCallbacks.onTaskCreated?()
         }
+      )
+
+    case let .taskDetail(task, listName):
+      TaskDetailView(
+        task: task,
+        listName: listName,
+        onComplete: {
+          await self.router.sheetCallbacks.onTaskCompleted?(task)
+        },
+        onDelete: {
+          await self.router.sheetCallbacks.onTaskDeleted?(task)
+        },
+        onUpdate: {
+          await self.router.sheetCallbacks.onTaskUpdated?()
+        },
+        taskService: self.appState.taskService,
+        tagService: self.appState.tagService,
+        subtaskManager: self.appState.subtaskManager,
+        listService: self.appState.listService,
+        listId: task.list_id
+      )
+
+    case let .addSubtask(parentTask):
+      AddSubtaskSheet(parentTask: parentTask) { title in
+        await self.router.sheetCallbacks.onSubtaskCreated?(parentTask, title)
+      }
+
+    case let .editSubtask(info):
+      EditSubtaskSheet(subtask: info.subtask) { newTitle in
+        await self.router.sheetCallbacks.onSubtaskUpdated?(info, newTitle)
+      }
+
+    // MARK: - Lists Tab Sheets
+
+    case .templatePicker:
+      TemplatePickerView(
+        listService: self.appState.listService,
+        taskService: self.appState.taskService,
+        onCreated: { list in
+          Task { await self.router.sheetCallbacks.onListCreated?() }
+          self.router.navigateToList(list)
+        }
+      )
+
+    case .createList:
+      CreateListView(listService: self.appState.listService, tagService: self.appState.tagService)
+
+    case let .editList(list):
+      EditListView(list: list, listService: self.appState.listService, tagService: self.appState.tagService)
+
+    case .enterInviteCode:
+      EnterInviteCodeView(
+        inviteService: self.appState.inviteService,
+        onAccepted: { list in
+          self.router.sheetCallbacks.onListJoined?(list)
+          self.router.navigateToList(list)
+        }
+      )
+
+    case let .acceptInvite(code):
+      AcceptInviteView(
+        code: code,
+        inviteService: self.appState.inviteService,
+        onAccepted: { list in
+          self.router.sheetCallbacks.onListJoined?(list)
+          self.router.navigateToList(list)
+          self.router.switchTab(to: .lists)
+        }
+      )
+      .environment(self.appState.auth)
+
+    case let .search(initialQuery):
+      SearchView(
+        taskService: self.appState.taskService,
+        listService: self.appState.listService,
+        tagService: self.appState.tagService,
+        onSelectList: { list in
+          self.router.navigateToList(list)
+        },
+        initialQuery: initialQuery
+      )
+
+    case let .listMembers(list):
+      ListMembersView(
+        list: list,
+        apiClient: self.appState.auth.api,
+        inviteService: self.appState.inviteService,
+        friendService: self.appState.friendService
+      )
+
+    case let .createTask(listId):
+      CreateTaskView(
+        listId: listId,
+        taskService: self.appState.taskService,
+        tagService: self.appState.tagService
+      )
+
+    case let .editTask(task, listId):
+      EditTaskView(
+        listId: listId,
+        task: task,
+        taskService: self.appState.taskService,
+        tagService: self.appState.tagService,
+        onSave: self.router.sheetCallbacks.onTaskSaved
+      )
+
+    case .createTag:
+      CreateTagView(tagService: self.appState.tagService) { _ in
+        Task { await self.router.sheetCallbacks.onTagCreated?() }
+      }
+
+    case let .overdueReason(task):
+      OverdueReasonSheet(task: task) { reason in
+        self.router.sheetCallbacks.onOverdueReasonSubmitted?(reason)
+      }
+
+    case let .rescheduleTask(task):
+      RescheduleSheet(task: task) { newDate, reason in
+        await self.router.sheetCallbacks.onRescheduleSubmitted?(newDate, reason)
+      }
+
+    case let .taskDeepLink(taskId):
+      TaskDeepLinkView(
+        taskId: taskId,
+        taskService: self.appState.taskService,
+        tagService: self.appState.tagService,
+        subtaskManager: self.appState.subtaskManager,
+        listService: self.appState.listService
+      )
+
+    case let .inviteMember(list):
+      InviteMemberView(
+        list: list,
+        apiClient: self.appState.auth.api,
+        onInvited: {
+          self.router.sheetCallbacks.onMemberInvited?()
+        }
+      )
+
+    case let .createInviteLink(list):
+      CreateInviteView(
+        viewModel: ListInvitesViewModel(list: list, inviteService: self.appState.inviteService)
+      ) { invite in
+        self.router.sheetCallbacks.onInviteCreated?(invite)
+      }
+
+    case let .shareInvite(invite):
+      ShareInviteSheet(invite: invite)
+
+    // MARK: - Settings Tab Sheets
+
+    case let .editProfile(user):
+      EditProfileView(user: user, apiClient: self.appState.auth.api)
+
+    case .changePassword:
+      ChangePasswordView(apiClient: self.appState.auth.api)
+
+    case .deleteAccount:
+      DeleteAccountView(apiClient: self.appState.auth.api, authStore: self.appState.auth)
+
+    // MARK: - Auth Sheets
+
+    case .register:
+      RegisterView()
+
+    case .forgotPassword:
+      ForgotPasswordView()
+
+    case .preAuthInviteCode:
+      PreAuthInviteCodeView(
+        code: .constant(""),
+        onCodeEntered: { code in
+          self.router.sheetCallbacks.onPreAuthInviteCodeEntered?(code)
+          self.router.dismissSheet()
+        }
+      )
     }
+  }
 }

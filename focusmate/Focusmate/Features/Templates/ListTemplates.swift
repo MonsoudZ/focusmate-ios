@@ -91,6 +91,7 @@ struct ListTemplate: Identifiable {
 enum TemplateCatalog {
   static let all: [ListTemplate] = [
     // MARK: - Habit Trackers
+
     ListTemplate(
       id: "morning-routine",
       name: "Morning Routine",
@@ -158,6 +159,7 @@ enum TemplateCatalog {
     ),
 
     // MARK: - Accountability Tasks
+
     ListTemplate(
       id: "weekly-adulting",
       name: "Weekly Adulting",
@@ -223,6 +225,7 @@ enum TemplateCatalog {
     ),
 
     // MARK: - Checklists
+
     ListTemplate(
       id: "grocery-run",
       name: "Grocery Run",
@@ -260,7 +263,7 @@ enum TemplateCatalog {
 
   static func grouped() -> [(category: TemplateCategory, templates: [ListTemplate])] {
     TemplateCategory.allCases.compactMap { category in
-      let templates = all.filter { $0.category == category }
+      let templates = self.all.filter { $0.category == category }
       guard !templates.isEmpty else { return nil }
       return (category: category, templates: templates)
     }
@@ -269,7 +272,7 @@ enum TemplateCatalog {
   static func previewTemplates() -> [ListTemplate] {
     // One from each category for empty-state discovery
     TemplateCategory.allCases.compactMap { category in
-      all.first { $0.category == category }
+      self.all.first { $0.category == category }
     }
   }
 }

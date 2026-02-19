@@ -169,7 +169,7 @@ final class KeychainManager: @unchecked Sendable {
     ]
 
     let status = SecItemDelete(query as CFDictionary)
-    if status != errSecSuccess && status != errSecItemNotFound {
+    if status != errSecSuccess, status != errSecItemNotFound {
       Logger.warning("Failed to clear refresh token from keychain (status: \(status))", category: .auth)
     }
   }

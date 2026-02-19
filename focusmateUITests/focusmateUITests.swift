@@ -14,37 +14,37 @@ import XCTest
 // swiftlint:disable:next type_name
 final class focusmateUITests: XCTestCase {
   var app: XCUIApplication!
-  
+
   override func setUpWithError() throws {
     continueAfterFailure = false
-    app = XCUIApplication()
+    self.app = XCUIApplication()
   }
 
   override func tearDownWithError() throws {
-    app = nil
+    self.app = nil
   }
 
   @MainActor
-  func testLaunchPerformance() throws {
+  func testLaunchPerformance() {
     // This measures how long it takes to launch your application.
     measure(metrics: [XCTApplicationLaunchMetric()]) {
       let app = XCUIApplication()
       app.launch()
     }
   }
-  
+
   @MainActor
-  func testAppLaunches() throws {
+  func testAppLaunches() {
     // Basic smoke test: verify app launches successfully
-    app.launch()
+    self.app.launch()
 
     // Verify app is running
-    XCTAssertTrue(app.exists, "App should launch successfully")
+    XCTAssertTrue(self.app.exists, "App should launch successfully")
 
     // Wait for initial UI to load (sign in or main app)
-    let signInButton = app.buttons["Sign In"]
-    let todayTab = app.tabBars.buttons["Today"]
+    let signInButton = self.app.buttons["Sign In"]
+    let todayTab = self.app.tabBars.buttons["Today"]
     let initialUILoaded = signInButton.waitForExistence(timeout: 5.0) || todayTab.waitForExistence(timeout: 5.0)
-    XCTAssertTrue(initialUILoaded || app.exists, "App should be running after launch")
+    XCTAssertTrue(initialUILoaded || self.app.exists, "App should be running after launch")
   }
 }

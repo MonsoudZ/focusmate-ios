@@ -18,26 +18,26 @@ import Foundation
 /// a non-standard ISO8601 variant, you'd add the new formatter here rather than
 /// locally — slightly less encapsulation in exchange for zero duplication.
 enum ISO8601Utils {
-    static let formatter: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
+  static let formatter: ISO8601DateFormatter = {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return f
+  }()
 
-    static let formatterNoFrac = ISO8601DateFormatter()
+  static let formatterNoFrac = ISO8601DateFormatter()
 
-    /// Parse an ISO8601 string, trying fractional seconds first then without.
-    static func parseDate(_ string: String) -> Date? {
-        formatter.date(from: string) ?? formatterNoFrac.date(from: string)
-    }
+  /// Parse an ISO8601 string, trying fractional seconds first then without.
+  static func parseDate(_ string: String) -> Date? {
+    self.formatter.date(from: string) ?? self.formatterNoFrac.date(from: string)
+  }
 
-    /// Format a Date to ISO8601 string (with fractional seconds).
-    static func formatDate(_ date: Date) -> String {
-        formatter.string(from: date)
-    }
+  /// Format a Date to ISO8601 string (with fractional seconds).
+  static func formatDate(_ date: Date) -> String {
+    self.formatter.string(from: date)
+  }
 
-    /// Format a Date to ISO8601 string (without fractional seconds).
-    static func formatDateNoFrac(_ date: Date) -> String {
-        formatterNoFrac.string(from: date)
-    }
+  /// Format a Date to ISO8601 string (without fractional seconds).
+  static func formatDateNoFrac(_ date: Date) -> String {
+    self.formatterNoFrac.string(from: date)
+  }
 }

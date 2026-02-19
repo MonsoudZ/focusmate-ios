@@ -25,10 +25,10 @@ final class TemplateCreationViewModel {
   /// task ordering. For 5-6 tasks at ~200ms each, total time is ~1 second — acceptable for
   /// the perceived "instant" feel with an inline spinner.
   func createFromTemplate(_ template: ListTemplate) async -> ListDTO? {
-    isCreating = true
-    creatingTemplateId = template.id
-    failedTaskCount = 0
-    error = nil
+    self.isCreating = true
+    self.creatingTemplateId = template.id
+    self.failedTaskCount = 0
+    self.error = nil
 
     Logger.info("TemplateCreation: Starting '\(template.id)' with \(template.tasks.count) tasks", category: .api)
 
@@ -39,9 +39,12 @@ final class TemplateCreationViewModel {
         color: template.color,
         listType: template.listType.rawValue
       )
-      createdList = list
+      self.createdList = list
 
-      Logger.info("TemplateCreation: List created id=\(list.id), creating \(template.tasks.count) tasks", category: .api)
+      Logger.info(
+        "TemplateCreation: List created id=\(list.id), creating \(template.tasks.count) tasks",
+        category: .api
+      )
 
       // Default due date: start of today (midnight) — shows as "anytime" in time grouping.
       // The backend requires due_at for task creation; omitting it causes a 422 validation error.
@@ -65,7 +68,7 @@ final class TemplateCreationViewModel {
             category: .api
           )
         } catch {
-          failedTaskCount += 1
+          self.failedTaskCount += 1
           Logger.error(
             "TemplateCreation: Task \(index + 1)/\(template.tasks.count) FAILED '\(templateTask.title)'",
             error: error,
@@ -74,13 +77,13 @@ final class TemplateCreationViewModel {
         }
       }
 
-      if failedTaskCount > 0 {
+      if self.failedTaskCount > 0 {
         Logger.warning(
-          "TemplateCreation: Completed with \(failedTaskCount)/\(template.tasks.count) task failures",
+          "TemplateCreation: Completed with \(self.failedTaskCount)/\(template.tasks.count) task failures",
           category: .api
         )
         self.error = .custom(
-          "\(failedTaskCount) of \(template.tasks.count) tasks couldn't be created",
+          "\(self.failedTaskCount) of \(template.tasks.count) tasks couldn't be created",
           "The list was created but some tasks failed. You can add them manually."
         )
       } else {
@@ -88,15 +91,15 @@ final class TemplateCreationViewModel {
       }
 
       HapticManager.success()
-      isCreating = false
-      creatingTemplateId = nil
+      self.isCreating = false
+      self.creatingTemplateId = nil
       return list
 
     } catch {
       self.error = ErrorMapper.map(error)
       HapticManager.error()
-      isCreating = false
-      creatingTemplateId = nil
+      self.isCreating = false
+      self.creatingTemplateId = nil
       Logger.error(
         "TemplateCreation: Failed to create list from template '\(template.id)'",
         error: error,

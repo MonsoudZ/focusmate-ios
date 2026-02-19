@@ -45,7 +45,7 @@ class IntentiaMonitorExtension: DeviceActivityMonitor {
     // Activate blocking — idempotent write to ManagedSettingsStore.
     // If the main app already activated blocking (because it was
     // in the foreground), this is a harmless no-op.
-    store.shield.applications = apps
-    store.shield.applicationCategories = .specific(categories)
+    self.store.shield.applications = apps
+    self.store.shield.applicationCategories = .specific(categories)
   }
 }

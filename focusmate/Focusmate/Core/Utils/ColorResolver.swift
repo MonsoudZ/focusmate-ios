@@ -17,26 +17,26 @@ import SwiftUI
 /// All three DTOs now share the same default color (.blue). If a DTO ever needs a
 /// different default, you'd pass it as a parameter rather than forking the switch.
 enum ColorResolver {
-    static func resolve(_ colorString: String?) -> Color {
-        guard let color = colorString?.lowercased() else { return .blue }
+  static func resolve(_ colorString: String?) -> Color {
+    guard let color = colorString?.lowercased() else { return .blue }
 
-        switch color {
-        case "blue": return .blue
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "purple": return .purple
-        case "pink": return .pink
-        case "teal": return .teal
-        case "yellow": return .yellow
-        case "gray", "grey": return .gray
-        default: break
-        }
-
-        if color.hasPrefix("#") {
-            return Color(hex: color) ?? .blue
-        }
-
-        return .blue
+    switch color {
+    case "blue": return .blue
+    case "green": return .green
+    case "orange": return .orange
+    case "red": return .red
+    case "purple": return .purple
+    case "pink": return .pink
+    case "teal": return .teal
+    case "yellow": return .yellow
+    case "gray", "grey": return .gray
+    default: break
     }
+
+    if color.hasPrefix("#") {
+      return Color(hex: color) ?? .blue
+    }
+
+    return .blue
+  }
 }

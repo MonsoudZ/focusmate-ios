@@ -1,140 +1,139 @@
-import XCTest
-@testable import focusmate
 import Combine
+@testable import focusmate
+import XCTest
 
 final class InternalNetworkingTests: XCTestCase {
+  override func setUp() async throws {
+    try await super.setUp()
+    MockURLProtocol.stub = nil
+    MockURLProtocol.error = nil
+    // Reset throttle state to prevent interference between tests
+    await MainActor.run {
+      AuthEventBus.shared._resetThrottleForTests()
+    }
+  }
 
-    override func setUp() async throws {
-        try await super.setUp()
-        MockURLProtocol.stub = nil
-        MockURLProtocol.error = nil
-        // Reset throttle state to prevent interference between tests
-        await MainActor.run {
-            AuthEventBus.shared._resetThrottleForTests()
-        }
+  private func makeNetworking(token: String? = nil) -> InternalNetworking {
+    let config = URLSessionConfiguration.ephemeral
+    config.protocolClasses = [MockURLProtocol.self]
+
+    let session = URLSession(configuration: config)
+
+    let pinning = CertificatePinning(pinnedDomains: [], publicKeyHashes: [], enforceInDebug: false)
+
+    return InternalNetworking(
+      tokenProvider: { token },
+      session: session,
+      certificatePinning: pinning
+    )
+  }
+
+  func test401ThrowsUnauthorizedAndSendsUnauthorizedEvent() async {
+    let networking = self.makeNetworking(token: "jwt-123")
+
+    let exp = expectation(description: "unauthorized event")
+    let cancellable = await MainActor.run {
+      AuthEventBus.shared.publisher.sink { event in
+        if event == .unauthorized { exp.fulfill() }
+      }
+    }
+    defer { cancellable.cancel() }
+
+    MockURLProtocol.stub = .init(
+      statusCode: 401,
+      headers: ["Content-Type": "application/json"],
+      body: Data()
+    )
+
+    do {
+      let _: UserDTO = try await networking.request(
+        "GET",
+        API.Users.profile,
+        body: nil as String?,
+        queryParameters: [:],
+        idempotencyKey: nil
+      )
+      XCTFail("Expected to throw APIError.unauthorized")
+    } catch let err as APIError {
+      guard case .unauthorized = err else {
+        return XCTFail("Expected .unauthorized but got \(err)")
+      }
+    } catch {
+      XCTFail("Expected APIError but got \(error)")
     }
 
-    private func makeNetworking(token: String? = nil) -> InternalNetworking {
-        let config = URLSessionConfiguration.ephemeral
-        config.protocolClasses = [MockURLProtocol.self]
+    await fulfillment(of: [exp], timeout: 1.0)
+  }
 
-        let session = URLSession(configuration: config)
+  func test429ParsesRetryAfterHeader() async {
+    let networking = self.makeNetworking()
 
-        let pinning = CertificatePinning(pinnedDomains: [], publicKeyHashes: [], enforceInDebug: false)
+    MockURLProtocol.stub = .init(
+      statusCode: 429,
+      headers: ["Retry-After": "7", "Content-Type": "application/json"],
+      body: Data()
+    )
 
-        return InternalNetworking(
-            tokenProvider: { token },
-            session: session,
-            certificatePinning: pinning
-        )
+    do {
+      let _: UserDTO = try await networking.request(
+        "GET",
+        API.Users.profile,
+        body: nil as String?,
+        queryParameters: [:],
+        idempotencyKey: nil
+      )
+      XCTFail("Expected to throw rateLimited")
+    } catch let err as APIError {
+      guard case let .rateLimited(seconds) = err else {
+        return XCTFail("Expected .rateLimited but got \(err)")
+      }
+      XCTAssertEqual(seconds, 7)
+    } catch {
+      XCTFail("Expected APIError but got \(error)")
     }
+  }
 
-    func test401ThrowsUnauthorizedAndSendsUnauthorizedEvent() async {
-        let networking = makeNetworking(token: "jwt-123")
+  func testTimedOutMapsToTimeout() async {
+    let networking = self.makeNetworking()
+    MockURLProtocol.error = URLError(.timedOut)
 
-        let exp = expectation(description: "unauthorized event")
-        let cancellable = await MainActor.run {
-            AuthEventBus.shared.publisher.sink { event in
-                if event == .unauthorized { exp.fulfill() }
-            }
-        }
-        defer { cancellable.cancel() }
-
-        MockURLProtocol.stub = .init(
-            statusCode: 401,
-            headers: ["Content-Type": "application/json"],
-            body: Data()
-        )
-
-        do {
-            let _: UserDTO = try await networking.request(
-                "GET",
-                API.Users.profile,
-                body: nil as String?,
-                queryParameters: [:],
-                idempotencyKey: nil
-            )
-            XCTFail("Expected to throw APIError.unauthorized")
-        } catch let err as APIError {
-            guard case .unauthorized(_) = err else {
-                return XCTFail("Expected .unauthorized but got \(err)")
-            }
-        } catch {
-            XCTFail("Expected APIError but got \(error)")
-        }
-
-        await fulfillment(of: [exp], timeout: 1.0)
+    do {
+      let _: UserDTO = try await networking.request(
+        "GET",
+        API.Users.profile,
+        body: nil as String?,
+        queryParameters: [:],
+        idempotencyKey: nil
+      )
+      XCTFail("Expected to throw timeout")
+    } catch let err as APIError {
+      guard case .timeout = err else {
+        return XCTFail("Expected .timeout but got \(err)")
+      }
+    } catch {
+      XCTFail("Expected APIError but got \(error)")
     }
+  }
 
-    func test429ParsesRetryAfterHeader() async {
-        let networking = makeNetworking()
+  func testNoInternetMapsToNoInternetConnection() async {
+    let networking = self.makeNetworking()
+    MockURLProtocol.error = URLError(.notConnectedToInternet)
 
-        MockURLProtocol.stub = .init(
-            statusCode: 429,
-            headers: ["Retry-After": "7", "Content-Type": "application/json"],
-            body: Data()
-        )
-
-        do {
-            let _: UserDTO = try await networking.request(
-                "GET",
-                API.Users.profile,
-                body: nil as String?,
-                queryParameters: [:],
-                idempotencyKey: nil
-            )
-            XCTFail("Expected to throw rateLimited")
-        } catch let err as APIError {
-            guard case .rateLimited(let seconds) = err else {
-                return XCTFail("Expected .rateLimited but got \(err)")
-            }
-            XCTAssertEqual(seconds, 7)
-        } catch {
-            XCTFail("Expected APIError but got \(error)")
-        }
+    do {
+      let _: UserDTO = try await networking.request(
+        "GET",
+        API.Users.profile,
+        body: nil as String?,
+        queryParameters: [:],
+        idempotencyKey: nil
+      )
+      XCTFail("Expected to throw noInternetConnection")
+    } catch let err as APIError {
+      guard case .noInternetConnection = err else {
+        return XCTFail("Expected .noInternetConnection but got \(err)")
+      }
+    } catch {
+      XCTFail("Expected APIError but got \(error)")
     }
-
-    func testTimedOutMapsToTimeout() async {
-        let networking = makeNetworking()
-        MockURLProtocol.error = URLError(.timedOut)
-
-        do {
-            let _: UserDTO = try await networking.request(
-                "GET",
-                API.Users.profile,
-                body: nil as String?,
-                queryParameters: [:],
-                idempotencyKey: nil
-            )
-            XCTFail("Expected to throw timeout")
-        } catch let err as APIError {
-            guard case .timeout = err else {
-                return XCTFail("Expected .timeout but got \(err)")
-            }
-        } catch {
-            XCTFail("Expected APIError but got \(error)")
-        }
-    }
-
-    func testNoInternetMapsToNoInternetConnection() async {
-        let networking = makeNetworking()
-        MockURLProtocol.error = URLError(.notConnectedToInternet)
-
-        do {
-            let _: UserDTO = try await networking.request(
-                "GET",
-                API.Users.profile,
-                body: nil as String?,
-                queryParameters: [:],
-                idempotencyKey: nil
-            )
-            XCTFail("Expected to throw noInternetConnection")
-        } catch let err as APIError {
-            guard case .noInternetConnection = err else {
-                return XCTFail("Expected .noInternetConnection but got \(err)")
-            }
-        } catch {
-            XCTFail("Expected APIError but got \(error)")
-        }
-    }
+  }
 }

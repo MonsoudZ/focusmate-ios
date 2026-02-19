@@ -2,74 +2,73 @@ import SwiftUI
 
 /// Details card showing due date, list, recurrence, and completion date
 struct TaskDetailDetailsCard: View {
-    let task: TaskDTO
-    let listName: String
-    let isOverdue: Bool
+  let task: TaskDTO
+  let listName: String
+  let isOverdue: Bool
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.md) {
-            if let dueDate = task.dueDate {
-                DetailRow(
-                    icon: DS.Icon.calendar,
-                    title: "Due",
-                    value: DueDateFormatter.full(dueDate, isAnytime: task.isAnytime),
-                    valueColor: isOverdue ? DS.Colors.error : nil
-                )
-            }
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      if let dueDate = task.dueDate {
+        DetailRow(
+          icon: DS.Icon.calendar,
+          title: "Due",
+          value: DueDateFormatter.full(dueDate, isAnytime: self.task.isAnytime),
+          valueColor: self.isOverdue ? DS.Colors.error : nil
+        )
+      }
 
-            DetailRow(
-                icon: "list.bullet",
-                title: "List",
-                value: listName
-            )
+      DetailRow(
+        icon: "list.bullet",
+        title: "List",
+        value: self.listName
+      )
 
-            if let recurrence = task.recurrenceDescription {
-                DetailRow(
-                    icon: DS.Icon.recurring,
-                    title: "Repeats",
-                    value: recurrence
-                )
-            }
+      if let recurrence = task.recurrenceDescription {
+        DetailRow(
+          icon: DS.Icon.recurring,
+          title: "Repeats",
+          value: recurrence
+        )
+      }
 
-            if task.isCompleted, let completedAt = task.completed_at {
-                if let date = ISO8601Utils.parseDate(completedAt) {
-                    DetailRow(
-                        icon: DS.Icon.circleChecked,
-                        title: "Completed",
-                        value: DueDateFormatter.full(date, isAnytime: false),
-                        valueColor: DS.Colors.success
-                    )
-                }
-            }
+      if self.task.isCompleted, let completedAt = task.completed_at {
+        if let date = ISO8601Utils.parseDate(completedAt) {
+          DetailRow(
+            icon: DS.Icon.circleChecked,
+            title: "Completed",
+            value: DueDateFormatter.full(date, isAnytime: false),
+            valueColor: DS.Colors.success
+          )
         }
-        .card()
+      }
     }
-
+    .card()
+  }
 }
 
 // MARK: - Detail Row
 
 struct DetailRow: View {
-    let icon: String
-    let title: String
-    let value: String
-    var valueColor: Color?
+  let icon: String
+  let title: String
+  let value: String
+  var valueColor: Color?
 
-    var body: some View {
-        HStack(spacing: DS.Spacing.md) {
-            Image(systemName: icon)
-                .foregroundStyle(.secondary)
-                .frame(width: 24)
+  var body: some View {
+    HStack(spacing: DS.Spacing.md) {
+      Image(systemName: self.icon)
+        .foregroundStyle(.secondary)
+        .frame(width: 24)
 
-            Text(title)
-                .font(.body)
-                .foregroundStyle(.secondary)
+      Text(self.title)
+        .font(.body)
+        .foregroundStyle(.secondary)
 
-            Spacer()
+      Spacer()
 
-            Text(value)
-                .font(.body)
-                .foregroundStyle(valueColor ?? Color(.label))
-        }
+      Text(self.value)
+        .font(.body)
+        .foregroundStyle(self.valueColor ?? Color(.label))
     }
+  }
 }

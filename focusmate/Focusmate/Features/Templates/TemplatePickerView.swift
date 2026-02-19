@@ -30,16 +30,16 @@ struct TemplatePickerView: View {
             Section {
               ForEach(group.templates) { template in
                 Button {
-                  createTemplate(template)
+                  self.createTemplate(template)
                 } label: {
                   TemplateCardView(
                     template: template,
-                    isCreating: viewModel.creatingTemplateId == template.id,
-                    isDisabled: viewModel.isCreating && viewModel.creatingTemplateId != template.id
+                    isCreating: self.viewModel.creatingTemplateId == template.id,
+                    isDisabled: self.viewModel.isCreating && self.viewModel.creatingTemplateId != template.id
                   )
                 }
                 .buttonStyle(IntentiaCardButtonStyle())
-                .disabled(viewModel.isCreating)
+                .disabled(self.viewModel.isCreating)
               }
             } header: {
               SectionHeader(
@@ -58,13 +58,13 @@ struct TemplatePickerView: View {
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
-            dismiss()
+            self.dismiss()
           }
-          .disabled(viewModel.isCreating)
+          .disabled(self.viewModel.isCreating)
         }
       }
     }
-    .floatingErrorBanner($viewModel.error)
+    .floatingErrorBanner(self.$viewModel.error)
   }
 
   // MARK: - Actions
@@ -74,15 +74,15 @@ struct TemplatePickerView: View {
     Task {
       guard let list = await viewModel.createFromTemplate(template) else { return }
 
-      if viewModel.failedTaskCount > 0 {
+      if self.viewModel.failedTaskCount > 0 {
         Logger.warning(
-          "Template '\(template.id)' created with \(viewModel.failedTaskCount) failed tasks",
+          "Template '\(template.id)' created with \(self.viewModel.failedTaskCount) failed tasks",
           category: .ui
         )
       }
 
-      dismiss()
-      onCreated(list)
+      self.dismiss()
+      self.onCreated(list)
     }
   }
 }

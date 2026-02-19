@@ -6,7 +6,7 @@ struct TemplateCardView: View {
   let isDisabled: Bool
 
   private var templateColor: Color {
-    ColorResolver.resolve(template.color)
+    ColorResolver.resolve(self.template.color)
   }
 
   var body: some View {
@@ -14,20 +14,20 @@ struct TemplateCardView: View {
       // Icon circle
       ZStack {
         Circle()
-          .fill(templateColor.opacity(DS.Opacity.tintBackground))
+          .fill(self.templateColor.opacity(DS.Opacity.tintBackground))
 
-        Image(systemName: template.icon)
+        Image(systemName: self.template.icon)
           .font(.system(size: 18, weight: .medium))
-          .foregroundStyle(templateColor)
+          .foregroundStyle(self.templateColor)
       }
       .frame(width: 44, height: 44)
 
       // Info
       VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-        Text(template.name)
+        Text(self.template.name)
           .font(DS.Typography.bodyMedium)
 
-        Text(template.description)
+        Text(self.template.description)
           .font(DS.Typography.caption)
           .foregroundStyle(.secondary)
           .lineLimit(1)
@@ -36,16 +36,16 @@ struct TemplateCardView: View {
       Spacer()
 
       // Type badge
-      Text(template.listType.displayName)
+      Text(self.template.listType.displayName)
         .font(DS.Typography.caption2.weight(.medium))
-        .foregroundStyle(templateColor)
+        .foregroundStyle(self.templateColor)
         .padding(.horizontal, DS.Spacing.sm)
         .padding(.vertical, DS.Spacing.xxs)
-        .background(templateColor.opacity(DS.Opacity.tintBackground))
+        .background(self.templateColor.opacity(DS.Opacity.tintBackground))
         .clipShape(Capsule())
 
       // Chevron or spinner
-      if isCreating {
+      if self.isCreating {
         ProgressView()
           .controlSize(.small)
       } else {
@@ -55,6 +55,6 @@ struct TemplateCardView: View {
       }
     }
     .card()
-    .opacity(isDisabled ? 0.5 : 1.0)
+    .opacity(self.isDisabled ? 0.5 : 1.0)
   }
 }

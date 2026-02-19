@@ -13,7 +13,6 @@ import Foundation
 /// The worst case if `exp` is spoofed is that we skip proactive refresh and fall
 /// back to the reactive 401 path — which is exactly what we had before.
 enum JWTExpiry {
-
   /// Extracts the expiration date from a JWT's `exp` claim.
   ///
   /// JWT structure: `<header>.<payload>.<signature>`, each segment base64url-encoded.

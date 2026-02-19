@@ -1,59 +1,85 @@
 import Foundation
 
 final class ListService {
-    private let apiClient: APIClient
-    private let cache = ResponseCache.shared
+  private let apiClient: APIClient
+  private let cache = ResponseCache.shared
 
-    private static let cacheKey = "lists"
-    private static var cacheTTL: TimeInterval { AppConfiguration.Cache.listsTTLSeconds }
+  private static let cacheKey = "lists"
+  private static var cacheTTL: TimeInterval {
+    AppConfiguration.Cache.listsTTLSeconds
+  }
 
-    init(apiClient: APIClient) {
-        self.apiClient = apiClient
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+
+  // MARK: - List Management
+
+  func fetchLists() async throws -> [ListDTO] {
+    if let cached: [ListDTO] = await cache.get(Self.cacheKey) {
+      return cached
     }
+    let response: ListsResponse = try await apiClient.request("GET", API.Lists.root, body: nil as String?)
+    Logger.debug("ListService: Fetched \(response.lists.count) lists", category: .api)
+    await self.cache.set(Self.cacheKey, value: response.lists, ttl: Self.cacheTTL)
+    return response.lists
+  }
 
-    // MARK: - List Management
+  func fetchList(id: Int) async throws -> ListDTO {
+    let response: ListResponse = try await apiClient.request("GET", API.Lists.id(String(id)), body: nil as String?)
+    return response.list
+  }
 
-    func fetchLists() async throws -> [ListDTO] {
-        if let cached: [ListDTO] = await cache.get(Self.cacheKey) {
-            return cached
-        }
-        let response: ListsResponse = try await apiClient.request("GET", API.Lists.root, body: nil as String?)
-        Logger.debug("ListService: Fetched \(response.lists.count) lists", category: .api)
-        await cache.set(Self.cacheKey, value: response.lists, ttl: Self.cacheTTL)
-        return response.lists
+  func createList(
+    name: String,
+    description: String?,
+    color: String = "blue",
+    listType: String? = nil,
+    tagIds: [Int] = []
+  ) async throws -> ListDTO {
+    let request = CreateListRequest(list: .init(
+      name: name,
+      description: description,
+      color: color,
+      listType: listType,
+      tagIds: tagIds
+    ))
+    let response: ListResponse = try await apiClient.request("POST", API.Lists.root, body: request)
+    let newList = response.list
+    await self.cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in
+      lists.append(newList)
     }
+    return newList
+  }
 
-    func fetchList(id: Int) async throws -> ListDTO {
-        let response: ListResponse = try await apiClient.request("GET", API.Lists.id(String(id)), body: nil as String?)
-        return response.list
+  func updateList(
+    id: Int,
+    name: String?,
+    description: String?,
+    color: String? = nil,
+    tagIds: [Int]? = nil
+  ) async throws -> ListDTO {
+    let request = UpdateListRequest(list: .init(
+      name: name,
+      description: description,
+      visibility: nil,
+      color: color,
+      tag_ids: tagIds
+    ))
+    let response: ListResponse = try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
+    let updatedList = response.list
+    await self.cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in
+      if let idx = lists.firstIndex(where: { $0.id == id }) {
+        lists[idx] = updatedList
+      }
     }
+    return updatedList
+  }
 
-    func createList(name: String, description: String?, color: String = "blue", listType: String? = nil, tagIds: [Int] = []) async throws -> ListDTO {
-        let request = CreateListRequest(list: .init(name: name, description: description, color: color, listType: listType, tagIds: tagIds))
-        let response: ListResponse = try await apiClient.request("POST", API.Lists.root, body: request)
-        let newList = response.list
-        await cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in
-            lists.append(newList)
-        }
-        return newList
+  func deleteList(id: Int) async throws {
+    _ = try await self.apiClient.request("DELETE", API.Lists.id(String(id)), body: nil as String?) as EmptyResponse
+    await self.cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in
+      lists.removeAll { $0.id == id }
     }
-
-    func updateList(id: Int, name: String?, description: String?, color: String? = nil, tagIds: [Int]? = nil) async throws -> ListDTO {
-        let request = UpdateListRequest(list: .init(name: name, description: description, visibility: nil, color: color, tag_ids: tagIds))
-        let response: ListResponse = try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
-        let updatedList = response.list
-        await cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in
-            if let idx = lists.firstIndex(where: { $0.id == id }) {
-                lists[idx] = updatedList
-            }
-        }
-        return updatedList
-    }
-
-    func deleteList(id: Int) async throws {
-        _ = try await apiClient.request("DELETE", API.Lists.id(String(id)), body: nil as String?) as EmptyResponse
-        await cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in
-            lists.removeAll { $0.id == id }
-        }
-    }
+  }
 }

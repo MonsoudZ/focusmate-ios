@@ -1,204 +1,204 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 /// Main router class for centralized navigation state management
 @MainActor
 @Observable
 final class AppRouter {
-    static let shared = AppRouter()
+  static let shared = AppRouter()
 
-    // MARK: - Tab State
+  // MARK: - Tab State
 
-    var selectedTab: Tab = .today
+  var selectedTab: Tab = .today
 
-    // MARK: - Navigation Stack State (per tab)
+  // MARK: - Navigation Stack State (per tab)
 
-    var todayPath: [Route] = []
-    var listsPath: [Route] = []
-    var settingsPath: [Route] = []
+  var todayPath: [Route] = []
+  var listsPath: [Route] = []
+  var settingsPath: [Route] = []
 
-    // MARK: - Sheet State
+  // MARK: - Sheet State
 
-    var activeSheet: Sheet? {
-        didSet {
-            if activeSheet == nil {
-                sheetCallbacks = SheetCallbacks()
-            }
+  var activeSheet: Sheet? {
+    didSet {
+      if self.activeSheet == nil {
+        self.sheetCallbacks = SheetCallbacks()
+      }
+    }
+  }
+
+  // MARK: - Sheet Callbacks
+
+  /// Callbacks for sheet actions. Set these before presenting a sheet that needs callbacks.
+  /// Cleared automatically when sheet is dismissed.
+  var sheetCallbacks = SheetCallbacks()
+
+  // MARK: - Deep Link Buffering
+
+  private var pendingDeepLink: DeepLinkRoute?
+  private var isReady = false
+
+  // MARK: - Auth Event Subscription
+
+  private var cancellables = Set<AnyCancellable>()
+
+  // MARK: - Init
+
+  private init() {
+    self.bindAuthEvents()
+  }
+
+  /// Listen for auth events to reset navigation on logout.
+  /// This keeps the dependency one-directional (AppRouter depends on AuthEventBus,
+  /// not the other way around).
+  private func bindAuthEvents() {
+    AuthEventBus.shared.publisher
+      .receive(on: RunLoop.main)
+      .sink { [weak self] event in
+        if event == .signedOut {
+          self?.resetAllNavigation()
         }
+      }
+      .store(in: &self.cancellables)
+  }
+
+  // MARK: - Tab Navigation
+
+  func switchTab(to tab: Tab) {
+    self.selectedTab = tab
+  }
+
+  // MARK: - Stack Navigation
+
+  func push(_ route: Route, in tab: Tab? = nil) {
+    let targetTab = tab ?? self.selectedTab
+    switch targetTab {
+    case .today:
+      self.todayPath.append(route)
+    case .lists:
+      self.listsPath.append(route)
+    case .settings:
+      self.settingsPath.append(route)
     }
 
-    // MARK: - Sheet Callbacks
-
-    /// Callbacks for sheet actions. Set these before presenting a sheet that needs callbacks.
-    /// Cleared automatically when sheet is dismissed.
-    var sheetCallbacks = SheetCallbacks()
-
-    // MARK: - Deep Link Buffering
-
-    private var pendingDeepLink: DeepLinkRoute?
-    private var isReady = false
-
-    // MARK: - Auth Event Subscription
-
-    private var cancellables = Set<AnyCancellable>()
-
-    // MARK: - Init
-
-    private init() {
-        bindAuthEvents()
+    if tab != nil, tab != self.selectedTab {
+      self.selectedTab = targetTab
     }
+  }
 
-    /// Listen for auth events to reset navigation on logout.
-    /// This keeps the dependency one-directional (AppRouter depends on AuthEventBus,
-    /// not the other way around).
-    private func bindAuthEvents() {
-        AuthEventBus.shared.publisher
-            .receive(on: RunLoop.main)
-            .sink { [weak self] event in
-                if event == .signedOut {
-                    self?.resetAllNavigation()
-                }
-            }
-            .store(in: &cancellables)
+  func pop(in tab: Tab? = nil) {
+    let targetTab = tab ?? self.selectedTab
+    switch targetTab {
+    case .today:
+      if !self.todayPath.isEmpty { self.todayPath.removeLast() }
+    case .lists:
+      if !self.listsPath.isEmpty { self.listsPath.removeLast() }
+    case .settings:
+      if !self.settingsPath.isEmpty { self.settingsPath.removeLast() }
     }
+  }
 
-    // MARK: - Tab Navigation
-
-    func switchTab(to tab: Tab) {
-        selectedTab = tab
+  func popToRoot(in tab: Tab? = nil) {
+    let targetTab = tab ?? self.selectedTab
+    switch targetTab {
+    case .today:
+      self.todayPath.removeAll()
+    case .lists:
+      self.listsPath.removeAll()
+    case .settings:
+      self.settingsPath.removeAll()
     }
+  }
 
-    // MARK: - Stack Navigation
+  /// Resets all navigation state. Call this on logout to prevent
+  /// stale navigation data from being visible to the next user.
+  func resetAllNavigation() {
+    self.todayPath.removeAll()
+    self.listsPath.removeAll()
+    self.settingsPath.removeAll()
+    self.selectedTab = .today
+    self.activeSheet = nil
+    self.sheetCallbacks = SheetCallbacks()
+    self.pendingDeepLink = nil
+    Logger.debug("AppRouter: All navigation state reset", category: .general)
+  }
 
-    func push(_ route: Route, in tab: Tab? = nil) {
-        let targetTab = tab ?? selectedTab
-        switch targetTab {
-        case .today:
-            todayPath.append(route)
-        case .lists:
-            listsPath.append(route)
-        case .settings:
-            settingsPath.append(route)
-        }
+  // MARK: - Sheet Presentation
 
-        if tab != nil && tab != selectedTab {
-            selectedTab = targetTab
-        }
+  func present(_ sheet: Sheet) {
+    self.activeSheet = sheet
+  }
+
+  func dismissSheet() {
+    self.activeSheet = nil
+    self.sheetCallbacks = SheetCallbacks()
+  }
+
+  // MARK: - Deep Link Handling
+
+  /// Handle a deep link route, buffering if app is not ready
+  func handleDeepLink(_ route: DeepLinkRoute) {
+    if self.isReady {
+      self.executeDeepLink(route)
+    } else {
+      self.pendingDeepLink = route
     }
+  }
 
-    func pop(in tab: Tab? = nil) {
-        let targetTab = tab ?? selectedTab
-        switch targetTab {
-        case .today:
-            if !todayPath.isEmpty { todayPath.removeLast() }
-        case .lists:
-            if !listsPath.isEmpty { listsPath.removeLast() }
-        case .settings:
-            if !settingsPath.isEmpty { settingsPath.removeLast() }
-        }
+  /// Mark the router as ready and flush any pending deep links
+  /// Call this from RootView.onAppear when the main UI is mounted
+  func markReady() {
+    self.isReady = true
+    self.flushPendingDeepLink()
+  }
+
+  /// Flush any buffered deep link
+  private func flushPendingDeepLink() {
+    guard let route = pendingDeepLink else { return }
+    self.pendingDeepLink = nil
+    self.executeDeepLink(route)
+  }
+
+  /// Execute a deep link route
+  private func executeDeepLink(_ route: DeepLinkRoute) {
+    switch route {
+    case .openToday:
+      self.selectedTab = .today
+
+    case let .openTask(taskId):
+      self.selectedTab = .today
+      self.present(.taskDeepLink(taskId))
+
+    case let .openInvite(code):
+      self.present(.acceptInvite(code))
     }
+  }
 
-    func popToRoot(in tab: Tab? = nil) {
-        let targetTab = tab ?? selectedTab
-        switch targetTab {
-        case .today:
-            todayPath.removeAll()
-        case .lists:
-            listsPath.removeAll()
-        case .settings:
-            settingsPath.removeAll()
-        }
-    }
+  // MARK: - Convenience Methods
 
-    /// Resets all navigation state. Call this on logout to prevent
-    /// stale navigation data from being visible to the next user.
-    func resetAllNavigation() {
-        todayPath.removeAll()
-        listsPath.removeAll()
-        settingsPath.removeAll()
-        selectedTab = .today
-        activeSheet = nil
-        sheetCallbacks = SheetCallbacks()
-        pendingDeepLink = nil
-        Logger.debug("AppRouter: All navigation state reset", category: .general)
-    }
+  /// Navigate to a list detail
+  func navigateToList(_ list: ListDTO) {
+    self.selectedTab = .lists
+    self.listsPath = [.listDetail(list)]
+  }
 
-    // MARK: - Sheet Presentation
-
-    func present(_ sheet: Sheet) {
-        activeSheet = sheet
-    }
-
-    func dismissSheet() {
-        activeSheet = nil
-        sheetCallbacks = SheetCallbacks()
-    }
-
-    // MARK: - Deep Link Handling
-
-    /// Handle a deep link route, buffering if app is not ready
-    func handleDeepLink(_ route: DeepLinkRoute) {
-        if isReady {
-            executeDeepLink(route)
-        } else {
-            pendingDeepLink = route
-        }
-    }
-
-    /// Mark the router as ready and flush any pending deep links
-    /// Call this from RootView.onAppear when the main UI is mounted
-    func markReady() {
-        isReady = true
-        flushPendingDeepLink()
-    }
-
-    /// Flush any buffered deep link
-    private func flushPendingDeepLink() {
-        guard let route = pendingDeepLink else { return }
-        pendingDeepLink = nil
-        executeDeepLink(route)
-    }
-
-    /// Execute a deep link route
-    private func executeDeepLink(_ route: DeepLinkRoute) {
-        switch route {
-        case .openToday:
-            selectedTab = .today
-
-        case .openTask(let taskId):
-            selectedTab = .today
-            present(.taskDeepLink(taskId))
-
-        case .openInvite(let code):
-            present(.acceptInvite(code))
-        }
-    }
-
-    // MARK: - Convenience Methods
-
-    /// Navigate to a list detail
-    func navigateToList(_ list: ListDTO) {
-        selectedTab = .lists
-        listsPath = [.listDetail(list)]
-    }
-
-    /// Present invite code acceptance sheet
-    func presentInvite(code: String) {
-        present(.acceptInvite(code))
-    }
+  /// Present invite code acceptance sheet
+  func presentInvite(code: String) {
+    self.present(.acceptInvite(code))
+  }
 }
 
 // MARK: - Environment Key
 
 private struct AppRouterKey: EnvironmentKey {
-    static let defaultValue: AppRouter = .shared
+  static let defaultValue: AppRouter = .shared
 }
 
 extension EnvironmentValues {
-    var router: AppRouter {
-        get { self[AppRouterKey.self] }
-        set { self[AppRouterKey.self] = newValue }
-    }
+  var router: AppRouter {
+    get { self[AppRouterKey.self] }
+    set { self[AppRouterKey.self] = newValue }
+  }
 }
 
 // MARK: - Sheet Callbacks
@@ -207,31 +207,31 @@ extension EnvironmentValues {
 /// Views set these before presenting sheets that need callbacks
 @MainActor
 struct SheetCallbacks {
-    // Today tab callbacks
-    var onTaskCreated: (() async -> Void)?
-    var onTaskCompleted: ((TaskDTO) async -> Void)?
-    var onTaskDeleted: ((TaskDTO) async -> Void)?
-    var onTaskUpdated: (() async -> Void)?
-    var onSubtaskCreated: ((TaskDTO, String) async -> Void)?
-    var onSubtaskUpdated: ((SubtaskEditInfo, String) async -> Void)?
+  // Today tab callbacks
+  var onTaskCreated: (() async -> Void)?
+  var onTaskCompleted: ((TaskDTO) async -> Void)?
+  var onTaskDeleted: ((TaskDTO) async -> Void)?
+  var onTaskUpdated: (() async -> Void)?
+  var onSubtaskCreated: ((TaskDTO, String) async -> Void)?
+  var onSubtaskUpdated: ((SubtaskEditInfo, String) async -> Void)?
 
-    // Task edit callbacks
-    var onTaskSaved: (() -> Void)?
-    var onOverdueReasonSubmitted: ((String) -> Void)?
-    var onRescheduleSubmitted: ((Date, String) async -> Void)?
-    var onTagCreated: (() async -> Void)?
+  // Task edit callbacks
+  var onTaskSaved: (() -> Void)?
+  var onOverdueReasonSubmitted: ((String) -> Void)?
+  var onRescheduleSubmitted: ((Date, String) async -> Void)?
+  var onTagCreated: (() async -> Void)?
 
-    // Lists tab callbacks
-    var onListCreated: (() async -> Void)?
-    var onListUpdated: (() async -> Void)?
-    var onListJoined: ((ListDTO) -> Void)?
+  // Lists tab callbacks
+  var onListCreated: (() async -> Void)?
+  var onListUpdated: (() async -> Void)?
+  var onListJoined: ((ListDTO) -> Void)?
 
-    // Invite callbacks
-    var onMemberInvited: (() -> Void)?
-    var onInviteCreated: ((InviteDTO) -> Void)?
+  // Invite callbacks
+  var onMemberInvited: (() -> Void)?
+  var onInviteCreated: ((InviteDTO) -> Void)?
 
-    // Auth callbacks
-    var onPreAuthInviteCodeEntered: ((String) -> Void)?
+  /// Auth callbacks
+  var onPreAuthInviteCodeEntered: ((String) -> Void)?
 
-    init() {}
+  init() {}
 }

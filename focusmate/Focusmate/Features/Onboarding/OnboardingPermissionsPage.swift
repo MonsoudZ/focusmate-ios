@@ -2,7 +2,7 @@ import SwiftUI
 import UserNotifications
 
 #if !targetEnvironment(simulator)
-import FamilyControls
+  import FamilyControls
 #endif
 
 struct OnboardingPermissionsPage: View {
@@ -48,34 +48,34 @@ struct OnboardingPermissionsPage: View {
       }
 
       VStack(spacing: DS.Spacing.lg) {
-        permissionRow(
+        self.permissionRow(
           icon: DS.Icon.bell,
           title: "Notifications",
           description: "Get reminders for due tasks and daily briefings.",
-          status: notificationStatus,
-          action: requestNotifications
+          status: self.notificationStatus,
+          action: self.requestNotifications
         )
 
-        permissionRow(
+        self.permissionRow(
           icon: DS.Icon.shield,
           title: "Screen Time",
           description: "Required to block distracting apps.",
-          status: screenTimeStatus,
-          action: requestScreenTime
+          status: self.screenTimeStatus,
+          action: self.requestScreenTime
         )
 
-        permissionRow(
+        self.permissionRow(
           icon: "calendar",
           title: "Calendar",
           description: "Sync tasks to your calendar for better planning.",
-          status: calendarStatus,
-          action: requestCalendar
+          status: self.calendarStatus,
+          action: self.requestCalendar
         )
       }
 
       Spacer()
 
-      Button(action: onNext) {
+      Button(action: self.onNext) {
         Text("Continue")
           .frame(maxWidth: .infinity)
       }
@@ -83,14 +83,13 @@ struct OnboardingPermissionsPage: View {
     }
     .padding(DS.Spacing.xl)
     .task {
-      await checkExistingPermissions()
+      await self.checkExistingPermissions()
     }
-    .sheet(isPresented: $showingAppSelection) {
+    .sheet(isPresented: self.$showingAppSelection) {
       OnboardingAppSelectionSheet()
     }
   }
 
-  @ViewBuilder
   private func permissionRow(
     icon: String,
     title: String,
@@ -134,21 +133,21 @@ struct OnboardingPermissionsPage: View {
     let settings = await UNUserNotificationCenter.current().notificationSettings()
     switch settings.authorizationStatus {
     case .authorized, .provisional, .ephemeral:
-      notificationStatus = .granted
+      self.notificationStatus = .granted
     case .denied:
-      notificationStatus = .denied
+      self.notificationStatus = .denied
     default:
       break
     }
 
     #if !targetEnvironment(simulator)
-    if ScreenTimeService.shared.isAuthorized {
-      screenTimeStatus = .granted
-    }
+      if ScreenTimeService.shared.isAuthorized {
+        self.screenTimeStatus = .granted
+      }
     #endif
 
     if CalendarService.shared.checkPermission() {
-      calendarStatus = .granted
+      self.calendarStatus = .granted
     }
   }
 
@@ -158,7 +157,7 @@ struct OnboardingPermissionsPage: View {
       do {
         let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
         await MainActor.run {
-          notificationStatus = granted ? .granted : .denied
+          self.notificationStatus = granted ? .granted : .denied
           if granted {
             UIApplication.shared.registerForRemoteNotifications()
             AppSettings.shared.didRequestPushPermission = true
@@ -167,7 +166,7 @@ struct OnboardingPermissionsPage: View {
         }
       } catch {
         await MainActor.run {
-          notificationStatus = .denied
+          self.notificationStatus = .denied
         }
       }
     }
@@ -175,22 +174,22 @@ struct OnboardingPermissionsPage: View {
 
   private func requestScreenTime() {
     #if !targetEnvironment(simulator)
-    Task {
-      do {
-        try await ScreenTimeService.shared.requestAuthorization()
-        await MainActor.run {
-          screenTimeStatus = .granted
-          AppSettings.shared.didRequestScreenTimePermission = true
-          showingAppSelection = true
-        }
-      } catch {
-        await MainActor.run {
-          screenTimeStatus = .denied
+      Task {
+        do {
+          try await ScreenTimeService.shared.requestAuthorization()
+          await MainActor.run {
+            self.screenTimeStatus = .granted
+            AppSettings.shared.didRequestScreenTimePermission = true
+            self.showingAppSelection = true
+          }
+        } catch {
+          await MainActor.run {
+            self.screenTimeStatus = .denied
+          }
         }
       }
-    }
     #else
-    screenTimeStatus = .denied
+      self.screenTimeStatus = .denied
     #endif
   }
 
@@ -198,7 +197,7 @@ struct OnboardingPermissionsPage: View {
     Task {
       let granted = await CalendarService.shared.requestPermission()
       await MainActor.run {
-        calendarStatus = granted ? .granted : .denied
+        self.calendarStatus = granted ? .granted : .denied
         if granted {
           AppSettings.shared.didRequestCalendarPermission = true
         }
@@ -211,169 +210,171 @@ struct OnboardingPermissionsPage: View {
 
 #if !targetEnvironment(simulator)
 
-struct OnboardingAppSelectionSheet: View {
-  @Environment(\.dismiss) private var dismiss
-  @ObservedObject private var screenTime = ScreenTimeService.shared
-  @State private var showingPicker = false
-  @State private var selection = FamilyActivitySelection()
+  struct OnboardingAppSelectionSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var screenTime = ScreenTimeService.shared
+    @State private var showingPicker = false
+    @State private var selection = FamilyActivitySelection()
 
-  private let recommendedCategories = [
-    ("Social", "person.2.fill", "Instagram, TikTok, Twitter, Facebook"),
-    ("Games", "gamecontroller.fill", "Mobile games and gaming apps"),
-    ("Entertainment", "play.tv.fill", "YouTube, Netflix, streaming apps"),
-  ]
+    private let recommendedCategories = [
+      ("Social", "person.2.fill", "Instagram, TikTok, Twitter, Facebook"),
+      ("Games", "gamecontroller.fill", "Mobile games and gaming apps"),
+      ("Entertainment", "play.tv.fill", "YouTube, Netflix, streaming apps"),
+    ]
 
-  var body: some View {
-    NavigationStack {
-      ScrollView {
-        VStack(spacing: DS.Spacing.xl) {
-          // Header
-          VStack(spacing: DS.Spacing.md) {
-            Image(systemName: "apps.iphone")
-              .font(.system(size: 50))
-              .foregroundStyle(DS.Colors.accent)
+    var body: some View {
+      NavigationStack {
+        ScrollView {
+          VStack(spacing: DS.Spacing.xl) {
+            // Header
+            VStack(spacing: DS.Spacing.md) {
+              Image(systemName: "apps.iphone")
+                .font(.system(size: 50))
+                .foregroundStyle(DS.Colors.accent)
 
-            Text("Choose Apps to Block")
-              .font(DS.Typography.title2)
+              Text("Choose Apps to Block")
+                .font(DS.Typography.title2)
 
-            Text("When you have overdue tasks, these apps will be blocked to help you focus.")
-              .font(DS.Typography.subheadline)
-              .foregroundStyle(.secondary)
-              .multilineTextAlignment(.center)
-          }
-          .padding(.top, DS.Spacing.lg)
+              Text("When you have overdue tasks, these apps will be blocked to help you focus.")
+                .font(DS.Typography.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            }
+            .padding(.top, DS.Spacing.lg)
 
-          // Recommendations
-          VStack(alignment: .leading, spacing: DS.Spacing.md) {
-            Text("We recommend blocking:")
-              .font(DS.Typography.bodyMedium)
-              .padding(.horizontal, DS.Spacing.md)
+            // Recommendations
+            VStack(alignment: .leading, spacing: DS.Spacing.md) {
+              Text("We recommend blocking:")
+                .font(DS.Typography.bodyMedium)
+                .padding(.horizontal, DS.Spacing.md)
 
+              VStack(spacing: DS.Spacing.sm) {
+                ForEach(self.recommendedCategories, id: \.0) { category in
+                  self.recommendationRow(
+                    title: category.0,
+                    icon: category.1,
+                    examples: category.2
+                  )
+                }
+              }
+            }
+
+            // Selection button
             VStack(spacing: DS.Spacing.sm) {
-              ForEach(recommendedCategories, id: \.0) { category in
-                recommendationRow(
-                  title: category.0,
-                  icon: category.1,
-                  examples: category.2
-                )
+              Button {
+                self.selection.applicationTokens = self.screenTime.selectedApps
+                self.selection.categoryTokens = self.screenTime.selectedCategories
+                self.showingPicker = true
+              } label: {
+                HStack {
+                  Image(systemName: "plus.circle.fill")
+                  Text("Select Apps & Categories")
+                }
+                .frame(maxWidth: .infinity)
               }
-            }
-          }
+              .buttonStyle(IntentiaPrimaryButtonStyle())
 
-          // Selection button
-          VStack(spacing: DS.Spacing.sm) {
-            Button {
-              selection.applicationTokens = screenTime.selectedApps
-              selection.categoryTokens = screenTime.selectedCategories
-              showingPicker = true
-            } label: {
-              HStack {
-                Image(systemName: "plus.circle.fill")
-                Text("Select Apps & Categories")
-              }
-              .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(IntentiaPrimaryButtonStyle())
-
-            if screenTime.hasSelections {
-              HStack(spacing: DS.Spacing.xs) {
-                Image(systemName: "checkmark.circle.fill")
-                  .foregroundStyle(DS.Colors.success)
-                Text("\(screenTime.selectedApps.count) apps and \(screenTime.selectedCategories.count) categories selected")
+              if self.screenTime.hasSelections {
+                HStack(spacing: DS.Spacing.xs) {
+                  Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(DS.Colors.success)
+                  Text(
+                    "\(self.screenTime.selectedApps.count) apps and \(self.screenTime.selectedCategories.count) categories selected"
+                  )
                   .font(DS.Typography.caption)
                   .foregroundStyle(.secondary)
+                }
               }
             }
-          }
-          .padding(.top, DS.Spacing.md)
+            .padding(.top, DS.Spacing.md)
 
-          // Info box
-          HStack(alignment: .top, spacing: DS.Spacing.sm) {
-            Image(systemName: "info.circle.fill")
-              .foregroundStyle(DS.Colors.accent)
-            Text("You can change these anytime in Settings → App Blocking.")
-              .font(DS.Typography.caption)
-              .foregroundStyle(.secondary)
+            // Info box
+            HStack(alignment: .top, spacing: DS.Spacing.sm) {
+              Image(systemName: "info.circle.fill")
+                .foregroundStyle(DS.Colors.accent)
+              Text("You can change these anytime in Settings → App Blocking.")
+                .font(DS.Typography.caption)
+                .foregroundStyle(.secondary)
+            }
+            .padding(DS.Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(DS.Colors.accent.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
           }
-          .padding(DS.Spacing.md)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .background(DS.Colors.accent.opacity(0.1))
-          .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+          .padding(DS.Spacing.xl)
         }
-        .padding(DS.Spacing.xl)
-      }
-      .surfaceBackground()
-      .navigationTitle("App Blocking")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Done") {
-            dismiss()
+        .surfaceBackground()
+        .navigationTitle("App Blocking")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .confirmationAction) {
+            Button("Done") {
+              self.dismiss()
+            }
           }
         }
-      }
-      .familyActivityPicker(isPresented: $showingPicker, selection: $selection)
-      .onChange(of: selection) { _, newValue in
-        screenTime.updateSelections(
-          apps: newValue.applicationTokens,
-          categories: newValue.categoryTokens
-        )
+        .familyActivityPicker(isPresented: self.$showingPicker, selection: self.$selection)
+        .onChange(of: self.selection) { _, newValue in
+          self.screenTime.updateSelections(
+            apps: newValue.applicationTokens,
+            categories: newValue.categoryTokens
+          )
+        }
       }
     }
-  }
 
-  private func recommendationRow(title: String, icon: String, examples: String) -> some View {
-    HStack(spacing: DS.Spacing.md) {
-      Image(systemName: icon)
-        .font(.system(size: 24))
-        .foregroundStyle(DS.Colors.accent)
-        .frame(width: 40)
+    private func recommendationRow(title: String, icon: String, examples: String) -> some View {
+      HStack(spacing: DS.Spacing.md) {
+        Image(systemName: icon)
+          .font(.system(size: 24))
+          .foregroundStyle(DS.Colors.accent)
+          .frame(width: 40)
 
-      VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
-        Text(title)
-          .font(DS.Typography.bodyMedium)
-        Text(examples)
-          .font(DS.Typography.caption)
-          .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
+          Text(title)
+            .font(DS.Typography.bodyMedium)
+          Text(examples)
+            .font(DS.Typography.caption)
+            .foregroundStyle(.secondary)
+        }
+
+        Spacer()
       }
-
-      Spacer()
+      .padding(DS.Spacing.md)
+      .background(Color(.secondarySystemGroupedBackground))
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+      .padding(.horizontal, DS.Spacing.md)
     }
-    .padding(DS.Spacing.md)
-    .background(Color(.secondarySystemGroupedBackground))
-    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
-    .padding(.horizontal, DS.Spacing.md)
   }
-}
 
 #else
 
-// MARK: - Simulator Stub
+  // MARK: - Simulator Stub
 
-struct OnboardingAppSelectionSheet: View {
-  @Environment(\.dismiss) private var dismiss
+  struct OnboardingAppSelectionSheet: View {
+    @Environment(\.dismiss) private var dismiss
 
-  var body: some View {
-    NavigationStack {
-      VStack(spacing: DS.Spacing.xl) {
-        Spacer()
-        Image(systemName: "apps.iphone")
-          .font(.system(size: 50))
-          .foregroundStyle(.secondary)
-        Text("App selection is not available on Simulator.")
-          .font(DS.Typography.subheadline)
-          .foregroundStyle(.secondary)
-        Spacer()
-      }
-      .navigationTitle("App Blocking")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Done") { dismiss() }
+    var body: some View {
+      NavigationStack {
+        VStack(spacing: DS.Spacing.xl) {
+          Spacer()
+          Image(systemName: "apps.iphone")
+            .font(.system(size: 50))
+            .foregroundStyle(.secondary)
+          Text("App selection is not available on Simulator.")
+            .font(DS.Typography.subheadline)
+            .foregroundStyle(.secondary)
+          Spacer()
+        }
+        .navigationTitle("App Blocking")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .confirmationAction) {
+            Button("Done") { self.dismiss() }
+          }
         }
       }
     }
   }
-}
 
 #endif
