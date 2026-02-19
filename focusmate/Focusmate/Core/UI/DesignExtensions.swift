@@ -44,7 +44,6 @@ extension UIColor {
     }
 }
 
-
 // MARK: - View Modifiers
 
 extension View {

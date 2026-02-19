@@ -61,4 +61,3 @@ final class FriendService: Sendable {
         return response.membership
     }
 }
-

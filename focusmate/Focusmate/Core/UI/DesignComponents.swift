@@ -356,7 +356,6 @@ struct DSDivider: View {
     }
 }
 
-
 // MARK: - Preview Catalog
 
 #Preview("Components") {

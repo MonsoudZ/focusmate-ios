@@ -54,7 +54,6 @@ struct RefreshTokenRequest: Encodable {
     }
 }
 
-
 struct ForgotPasswordRequest: Encodable {
     let user: User
     
@@ -107,4 +106,3 @@ struct UpdateListRequest: Encodable {
         let tag_ids: [Int]?
     }
 }
-

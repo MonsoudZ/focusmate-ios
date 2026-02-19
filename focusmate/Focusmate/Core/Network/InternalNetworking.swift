@@ -471,4 +471,3 @@ final class InternalNetworking: NetworkingProtocol {
         return .network(error)
     }
 }
-

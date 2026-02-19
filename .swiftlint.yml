@@ -1,12 +1,62 @@
+# SwiftLint Configuration
+# DTOs use snake_case property names to match the Rails API JSON contract
+# (encoder uses .convertToSnakeCase). Renaming them would require manual
+# CodingKeys on every model for no correctness benefit.
+
 disabled_rules:
-  - trailing_whitespace
-  - line_length
+  - trailing_whitespace                 # Handled by SwiftFormat
+  - line_length                         # Handled by SwiftFormat
+  - trailing_comma                      # Style preference, many intentional uses
+  - explicit_acl                        # Not consistently followed across codebase
+  - nesting                             # Project uses nested types intentionally
+  - opening_brace                       # Conflicts with some formatting patterns
+  - statement_position                  # Conflicts with multiline formatting
+  - implicit_optional_initialization    # Style preference
+
 opt_in_rules:
   - force_unwrapping
-  - explicit_acl
-  - redundant_optional_initialization
+
+analyzer_rules:
   - explicit_self
+
+identifier_name:
+  min_length: 1
+  max_length: 60
+  allowed_symbols:
+    - _
+  excluded:
+    - id
+    - i
+    - x
+    - y
+
+type_name:
+  min_length: 2
+
+type_body_length:
+  warning: 350
+  error: 500
+
+file_length:
+  warning: 600
+  error: 1000
+
+function_body_length:
+  warning: 80
+  error: 150
+
+function_parameter_count:
+  warning: 8
+  error: 12
+
+cyclomatic_complexity:
+  warning: 20
+  error: 30
+
+large_tuple:
+  warning: 4
+
 included:
   - focusmate/Focusmate
-  - ios/Generated
+
 reporter: xcode

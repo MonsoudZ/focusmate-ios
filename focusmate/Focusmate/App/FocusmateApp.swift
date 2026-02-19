@@ -64,7 +64,6 @@ struct FocusmateApp: App {
     }
 }
 
-
 struct RootView: View {
     @EnvironmentObject var state: AppState
     @Environment(AuthStore.self) var auth

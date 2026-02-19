@@ -37,7 +37,7 @@ struct SearchView: View {
             .task {
                 await viewModel.searchIfNeeded()
             }
-            .onChange(of: viewModel.query) { oldValue, newValue in
+            .onChange(of: viewModel.query) { _, newValue in
                 if newValue.isEmpty {
                     viewModel.clearSearch()
                 }

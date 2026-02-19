@@ -108,4 +108,3 @@ struct TaskRowTags: View {
         }
     }
 }
-
