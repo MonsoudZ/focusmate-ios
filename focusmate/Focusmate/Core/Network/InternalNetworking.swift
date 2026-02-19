@@ -147,7 +147,7 @@ final class InternalNetworking: NetworkingProtocol {
 
     let (data, http) = try await executeRequest(req)
 
-    self.sentryService.addAPIBreadcrumb(method: method, endpoint: path, statusCode: http.statusCode)
+    await self.sentryService.addAPIBreadcrumb(method: method, endpoint: path, statusCode: http.statusCode)
 
     let errorResponse = self.parseErrorResponse(data: data, statusCode: http.statusCode)
 
@@ -353,7 +353,7 @@ final class InternalNetworking: NetworkingProtocol {
       return nil
     }
 
-    self.sentryService.addBreadcrumb(
+    await self.sentryService.addBreadcrumb(
       message: "Token refresh triggered by 401",
       category: "auth",
       level: .warning,
@@ -362,7 +362,7 @@ final class InternalNetworking: NetworkingProtocol {
 
     do {
       try await self.attemptTokenRefresh()
-      self.sentryService.addBreadcrumb(
+      await self.sentryService.addBreadcrumb(
         message: "Token refresh succeeded, retrying request",
         category: "auth",
         level: .info,
@@ -371,7 +371,7 @@ final class InternalNetworking: NetworkingProtocol {
       Logger.info("Token refreshed, retrying \(method) \(path)", category: .api)
       return try await retry()
     } catch {
-      self.sentryService.addBreadcrumb(
+      await self.sentryService.addBreadcrumb(
         message: "Token refresh failed",
         category: "auth",
         level: .error,
@@ -396,7 +396,7 @@ final class InternalNetworking: NetworkingProtocol {
 
       guard let refreshToken = refreshTokenProvider() else {
         // Breadcrumb 4: No refresh token available — explains why refresh couldn't be attempted
-        self.sentryService.addBreadcrumb(
+        await self.sentryService.addBreadcrumb(
           message: "No refresh token available",
           category: "auth",
           level: .warning
@@ -417,7 +417,7 @@ final class InternalNetworking: NetworkingProtocol {
       guard let http = resp as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
         // Breadcrumb 5: Refresh endpoint returned non-2xx — the refresh call itself failed
         let statusCode = (resp as? HTTPURLResponse)?.statusCode
-        self.sentryService.addBreadcrumb(
+        await self.sentryService.addBreadcrumb(
           message: "Refresh endpoint returned non-2xx",
           category: "auth",
           level: .error,
