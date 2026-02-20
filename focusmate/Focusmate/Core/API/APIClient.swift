@@ -55,7 +55,4 @@ final class APIClient {
     )
   }
 
-  func getRawResponse(endpoint: String, params: [String: String] = [:]) async throws -> Data {
-    return try await self.networking.getRawResponse(endpoint: endpoint, params: params)
-  }
 }

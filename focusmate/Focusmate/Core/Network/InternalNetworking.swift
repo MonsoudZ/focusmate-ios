@@ -9,7 +9,6 @@ protocol NetworkingProtocol {
     idempotencyKey: String?
   ) async throws -> T
 
-  func getRawResponse(endpoint: String, params: [String: String]) async throws -> Data
 }
 
 // MARK: - Token Refresh Coordinator
@@ -111,10 +110,6 @@ final class InternalNetworking: NetworkingProtocol {
       idempotencyKey: idempotencyKey,
       attemptRefresh: true
     )
-  }
-
-  func getRawResponse(endpoint: String, params: [String: String] = [:]) async throws -> Data {
-    try await self.performGetRawResponse(endpoint: endpoint, params: params, attemptRefresh: true)
   }
 
   // MARK: - Requests (private, with retry)
@@ -221,42 +216,6 @@ final class InternalNetworking: NetworkingProtocol {
       #endif
 
       throw APIError.decoding
-    }
-  }
-
-  private func performGetRawResponse(
-    endpoint: String,
-    params: [String: String],
-    attemptRefresh: Bool
-  ) async throws -> Data {
-    let url = self.buildURL(path: endpoint, queryParameters: params)
-
-    var req = URLRequest(url: url)
-    req.httpMethod = "GET"
-    req.setValue("application/json", forHTTPHeaderField: "Accept")
-
-    let isPublicEndpoint = await applyAuth(to: &req, path: endpoint, attemptRefresh: attemptRefresh)
-
-    let (data, http) = try await executeRequest(req)
-
-    switch http.statusCode {
-    case 200 ... 299:
-      return data
-    case 401:
-      if let retryResult: Data = await attemptRefreshAndRetry(
-        method: "GET", path: endpoint,
-        isPublicEndpoint: isPublicEndpoint,
-        attemptRefresh: attemptRefresh,
-        retry: { try await self.performGetRawResponse(endpoint: endpoint, params: params, attemptRefresh: false) }
-      ) {
-        return retryResult
-      }
-      if !isPublicEndpoint {
-        AuthEventBus.shared.send(.unauthorized)
-      }
-      throw APIError.unauthorized(nil)
-    default:
-      throw APIError.badStatus(http.statusCode, nil, nil)
     }
   }
 

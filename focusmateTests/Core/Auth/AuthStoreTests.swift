@@ -69,9 +69,6 @@ final class AuthStoreTests: XCTestCase {
       throw APIError.badStatus(500, "Unexpected request: \(method) \(path)", nil)
     }
 
-    func getRawResponse(endpoint: String, params: [String: String]) async throws -> Data {
-      throw APIError.badStatus(500, "Unexpected raw request: \(endpoint)", nil)
-    }
   }
 
   // MARK: - Tests

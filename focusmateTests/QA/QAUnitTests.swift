@@ -1035,8 +1035,5 @@ final class QAUnitTests: XCTestCase {
       throw self.error
     }
 
-    func getRawResponse(endpoint: String, params: [String: String]) async throws -> Data {
-      throw self.error
-    }
   }
 }

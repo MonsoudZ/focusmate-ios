@@ -73,11 +73,4 @@ final class MockNetworking: NetworkingProtocol {
     return try APIClient.decoder.decode(T.self, from: self.stubbedData)
   }
 
-  func getRawResponse(endpoint: String, params: [String: String]) async throws -> Data {
-    self.calls.append(Call(method: "GET", path: endpoint, body: nil, queryParameters: params))
-    if let error = stubbedError {
-      throw error
-    }
-    return self.stubbedData
-  }
 }
