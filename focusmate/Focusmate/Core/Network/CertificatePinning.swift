@@ -158,8 +158,15 @@ enum CertificatePinningConfig {
   }
 
   static func createPinning(enforceInDebug: Bool = false) -> CertificatePinning {
-    CertificatePinning(
-      pinnedDomains: self.publicKeyHashes.isEmpty ? [] : self.pinnedDomains,
+    if self.publicKeyHashes.isEmpty {
+      // Fail-closed: empty hashes means no cert can match, so all connections
+      // to pinned domains are rejected in Release. This is safer than the old
+      // fail-open behavior (passing empty pinnedDomains, which disabled pinning
+      // entirely). assertionFailure catches the misconfiguration in Debug.
+      assertionFailure("CertificatePinning: publicKeyHashes is empty — pinning will reject all connections")
+    }
+    return CertificatePinning(
+      pinnedDomains: self.pinnedDomains,
       publicKeyHashes: self.publicKeyHashes,
       enforceInDebug: enforceInDebug
     )
