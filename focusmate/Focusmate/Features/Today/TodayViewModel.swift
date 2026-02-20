@@ -301,8 +301,11 @@ final class TodayViewModel {
     guard var data = todayData else { return }
     var completedTask = task
     completedTask.completed_at = ISO8601Utils.formatDateNoFrac(Date())
-    data.overdue.removeAll { $0.id == task.id }
-    data.due_today.removeAll { $0.id == task.id }
+    if let idx = data.overdue.firstIndex(of: task) {
+      data.overdue.remove(at: idx)
+    } else if let idx = data.due_today.firstIndex(of: task) {
+      data.due_today.remove(at: idx)
+    }
     data.completed_today.insert(completedTask, at: 0)
     self.todayData = data
     self.recomputeGroupedTasks()
@@ -314,7 +317,9 @@ final class TodayViewModel {
     guard var data = todayData else { return }
     var reopenedTask = task
     reopenedTask.completed_at = nil
-    data.completed_today.removeAll { $0.id == task.id }
+    if let idx = data.completed_today.firstIndex(of: task) {
+      data.completed_today.remove(at: idx)
+    }
     data.due_today.append(reopenedTask)
     self.todayData = data
     self.recomputeGroupedTasks()
@@ -327,9 +332,13 @@ final class TodayViewModel {
     // Optimistic: remove the task from all arrays immediately
     let snapshot = self.todayData
     if var data = todayData {
-      data.overdue.removeAll { $0.id == task.id }
-      data.due_today.removeAll { $0.id == task.id }
-      data.completed_today.removeAll { $0.id == task.id }
+      if let idx = data.overdue.firstIndex(of: task) {
+        data.overdue.remove(at: idx)
+      } else if let idx = data.due_today.firstIndex(of: task) {
+        data.due_today.remove(at: idx)
+      } else if let idx = data.completed_today.firstIndex(of: task) {
+        data.completed_today.remove(at: idx)
+      }
       self.todayData = data
       self.recomputeGroupedTasks()
     }
