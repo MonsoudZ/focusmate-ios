@@ -1,20 +1,29 @@
 import Foundation
-import SwiftUI
 
-// MARK: - Legacy ErrorHandler (Backward Compatibility)
-
-final class ErrorHandler: @unchecked Sendable {
+/// Central error handler: maps errors, reports to Sentry, manages re-auth flag.
+///
+/// Consolidates the former ErrorHandler + AdvancedErrorHandler into a single class.
+/// Dead code removed: handleWithRetry(), showAlert(), shouldRetry(), RetryCoordinator.
+/// InternalNetworking owns its own 401-retry logic; no external retry coordinator needed.
+@Observable
+@MainActor
+final class ErrorHandler {
   static let shared = ErrorHandler()
-  private let advancedHandler = AdvancedErrorHandler.shared
-  private let sentryService = SentryService.shared
+
+  var isReauthenticating = false
 
   private init() {}
 
-  func handle(_ error: Error, context: String = "") -> FocusmateError {
-    let focusmateError = self.advancedHandler.handle(error, context: context)
+  // MARK: - Error Processing
 
-    // Send error to Sentry on MainActor since SentryService is @MainActor.
-    // Fire-and-forget: error reporting should never block the caller.
+  /// Maps any error to a FocusmateError and reports to Sentry.
+  ///
+  /// `nonisolated` so callers on any thread can use it without MainActor dispatch.
+  /// ErrorMapper.map() is pure and thread-safe. Sentry reporting is fire-and-forget
+  /// via an unstructured Task since SentryService is @MainActor-isolated.
+  nonisolated func handle(_ error: Error, context: String = "") -> FocusmateError {
+    let focusmateError = ErrorMapper.map(error)
+
     var sentryContext: [String: Any] = [:]
     if !context.isEmpty {
       sentryContext["context"] = context
@@ -22,7 +31,7 @@ final class ErrorHandler: @unchecked Sendable {
     sentryContext["error_code"] = focusmateError.code
     sentryContext["is_retryable"] = focusmateError.isRetryable
 
-    let sentryService = self.sentryService
+    let sentryService = SentryService.shared
     Task { @MainActor in
       sentryService.captureError(error, context: sentryContext)
     }
@@ -30,38 +39,22 @@ final class ErrorHandler: @unchecked Sendable {
     return focusmateError
   }
 
-  @MainActor func showAlert(for error: FocusmateError) -> Alert {
-    return self.advancedHandler.showAlert(for: error)
-  }
+  // MARK: - Re-authentication
 
-  // MARK: - Enhanced Methods
-
-  func handleWithRetry<T>(
-    context: String,
-    operation: @escaping () async throws -> T
-  ) async throws -> T {
-    do {
-      return try await operation()
-    } catch {
-      let processedError = self.handle(error, context: context)
-
-      if processedError.isRetryable {
-        return try await self.advancedHandler.retryWithBackoff(
-          context: context,
-          error: processedError,
-          operation: operation
-        )
-      }
-
-      throw processedError
-    }
-  }
-
+  /// Called by AuthStore before it clears credentials and sends signedOut event.
+  /// Manages the re-authentication flag to prevent duplicate handling.
+  /// Actual credential clearing is done by AuthStore.clearLocalSession().
+  /// Navigation reset is handled by AppRouter listening to AuthEventBus.signedOut.
   func handleUnauthorized() async -> Bool {
-    return await self.advancedHandler.handleUnauthorized()
-  }
+    guard !self.isReauthenticating else {
+      Logger.debug("ErrorHandler: Already re-authenticating, skipping", category: .general)
+      return false
+    }
 
-  @MainActor func shouldRetry(error: FocusmateError, context: String) -> Bool {
-    return self.advancedHandler.shouldRetry(error: error, context: context)
+    self.isReauthenticating = true
+    defer { isReauthenticating = false }
+
+    Logger.debug("ErrorHandler: Unauthorized handled, AuthStore will clear session", category: .general)
+    return true
   }
 }
