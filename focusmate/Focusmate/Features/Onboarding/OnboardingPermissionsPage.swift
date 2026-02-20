@@ -212,7 +212,7 @@ struct OnboardingPermissionsPage: View {
 
   struct OnboardingAppSelectionSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var screenTime = ScreenTimeService.shared
+    let screenTime = ScreenTimeService.shared
     @State private var showingPicker = false
     @State private var selection = FamilyActivitySelection()
 

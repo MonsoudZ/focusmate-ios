@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-  @EnvironmentObject var appState: AppState
+  @Environment(AppState.self) var appState
   @Environment(\.router) private var router
   @State private var showingSignOutConfirmation = false
   @State private var calendarPermissionGranted = CalendarService.shared.checkPermission()

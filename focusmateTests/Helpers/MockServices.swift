@@ -1,4 +1,3 @@
-import Combine
 @testable import focusmate
 import Foundation
 
@@ -176,11 +175,12 @@ final class MockTagService {
 
 // MARK: - MockEscalationService
 
+@Observable
 @MainActor
-final class MockEscalationService: ObservableObject {
-  @Published var isInGracePeriod: Bool = false
-  @Published var gracePeriodEndTime: Date?
-  @Published var overdueTaskIds: Set<Int> = []
+final class MockEscalationService {
+  var isInGracePeriod: Bool = false
+  var gracePeriodEndTime: Date?
+  var overdueTaskIds: Set<Int> = []
 
   private(set) var taskBecameOverdueCalled = false
   private(set) var taskCompletedCalled = false

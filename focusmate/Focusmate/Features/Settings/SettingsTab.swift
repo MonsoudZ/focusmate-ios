@@ -3,7 +3,7 @@ import SwiftUI
 /// Tab wrapper for Settings view with NavigationStack
 struct SettingsTab: View {
   @Environment(\.router) private var router
-  @EnvironmentObject var appState: AppState
+  @Environment(AppState.self) var appState
 
   var body: some View {
     NavigationStack(path: Binding(

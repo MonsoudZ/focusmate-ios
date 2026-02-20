@@ -2,13 +2,14 @@ import Combine
 import Foundation
 import SwiftUI
 
+@Observable
 @MainActor
-final class AppBootstrapper: ObservableObject {
-  private let auth: AuthStore
-  private let settings = AppSettings.shared
+final class AppBootstrapper {
+  @ObservationIgnored private let auth: AuthStore
+  @ObservationIgnored private let settings = AppSettings.shared
 
-  private var hasTrackedInitialOpenThisRun = false
-  private var isRunning = false
+  @ObservationIgnored private var hasTrackedInitialOpenThisRun = false
+  @ObservationIgnored private var isRunning = false
 
   init(auth: AuthStore) {
     self.auth = auth

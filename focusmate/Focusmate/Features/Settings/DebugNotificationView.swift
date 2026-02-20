@@ -3,7 +3,7 @@ import SwiftUI
 #if DEBUG
 
   struct DebugNotificationView: View {
-    @StateObject private var helper = NotificationTestHelper.shared
+    let helper = NotificationTestHelper.shared
     @State private var permissionStatus = "Checking..."
     @State private var testTaskId = "999"
     @State private var testDelay = "5"

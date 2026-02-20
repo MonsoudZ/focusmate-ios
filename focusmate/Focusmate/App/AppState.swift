@@ -2,31 +2,34 @@ import Combine
 import Foundation
 import SwiftUI
 
+@Observable
 @MainActor
-final class AppState: ObservableObject {
+final class AppState {
   let auth: AuthStore
 
-  @Published var isLoading = false
-  @Published var error: FocusmateError?
+  var isLoading = false
+  var error: FocusmateError?
 
   /// Invite code entered before sign-in, to be auto-accepted after authentication
-  @Published var pendingInviteCode: String?
+  var pendingInviteCode: String?
   /// List the user just joined via invite (for navigation after accept)
-  @Published var joinedList: ListDTO?
+  var joinedList: ListDTO?
 
-  private var cancellables = Set<AnyCancellable>()
+  @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
-  // Services
-  private(set) lazy var listService = ListService(apiClient: auth.api)
-  private(set) lazy var taskService = TaskService(
+  // Services — @ObservationIgnored keeps lazy vars as stored properties;
+  // without it, @Observable's macro turns them into computed properties
+  // which is incompatible with `lazy`.
+  @ObservationIgnored private(set) lazy var listService = ListService(apiClient: auth.api)
+  @ObservationIgnored private(set) lazy var taskService = TaskService(
     apiClient: auth.api,
     sideEffects: TaskSideEffectHandler(notificationService: .shared, calendarService: .shared)
   )
-  private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
-  private(set) lazy var tagService = TagService(apiClient: auth.api)
-  private(set) lazy var inviteService = InviteService(apiClient: auth.api)
-  private(set) lazy var friendService = FriendService(apiClient: auth.api)
-  private(set) lazy var subtaskManager = SubtaskManager(taskService: taskService)
+  @ObservationIgnored private(set) lazy var deviceService = DeviceService(apiClient: auth.api)
+  @ObservationIgnored private(set) lazy var tagService = TagService(apiClient: auth.api)
+  @ObservationIgnored private(set) lazy var inviteService = InviteService(apiClient: auth.api)
+  @ObservationIgnored private(set) lazy var friendService = FriendService(apiClient: auth.api)
+  @ObservationIgnored private(set) lazy var subtaskManager = SubtaskManager(taskService: taskService)
 
   /// Push token coordination (grouped for atomic consistency)
   private struct PushTokenState {
@@ -37,7 +40,7 @@ final class AppState: ObservableObject {
     var isRegistering = false
   }
 
-  private var pushState = PushTokenState()
+  @ObservationIgnored private var pushState = PushTokenState()
 
   init(auth: AuthStore) {
     self.auth = auth
@@ -179,7 +182,7 @@ final class AppState: ObservableObject {
   ///    automatically on the next auth event.
   /// 3. **Permanent failure** (4xx — expired, invalid, already used) — code
   ///    cleared, error shown once, won't retry.
-  private var isAcceptingInvite = false
+  @ObservationIgnored private var isAcceptingInvite = false
 
   private func tryAcceptPendingInvite() async {
     guard self.auth.jwt != nil else { return }
@@ -222,7 +225,7 @@ final class AppState: ObservableObject {
   /// a timezone change may still use the old value if it wins the race against
   /// this PATCH.  Layer 2 (the `timezone` query parameter on `fetchToday`) and
   /// Layer 3 (client-side re-bucketing) cover that gap.
-  private var isSyncingTimezone = false
+  @ObservationIgnored private var isSyncingTimezone = false
 
   private func syncTimezoneIfNeeded() async {
     guard self.auth.jwt != nil else { return }

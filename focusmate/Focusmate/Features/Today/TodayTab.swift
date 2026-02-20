@@ -3,7 +3,7 @@ import SwiftUI
 /// Tab wrapper for Today view with NavigationStack
 struct TodayTab: View {
   @Environment(\.router) private var router
-  @EnvironmentObject var appState: AppState
+  @Environment(AppState.self) var appState
 
   let onOverdueCountChange: ((Int) -> Void)?
 

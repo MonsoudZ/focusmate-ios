@@ -3,7 +3,7 @@ import SwiftUI
 struct OnboardingCreateListPage: View {
   let onNext: () -> Void
 
-  @EnvironmentObject private var state: AppState
+  @Environment(AppState.self) private var state
 
   @State private var listName: String = ""
   @State private var selectedColor: String = "blue"

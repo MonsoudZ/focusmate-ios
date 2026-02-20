@@ -1,4 +1,3 @@
-import Combine
 import Foundation
 
 #if !targetEnvironment(simulator)
@@ -6,24 +5,25 @@ import Foundation
   import FamilyControls
   import ManagedSettings
 
+  @Observable
   @MainActor
-  final class ScreenTimeService: ObservableObject, ScreenTimeManaging {
+  final class ScreenTimeService: ScreenTimeManaging {
     static let shared = ScreenTimeService()
 
-    private let store = ManagedSettingsStore()
-    private let center = AuthorizationCenter.shared
+    @ObservationIgnored private let store = ManagedSettingsStore()
+    @ObservationIgnored private let center = AuthorizationCenter.shared
 
-    @Published var authorizationStatus: AuthorizationStatus = .notDetermined
-    @Published var selectedApps: Set<ApplicationToken> = []
-    @Published var selectedCategories: Set<ActivityCategoryToken> = []
-    @Published var isBlocking: Bool = false
+    var authorizationStatus: AuthorizationStatus = .notDetermined
+    var selectedApps: Set<ApplicationToken> = []
+    var selectedCategories: Set<ActivityCategoryToken> = []
+    var isBlocking: Bool = false
 
-    private let appsKey = SharedDefaults.selectedAppsKey
-    private let categoriesKey = SharedDefaults.selectedCategoriesKey
+    @ObservationIgnored private let appsKey = SharedDefaults.selectedAppsKey
+    @ObservationIgnored private let categoriesKey = SharedDefaults.selectedCategoriesKey
 
     // Legacy keys for one-time migration from UserDefaults.standard
-    private let legacyAppsKey = "ScreenTime_SelectedApps"
-    private let legacyCategoriesKey = "ScreenTime_SelectedCategories"
+    @ObservationIgnored private let legacyAppsKey = "ScreenTime_SelectedApps"
+    @ObservationIgnored private let legacyCategoriesKey = "ScreenTime_SelectedCategories"
 
     private init() {
       self.migrateFromStandardDefaultsIfNeeded()
@@ -160,11 +160,12 @@ import Foundation
   /// causes dyld to attempt XPC initialization at process launch, corrupting the
   /// heap before any Swift code executes. This stub provides the same interface
   /// with no-op implementations so all code paths compile without the framework link.
+  @Observable
   @MainActor
-  final class ScreenTimeService: ObservableObject, ScreenTimeManaging {
+  final class ScreenTimeService: ScreenTimeManaging {
     static let shared = ScreenTimeService()
 
-    @Published var isBlocking: Bool = false
+    var isBlocking: Bool = false
 
     private init() {}
 

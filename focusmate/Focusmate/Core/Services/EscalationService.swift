@@ -1,26 +1,26 @@
-import Combine
 import Foundation
 
 #if !targetEnvironment(simulator)
   import DeviceActivity
 #endif
 
+@Observable
 @MainActor
-final class EscalationService: ObservableObject {
+final class EscalationService {
   static let shared = EscalationService()
 
-  @Published var isInGracePeriod: Bool = false
-  @Published var gracePeriodEndTime: Date?
-  @Published var overdueTaskIds: Set<Int> = []
+  var isInGracePeriod: Bool = false
+  var gracePeriodEndTime: Date?
+  var overdueTaskIds: Set<Int> = []
 
   /// Set when Screen Time authorization is revoked during an active escalation.
   /// Intentionally NOT cleared by `resetAll()` — it needs to survive so the UI
   /// can show a recovery banner explaining what happened and linking to Settings.
   /// Cleared by: user tapping the banner, or authorization being re-granted on foreground.
-  @Published var authorizationWasRevoked: Bool = false
+  var authorizationWasRevoked: Bool = false
 
-  private var gracePeriodTimer: Timer?
-  private var checkTimer: Timer?
+  @ObservationIgnored private var gracePeriodTimer: Timer?
+  @ObservationIgnored private var checkTimer: Timer?
 
   private var gracePeriodMinutes: Int {
     AppConfiguration.Escalation.gracePeriodMinutes
@@ -30,15 +30,15 @@ final class EscalationService: ObservableObject {
     AppConfiguration.Escalation.warningMinutes
   }
 
-  private let gracePeriodStartKey = SharedDefaults.gracePeriodStartTimeKey
-  private let overdueTaskIdsKey = SharedDefaults.overdueTaskIdsKey
+  @ObservationIgnored private let gracePeriodStartKey = SharedDefaults.gracePeriodStartTimeKey
+  @ObservationIgnored private let overdueTaskIdsKey = SharedDefaults.overdueTaskIdsKey
 
   // Legacy keys for one-time migration from UserDefaults.standard
-  private let legacyGracePeriodStartKey = "Escalation_GracePeriodStart"
-  private let legacyOverdueTaskIdsKey = "Escalation_OverdueTaskIds"
+  @ObservationIgnored private let legacyGracePeriodStartKey = "Escalation_GracePeriodStart"
+  @ObservationIgnored private let legacyOverdueTaskIdsKey = "Escalation_OverdueTaskIds"
 
-  private let screenTimeService: ScreenTimeManaging
-  private let notificationService: NotificationService
+  @ObservationIgnored private let screenTimeService: ScreenTimeManaging
+  @ObservationIgnored private let notificationService: NotificationService
 
   init(
     screenTimeService: (any ScreenTimeManaging)? = nil,

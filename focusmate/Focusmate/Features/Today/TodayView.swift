@@ -3,7 +3,7 @@ import SwiftUI
 struct TodayView: View {
   @State private var viewModel: TodayViewModel
   @Environment(\.router) private var router
-  @EnvironmentObject private var appState: AppState
+  @Environment(AppState.self) private var appState
 
   init(
     taskService: TaskService,

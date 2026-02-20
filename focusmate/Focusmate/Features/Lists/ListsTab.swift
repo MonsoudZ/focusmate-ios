@@ -3,7 +3,7 @@ import SwiftUI
 /// Tab wrapper for Lists view with NavigationStack
 struct ListsTab: View {
   @Environment(\.router) private var router
-  @EnvironmentObject var appState: AppState
+  @Environment(AppState.self) var appState
 
   var body: some View {
     NavigationStack(path: Binding(

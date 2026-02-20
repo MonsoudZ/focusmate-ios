@@ -1,4 +1,3 @@
-import Combine
 import Foundation
 import UserNotifications
 
@@ -6,12 +5,13 @@ import UserNotifications
 
   /// Test helper for simulating and debugging push notifications
   /// Only available in DEBUG builds
+  @Observable
   @MainActor
-  final class NotificationTestHelper: ObservableObject {
+  final class NotificationTestHelper {
     static let shared = NotificationTestHelper()
 
-    @Published var scheduledNotifications: [ScheduledNotification] = []
-    @Published var lastSimulatedRoute: String?
+    var scheduledNotifications: [ScheduledNotification] = []
+    var lastSimulatedRoute: String?
 
     private init() {}
 

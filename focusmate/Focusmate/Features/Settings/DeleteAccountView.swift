@@ -2,7 +2,7 @@ import SwiftUI
 
 struct DeleteAccountView: View {
   @Environment(\.dismiss) private var dismiss
-  @EnvironmentObject var appState: AppState
+  @Environment(AppState.self) var appState
 
   @State private var viewModel: DeleteAccountViewModel
 

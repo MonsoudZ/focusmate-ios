@@ -5,13 +5,13 @@ import UIKit
 struct FocusmateApp: App {
   @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-  @StateObject private var state: AppState
-  @StateObject private var bootstrapper: AppBootstrapper
+  @State private var state: AppState
+  @State private var bootstrapper: AppBootstrapper
 
   init() {
     let auth = AuthStore()
-    _state = StateObject(wrappedValue: AppState(auth: auth))
-    _bootstrapper = StateObject(wrappedValue: AppBootstrapper(auth: auth))
+    _state = State(initialValue: AppState(auth: auth))
+    _bootstrapper = State(initialValue: AppBootstrapper(auth: auth))
 
     Self.configureAppearance()
   }
@@ -54,9 +54,9 @@ struct FocusmateApp: App {
     WindowGroup {
       RootView()
         .environment(\.router, AppRouter.shared)
-        .environmentObject(self.state)
+        .environment(self.state)
         .environment(self.state.auth)
-        .environmentObject(self.bootstrapper)
+        .environment(self.bootstrapper)
         .onOpenURL { url in
           if let route = DeepLinkRoute(url: url) {
             AppRouter.shared.handleDeepLink(route)
@@ -67,9 +67,9 @@ struct FocusmateApp: App {
 }
 
 struct RootView: View {
-  @EnvironmentObject var state: AppState
+  @Environment(AppState.self) var state
   @Environment(AuthStore.self) var auth
-  @EnvironmentObject var bootstrapper: AppBootstrapper
+  @Environment(AppBootstrapper.self) var bootstrapper
   @Environment(\.router) private var router
 
   @State private var overdueCount: Int = 0
@@ -95,7 +95,7 @@ struct RootView: View {
             set: { self.router.activeSheet = $0 }
           )) { sheet in
             SheetContent(sheet: sheet, appState: self.state)
-              .environmentObject(self.state)
+              .environment(self.state)
               .environment(self.state.auth)
           }
       } else if !self.hasCompletedOnboarding || (self.hasCheckedLists && !self.userHasLists) {
@@ -105,7 +105,7 @@ struct RootView: View {
             self.hasCompletedOnboarding = true
           }
         }
-        .environmentObject(self.state)
+        .environment(self.state)
         .task(id: self.auth.jwt != nil) {
           guard self.auth.jwt != nil else { return }
           await self.bootstrapper.runAuthenticatedBootTasksIfNeeded()

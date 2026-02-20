@@ -1,16 +1,16 @@
-import Combine
 import Foundation
 import SwiftUI
 
 /// Central error handler that coordinates error mapping, retry logic, and user feedback.
 /// Uses ErrorMapper for conversion and RetryCoordinator for retry logic.
+@Observable
 @MainActor
-final class AdvancedErrorHandler: ObservableObject {
+final class AdvancedErrorHandler {
   static let shared = AdvancedErrorHandler()
 
-  @Published var isReauthenticating = false
+  var isReauthenticating = false
 
-  private let retryCoordinator: RetryCoordinator
+  @ObservationIgnored private let retryCoordinator: RetryCoordinator
 
   private init(retryCoordinator: RetryCoordinator = .shared) {
     self.retryCoordinator = retryCoordinator

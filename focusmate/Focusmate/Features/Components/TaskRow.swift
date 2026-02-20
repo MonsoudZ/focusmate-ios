@@ -16,7 +16,7 @@ struct TaskRow: View {
   let showHide: Bool
   let showDelete: Bool
 
-  @EnvironmentObject var state: AppState
+  @Environment(AppState.self) var state
   @Environment(\.router) private var router
   @State private var isNudging = false
   @State private var isExpanded = false
