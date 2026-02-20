@@ -39,30 +39,37 @@ final class SearchViewModelTests: XCTestCase {
     )
   }
 
-  private func stubSearchResults(_ tasks: [TaskDTO]) {
-    let response = TasksResponse(tasks: tasks, tombstones: nil)
-    self.mockNetworking.stubJSON(response)
+  // MARK: - Initial State
+
+  func testInitialState() {
+    let vm = makeViewModel()
+
+    XCTAssertEqual(vm.query, "")
+    XCTAssertTrue(vm.results.isEmpty)
+    XCTAssertFalse(vm.isSearching)
+    XCTAssertFalse(vm.hasSearched)
+    XCTAssertNil(vm.error)
+    XCTAssertTrue(vm.lists.isEmpty)
   }
 
-  private func stubListsResponse(_ lists: [ListDTO]) {
-    let response = ListsResponse(lists: lists, tombstones: nil)
-    self.mockNetworking.stubJSON(response)
+  func testInitialQuerySetsQuery() {
+    let vm = makeViewModel(initialQuery: "groceries")
+
+    XCTAssertEqual(vm.query, "groceries")
+    XCTAssertFalse(vm.hasSearched)
   }
 
-  private func stubSingleListResponse(_ list: ListDTO) {
-    let response = ListResponse(list: list)
-    self.mockNetworking.stubJSON(response)
-  }
+  // MARK: - Search
 
-  // MARK: - search() Tests
+  func testSearchSuccess() async {
+    let tasks = [
+      TestFactories.makeSampleTask(id: 1, listId: 10, title: "Buy milk"),
+      TestFactories.makeSampleTask(id: 2, listId: 10, title: "Buy eggs"),
+    ]
+    mockNetworking.stubJSON(TasksResponse(tasks: tasks, tombstones: nil))
 
-  func testSearchReturnsResults() async {
-    let task1 = TestFactories.makeSampleTask(id: 1, listId: 10, title: "Buy milk")
-    let task2 = TestFactories.makeSampleTask(id: 2, listId: 10, title: "Buy bread")
-    self.stubSearchResults([task1, task2])
-
-    let vm = self.makeViewModel()
-    vm.query = "buy"
+    let vm = makeViewModel()
+    vm.query = "Buy"
     await vm.search()
 
     XCTAssertEqual(vm.results.count, 2)
@@ -71,72 +78,111 @@ final class SearchViewModelTests: XCTestCase {
     XCTAssertNil(vm.error)
   }
 
-  func testSearchSetsLoadingState() async {
-    self.stubSearchResults([])
-    let vm = self.makeViewModel()
-    vm.query = "test"
-
-    XCTAssertFalse(vm.isSearching)
-    XCTAssertFalse(vm.hasSearched)
-
-    await vm.search()
-
-    XCTAssertFalse(vm.isSearching)
-    XCTAssertTrue(vm.hasSearched)
-  }
-
-  func testSearchIgnoresEmptyQuery() async {
-    let vm = self.makeViewModel()
+  func testSearchEmptyQueryDoesNothing() async {
+    let vm = makeViewModel()
     vm.query = "   "
     await vm.search()
 
     XCTAssertTrue(vm.results.isEmpty)
     XCTAssertFalse(vm.hasSearched)
-    XCTAssertFalse(vm.isSearching)
   }
 
   func testSearchTrimsWhitespace() async {
-    self.stubSearchResults([TestFactories.makeSampleTask(title: "Found")])
-    let vm = self.makeViewModel()
-    vm.query = "  buy  "
+    mockNetworking.stubJSON(TasksResponse(tasks: [], tombstones: nil))
+
+    let vm = makeViewModel()
+    vm.query = "  hello  "
     await vm.search()
 
-    let call = self.mockNetworking.lastCall
-    XCTAssertEqual(call?.queryParameters["q"], "buy")
+    // Verify the API was called with trimmed query
+    let call = mockNetworking.lastCall
+    XCTAssertEqual(call?.queryParameters["q"], "hello")
   }
 
-  func testSearchTruncatesAt255Characters() async {
-    self.stubSearchResults([])
-    let vm = self.makeViewModel()
+  func testSearchTruncatesLongQuery() async {
+    mockNetworking.stubJSON(TasksResponse(tasks: [], tombstones: nil))
+
+    let vm = makeViewModel()
     vm.query = String(repeating: "a", count: 300)
     await vm.search()
 
-    let sentQuery = self.mockNetworking.lastCall?.queryParameters["q"] ?? ""
-    XCTAssertEqual(sentQuery.count, 255)
+    let call = mockNetworking.lastCall
+    XCTAssertEqual(call?.queryParameters["q"]?.count, 255)
   }
 
-  func testSearchSetsErrorOnFailure() async {
-    self.mockNetworking.stubbedError = APIError.serverError(500, "Server Error", nil)
-    let vm = self.makeViewModel()
-    vm.query = "test"
+  func testSearchError() async {
+    mockNetworking.stubbedError = NSError(domain: "test", code: 500)
+
+    let vm = makeViewModel()
+    vm.query = "something"
     await vm.search()
 
     XCTAssertNotNil(vm.error)
     XCTAssertTrue(vm.results.isEmpty)
+    XCTAssertTrue(vm.hasSearched)
     XCTAssertFalse(vm.isSearching)
+  }
+
+  func testSearchResetsErrorOnNewSearch() async {
+    // First search fails
+    mockNetworking.stubbedError = NSError(domain: "test", code: 500)
+    let vm = makeViewModel()
+    vm.query = "fail"
+    await vm.search()
+    XCTAssertNotNil(vm.error)
+
+    // Second search succeeds
+    mockNetworking.stubbedError = nil
+    mockNetworking.stubJSON(TasksResponse(tasks: [], tombstones: nil))
+    vm.query = "succeed"
+    await vm.search()
+    XCTAssertNil(vm.error)
+  }
+
+  // MARK: - searchIfNeeded
+
+  func testSearchIfNeededWithInitialQuery() async {
+    mockNetworking.stubJSON(TasksResponse(tasks: [
+      TestFactories.makeSampleTask(id: 1, title: "Match"),
+    ], tombstones: nil))
+
+    let vm = makeViewModel(initialQuery: "Match")
+    await vm.searchIfNeeded()
+
+    XCTAssertEqual(vm.results.count, 1)
     XCTAssertTrue(vm.hasSearched)
   }
 
-  // MARK: - clearSearch() Tests
+  func testSearchIfNeededWithoutInitialQueryDoesNothing() async {
+    let vm = makeViewModel()
+    await vm.searchIfNeeded()
 
-  func testClearSearchResetsState() async {
-    self.stubSearchResults([TestFactories.makeSampleTask(title: "Found")])
-    let vm = self.makeViewModel()
-    vm.query = "test"
+    XCTAssertFalse(vm.hasSearched)
+    XCTAssertTrue(mockNetworking.calls.isEmpty)
+  }
+
+  func testSearchIfNeededOnlySearchesOnce() async {
+    mockNetworking.stubJSON(TasksResponse(tasks: [], tombstones: nil))
+
+    let vm = makeViewModel(initialQuery: "once")
+    await vm.searchIfNeeded()
+    let callCount = mockNetworking.calls.count
+
+    await vm.searchIfNeeded()
+    XCTAssertEqual(mockNetworking.calls.count, callCount, "Should not search again after first search")
+  }
+
+  // MARK: - clearSearch
+
+  func testClearSearch() async {
+    mockNetworking.stubJSON(TasksResponse(tasks: [
+      TestFactories.makeSampleTask(id: 1, title: "Task"),
+    ], tombstones: nil))
+
+    let vm = makeViewModel()
+    vm.query = "Task"
     await vm.search()
-
     XCTAssertFalse(vm.results.isEmpty)
-    XCTAssertTrue(vm.hasSearched)
 
     vm.clearSearch()
 
@@ -145,110 +191,67 @@ final class SearchViewModelTests: XCTestCase {
     XCTAssertFalse(vm.hasSearched)
   }
 
-  // MARK: - searchIfNeeded() Tests
+  // MARK: - groupedResults
 
-  func testSearchIfNeededTriggersWithInitialQuery() async {
-    self.stubSearchResults([TestFactories.makeSampleTask(title: "Result")])
-    let vm = self.makeViewModel(initialQuery: "buy")
-
-    XCTAssertEqual(vm.query, "buy")
-    XCTAssertFalse(vm.hasSearched)
-
-    await vm.searchIfNeeded()
-
-    XCTAssertTrue(vm.hasSearched)
-    XCTAssertEqual(vm.results.count, 1)
-  }
-
-  func testSearchIfNeededSkipsWhenNoInitialQuery() async {
-    let vm = self.makeViewModel()
-    await vm.searchIfNeeded()
-
-    XCTAssertFalse(vm.hasSearched)
-    XCTAssertTrue(vm.results.isEmpty)
-  }
-
-  func testSearchIfNeededSkipsWhenAlreadySearched() async {
-    self.stubSearchResults([TestFactories.makeSampleTask(title: "First")])
-    let vm = self.makeViewModel(initialQuery: "buy")
-    await vm.searchIfNeeded()
-
-    XCTAssertEqual(vm.results.count, 1)
-
-    // Stub different results — searchIfNeeded should NOT re-search
-    self.mockNetworking.reset()
-    self.stubSearchResults([
-      TestFactories.makeSampleTask(id: 1, title: "A"),
-      TestFactories.makeSampleTask(id: 2, title: "B"),
-    ])
-    await vm.searchIfNeeded()
-
-    // Should still have original results
-    XCTAssertEqual(vm.results.count, 1)
-  }
-
-  // MARK: - groupedResults Tests
-
-  func testGroupedResultsGroupsByListId() async {
+  func testGroupedResultsSortsByListId() async {
     let tasks = [
-      TestFactories.makeSampleTask(id: 1, listId: 10, title: "Task A"),
-      TestFactories.makeSampleTask(id: 2, listId: 20, title: "Task B"),
-      TestFactories.makeSampleTask(id: 3, listId: 10, title: "Task C"),
+      TestFactories.makeSampleTask(id: 1, listId: 30, title: "Task A"),
+      TestFactories.makeSampleTask(id: 2, listId: 10, title: "Task B"),
+      TestFactories.makeSampleTask(id: 3, listId: 20, title: "Task C"),
+      TestFactories.makeSampleTask(id: 4, listId: 10, title: "Task D"),
     ]
-    self.stubSearchResults(tasks)
+    mockNetworking.stubJSON(TasksResponse(tasks: tasks, tombstones: nil))
 
-    let vm = self.makeViewModel()
-    vm.query = "task"
+    let vm = makeViewModel()
+    vm.query = "Task"
     await vm.search()
 
     let grouped = vm.groupedResults
-    XCTAssertEqual(grouped.count, 2)
-    // Sorted by listId ascending
+    XCTAssertEqual(grouped.count, 3)
     XCTAssertEqual(grouped[0].listId, 10)
     XCTAssertEqual(grouped[0].tasks.count, 2)
     XCTAssertEqual(grouped[1].listId, 20)
-    XCTAssertEqual(grouped[1].tasks.count, 1)
+    XCTAssertEqual(grouped[2].listId, 30)
   }
 
   func testGroupedResultsEmptyWhenNoResults() {
-    let vm = self.makeViewModel()
+    let vm = makeViewModel()
     XCTAssertTrue(vm.groupedResults.isEmpty)
   }
 
-  // MARK: - List Loading Tests
+  // MARK: - List Loading
 
-  func testSearchLoadsListMetadataForResults() async {
-    let task = TestFactories.makeSampleTask(id: 1, listId: 5, title: "Found")
-    self.stubSearchResults([task])
+  func testSearchLoadsListMetadata() async {
+    let tasks = [
+      TestFactories.makeSampleTask(id: 1, listId: 5, title: "Task"),
+    ]
+    mockNetworking.stubJSON(TasksResponse(tasks: tasks, tombstones: nil))
 
-    let vm = self.makeViewModel()
-    vm.query = "found"
-
-    // After search(), the VM will try to load lists for results.
-    // MockNetworking returns the same stub for all calls, so the list
-    // fetch will decode from whatever is currently stubbed.
-    // For this test, we just verify the search completed and lists dict is populated.
-    // The mock will return the TasksResponse for the list fetch too, which will
-    // fail to decode as ListResponse — that's fine, the VM catches the error.
+    let vm = makeViewModel()
+    vm.query = "Task"
     await vm.search()
 
-    XCTAssertEqual(vm.results.count, 1)
-    // List loading may fail due to mock stub mismatch, but search itself succeeds
-    XCTAssertFalse(vm.isSearching)
+    // After search, lists should be populated for the result's list_id.
+    // MockNetworking returns the same stub for all calls, but the list
+    // loading path uses fetchList(id:) which goes through the same mock.
+    // The key assertion: the VM attempted to load list metadata.
+    XCTAssertTrue(mockNetworking.calls.count > 1, "Should make additional calls to load list metadata")
   }
 
-  func testSearchSkipsListLoadingWhenListsAlreadyCached() async {
-    let task = TestFactories.makeSampleTask(id: 1, listId: 5, title: "Found")
-    self.stubSearchResults([task])
+  func testSearchSkipsAlreadyCachedLists() async {
+    let tasks = [
+      TestFactories.makeSampleTask(id: 1, listId: 5, title: "Task"),
+    ]
 
-    let vm = self.makeViewModel()
-    // Pre-populate list cache
-    vm.lists[5] = TestFactories.makeSampleList(id: 5, name: "Work")
-    vm.query = "found"
+    let vm = makeViewModel()
+    // Pre-populate the list cache
+    vm.lists[5] = TestFactories.makeSampleList(id: 5, name: "Cached List")
+
+    mockNetworking.stubJSON(TasksResponse(tasks: tasks, tombstones: nil))
+    vm.query = "Task"
     await vm.search()
 
-    // Only the search call should have been made, no list fetches
-    let getCalls = self.mockNetworking.calls.filter { $0.method == "GET" }
-    XCTAssertEqual(getCalls.count, 1) // Just the search call
+    // Should only have the search call, no list fetch calls
+    XCTAssertEqual(mockNetworking.calls.count, 1, "Should not fetch already-cached lists")
   }
 }
