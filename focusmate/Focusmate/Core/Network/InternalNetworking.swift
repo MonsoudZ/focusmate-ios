@@ -216,9 +216,8 @@ final class InternalNetworking: NetworkingProtocol {
 
       #if DEBUG
         let raw = String(data: data, encoding: .utf8) ?? "unable to read"
-        let redacted = LogRedactor.redact(raw)
-        let capped = redacted.count > 4000 ? String(redacted.prefix(4000)) + "…(truncated)" : redacted
-        Logger.error("Raw JSON (debug, redacted): \(capped)", category: .api)
+        let capped = raw.count > 4000 ? String(raw.prefix(4000)) + "…(truncated)" : raw
+        Logger.error("Raw JSON (debug): \(capped)", category: .api)
       #endif
 
       throw APIError.decoding

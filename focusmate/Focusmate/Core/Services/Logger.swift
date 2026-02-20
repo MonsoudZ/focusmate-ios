@@ -142,13 +142,19 @@ final class Logger {
   ) {
     guard level >= self.minimumLevel else { return }
 
+    // Centralized redaction: every message is sanitized before output,
+    // regardless of whether the caller remembered to sanitize. This is
+    // the single enforcement point — callers no longer need to manually
+    // call sanitize() on their log strings.
+    let sanitized = Self.sanitize(message)
+
     let filename = self.filename(from: file)
     let timestamp = self.timestampString()
 
     if self.consoleLoggingEnabled {
       let logMessage = self.formatConsoleMessage(
         level: level,
-        message: message,
+        message: sanitized,
         category: category,
         filename: filename,
         line: line,
@@ -162,7 +168,7 @@ final class Logger {
         level.osLogType,
         log: category.osLog,
         "%{public}@",
-        message
+        sanitized
       )
     }
   }
@@ -237,10 +243,21 @@ extension Logger {
     return result
   }
 
+  /// Redacts JSON fields that commonly carry secrets (e.g. `"token": "abc123"`).
+  /// Complements sanitizeToken which catches inline token patterns.
+  static func sanitizeJSONFields(_ string: String) -> String {
+    string.replacingOccurrences(
+      of: #""(token|jwt|access_token|refresh_token)"\s*:\s*"[^"]+""#,
+      with: "\"$1\":\"[REDACTED]\"",
+      options: .regularExpression
+    )
+  }
+
   static func sanitize(_ string: String) -> String {
     var sanitized = string
     sanitized = self.sanitizeEmail(sanitized)
     sanitized = self.sanitizeToken(sanitized)
+    sanitized = self.sanitizeJSONFields(sanitized)
     return sanitized
   }
 }

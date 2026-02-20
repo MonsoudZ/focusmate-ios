@@ -35,7 +35,7 @@ final class AppRouter {
 
   // MARK: - Deep Link Buffering
 
-  private var pendingDeepLink: DeepLinkRoute?
+  private var pendingDeepLinks: [DeepLinkRoute] = []
   private var isReady = false
 
   // MARK: - Auth Event Subscription
@@ -119,7 +119,7 @@ final class AppRouter {
     self.selectedTab = .today
     self.activeSheet = nil
     self.sheetCallbacks = SheetCallbacks()
-    self.pendingDeepLink = nil
+    self.pendingDeepLinks.removeAll()
     Logger.debug("AppRouter: All navigation state reset", category: .general)
   }
 
@@ -136,27 +136,31 @@ final class AppRouter {
 
   // MARK: - Deep Link Handling
 
-  /// Handle a deep link route, buffering if app is not ready
+  /// Handle a deep link route, buffering if app is not ready.
+  /// Multiple deep links that arrive before markReady() are queued
+  /// and executed in order — no link is silently dropped.
   func handleDeepLink(_ route: DeepLinkRoute) {
     if self.isReady {
       self.executeDeepLink(route)
     } else {
-      self.pendingDeepLink = route
+      self.pendingDeepLinks.append(route)
     }
   }
 
-  /// Mark the router as ready and flush any pending deep links
-  /// Call this from RootView.onAppear when the main UI is mounted
+  /// Mark the router as ready and flush any pending deep links.
+  /// Call this from RootView.onAppear when the main UI is mounted.
   func markReady() {
     self.isReady = true
-    self.flushPendingDeepLink()
+    self.flushPendingDeepLinks()
   }
 
-  /// Flush any buffered deep link
-  private func flushPendingDeepLink() {
-    guard let route = pendingDeepLink else { return }
-    self.pendingDeepLink = nil
-    self.executeDeepLink(route)
+  /// Flush all buffered deep links in FIFO order.
+  private func flushPendingDeepLinks() {
+    let routes = self.pendingDeepLinks
+    self.pendingDeepLinks.removeAll()
+    for route in routes {
+      self.executeDeepLink(route)
+    }
   }
 
   /// Execute a deep link route
