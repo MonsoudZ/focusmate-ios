@@ -46,7 +46,7 @@ final class ListService {
     ))
     let response: ListResponse = try await apiClient.request("POST", API.Lists.root, body: request)
     let newList = response.list
-    await self.cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in
+    await self.cache.mutate(Self.cacheKey) { (lists: inout [ListDTO]) in
       lists.append(newList)
     }
     return newList
@@ -68,7 +68,7 @@ final class ListService {
     ))
     let response: ListResponse = try await apiClient.request("PUT", API.Lists.id(String(id)), body: request)
     let updatedList = response.list
-    await self.cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in
+    await self.cache.mutate(Self.cacheKey) { (lists: inout [ListDTO]) in
       if let idx = lists.firstIndex(where: { $0.id == id }) {
         lists[idx] = updatedList
       }
@@ -78,7 +78,7 @@ final class ListService {
 
   func deleteList(id: Int) async throws {
     _ = try await self.apiClient.request("DELETE", API.Lists.id(String(id)), body: nil as String?) as EmptyResponse
-    await self.cache.mutate(Self.cacheKey, ttl: Self.cacheTTL) { (lists: inout [ListDTO]) in
+    await self.cache.mutate(Self.cacheKey) { (lists: inout [ListDTO]) in
       lists.removeAll { $0.id == id }
     }
   }

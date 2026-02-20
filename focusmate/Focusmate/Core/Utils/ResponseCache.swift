@@ -69,7 +69,7 @@ actor ResponseCache {
   /// first writer's changes.
   ///
   /// If the key is missing or expired, the transform is not called.
-  func mutate<T>(_ key: String, ttl: TimeInterval, transform: (inout T) -> Void) {
+  func mutate<T>(_ key: String, transform: (inout T) -> Void) {
     guard let entry = store[key] else { return }
 
     if Date() >= entry.expiration {
@@ -80,11 +80,13 @@ actor ResponseCache {
     guard var value = entry.value as? T else { return }
     transform(&value)
 
-    let now = Date()
+    // Preserve the original expiration — mutations update the value, not the
+    // freshness deadline. Resetting TTL here would let frequent mutations
+    // (rapid toggles, reorders) keep stale data alive indefinitely.
     self.store[key] = Entry(
       value: value,
-      expiration: now.addingTimeInterval(ttl),
-      lastAccessed: now
+      expiration: entry.expiration,
+      lastAccessed: Date()
     )
   }
 
