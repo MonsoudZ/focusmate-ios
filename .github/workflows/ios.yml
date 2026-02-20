@@ -26,9 +26,12 @@ jobs:
       
     - name: Periphery (Dead Code Detection)
       run: |
-        # Skip periphery for now due to project configuration issues
-        echo "Skipping periphery scan - project configuration needs adjustment"
-        # periphery scan --workspace focusmate.xcodeproj --schemes "focusmate" --retain-public
+        periphery scan \
+          --project focusmate.xcodeproj \
+          --schemes "focusmate" \
+          --targets "focusmate" \
+          --retain-public \
+          --disable-update-check
       
     - name: Prepare Simulator
       run: |
@@ -91,3 +94,22 @@ jobs:
         file: ./coverage.json
         flags: ios
         name: ios-coverage
+
+  security-scan:
+    runs-on: macos-15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Secret Detection (Gitleaks)
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Dependency Audit (OSV-Scanner)
+      run: |
+        brew install osv-scanner
+        osv-scanner --lockfile Package.resolved
