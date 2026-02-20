@@ -73,8 +73,9 @@ final class TodayViewModel {
     let calendar = Calendar.current
     for task in data.due_today {
       guard let dueDate = task.dueDate else { anytime.append(task); continue }
-      let hour = calendar.component(.hour, from: dueDate)
-      let minute = calendar.component(.minute, from: dueDate)
+      let components = calendar.dateComponents([.hour, .minute], from: dueDate)
+      let hour = components.hour ?? 0
+      let minute = components.minute ?? 0
       if hour == 0, minute == 0 { anytime.append(task) }
       else if hour < 12 { morning.append(task) }
       else if hour < 17 { afternoon.append(task) }
