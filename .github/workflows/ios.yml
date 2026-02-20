@@ -42,8 +42,10 @@ jobs:
         xcrun simctl list devices available | head -20
 
     - name: Build and Test
+      env:
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       run: |
-        xcodebuild -scheme "focusmate" -project "focusmate.xcodeproj" -destination "platform=iOS Simulator,name=iPhone 16" -derivedDataPath build clean test -enableCodeCoverage YES
+        xcodebuild -scheme "focusmate" -project "focusmate.xcodeproj" -destination "platform=iOS Simulator,name=iPhone 16" -derivedDataPath build clean test -enableCodeCoverage YES SENTRY_DSN="$SENTRY_DSN"
         
     - name: Check for Raw Networking
       run: |

@@ -7,7 +7,7 @@
     <key>CABLE_URL</key>
     <string>$(CABLE_URL)</string>
     <key>SENTRY_DSN</key>
-    <string>https://your-sentry-dsn@sentry.io/project-id</string>
+    <string>$(SENTRY_DSN)</string>
     <key>CFBundleDisplayName</key>
     <string>Focusmate</string>
     <key>CFBundleExecutable</key>

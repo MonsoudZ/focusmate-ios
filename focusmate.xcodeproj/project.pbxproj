@@ -23,6 +23,13 @@
 			remoteGlobalIDString = 99A8F0A12F16938700A75CF9;
 			remoteInfo = IntentiaShield;
 		};
+		99B1F00F2F19A10000B1CF01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 99C4FB212E9E05B1003F8E91 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 99B1F0072F19A10000B1CF01;
+			remoteInfo = IntentiaMonitor;
+		};
 		99C4FB372E9E05B2003F8E91 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 99C4FB212E9E05B1003F8E91 /* Project object */;
@@ -36,13 +43,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 99C4FB282E9E05B1003F8E91;
 			remoteInfo = focusmate;
-		};
-		99B1F00F2F19A10000B1CF01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 99C4FB212E9E05B1003F8E91 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 99B1F0072F19A10000B1CF01;
-			remoteInfo = IntentiaMonitor;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -65,11 +65,11 @@
 		99A8F0A22F16938700A75CF9 /* IntentiaShield.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = IntentiaShield.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A8F0A42F16938700A75CF9 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
 		99A8F0A62F16938700A75CF9 /* ManagedSettingsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettingsUI.framework; path = System/Library/Frameworks/ManagedSettingsUI.framework; sourceTree = SDKROOT; };
+		99B1F0012F19A10000B1CF01 /* IntentiaMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = IntentiaMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		99B1F0022F19A10000B1CF01 /* DeviceActivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DeviceActivity.framework; path = System/Library/Frameworks/DeviceActivity.framework; sourceTree = SDKROOT; };
 		99C4FB292E9E05B1003F8E91 /* focusmate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = focusmate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99C4FB362E9E05B2003F8E91 /* focusmateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = focusmateTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		99C4FB402E9E05B2003F8E91 /* focusmateUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = focusmateUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		99B1F0012F19A10000B1CF01 /* IntentiaMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = IntentiaMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		99B1F0022F19A10000B1CF01 /* DeviceActivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DeviceActivity.framework; path = System/Library/Frameworks/DeviceActivity.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -80,6 +80,13 @@
 			);
 			target = 99A8F0A12F16938700A75CF9 /* IntentiaShield */;
 		};
+		99B1F0102F19A10000B1CF01 /* Exceptions for "IntentiaMonitor" folder in "IntentiaMonitor" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 99B1F0072F19A10000B1CF01 /* IntentiaMonitor */;
+		};
 		99C4FC422EA59034003F8E91 /* Exceptions for "focusmate" folder in "focusmate" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -87,13 +94,6 @@
 				"Release-Info.plist",
 			);
 			target = 99C4FB282E9E05B1003F8E91 /* focusmate */;
-		};
-		99B1F0102F19A10000B1CF01 /* Exceptions for "IntentiaMonitor" folder in "IntentiaMonitor" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 99B1F0072F19A10000B1CF01 /* IntentiaMonitor */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -111,6 +111,14 @@
 			path = IntentiaShield;
 			sourceTree = "<group>";
 		};
+		99B1F0062F19A10000B1CF01 /* IntentiaMonitor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				99B1F0102F19A10000B1CF01 /* Exceptions for "IntentiaMonitor" folder in "IntentiaMonitor" target */,
+			);
+			path = IntentiaMonitor;
+			sourceTree = "<group>";
+		};
 		99C4FB2B2E9E05B1003F8E91 /* focusmate */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -124,14 +132,6 @@
 			path = focusmateUITests;
 			sourceTree = "<group>";
 		};
-		99B1F0062F19A10000B1CF01 /* IntentiaMonitor */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				99B1F0102F19A10000B1CF01 /* Exceptions for "IntentiaMonitor" folder in "IntentiaMonitor" target */,
-			);
-			path = IntentiaMonitor;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,6 +141,15 @@
 			files = (
 				99A8F0A52F16938700A75CF9 /* ManagedSettings.framework in Frameworks */,
 				99A8F0A72F16938700A75CF9 /* ManagedSettingsUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		99B1F0042F19A10000B1CF01 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				99B1F0082F19A10000B1CF01 /* ManagedSettings.framework in Frameworks */,
+				99B1F0092F19A10000B1CF01 /* DeviceActivity.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -162,15 +171,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		99B1F0042F19A10000B1CF01 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				99B1F0082F19A10000B1CF01 /* ManagedSettings.framework in Frameworks */,
-				99B1F0092F19A10000B1CF01 /* DeviceActivity.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,6 +235,28 @@
 			);
 			productName = IntentiaShield;
 			productReference = 99A8F0A22F16938700A75CF9 /* IntentiaShield.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		99B1F0072F19A10000B1CF01 /* IntentiaMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 99B1F00D2F19A10000B1CF01 /* Build configuration list for PBXNativeTarget "IntentiaMonitor" */;
+			buildPhases = (
+				99B1F0032F19A10000B1CF01 /* Sources */,
+				99B1F0042F19A10000B1CF01 /* Frameworks */,
+				99B1F0052F19A10000B1CF01 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				99B1F0062F19A10000B1CF01 /* IntentiaMonitor */,
+			);
+			name = IntentiaMonitor;
+			packageProductDependencies = (
+			);
+			productName = IntentiaMonitor;
+			productReference = 99B1F0012F19A10000B1CF01 /* IntentiaMonitor.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		99C4FB282E9E05B1003F8E91 /* focusmate */ = {
@@ -308,28 +330,6 @@
 			productReference = 99C4FB402E9E05B2003F8E91 /* focusmateUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		99B1F0072F19A10000B1CF01 /* IntentiaMonitor */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 99B1F00D2F19A10000B1CF01 /* Build configuration list for PBXNativeTarget "IntentiaMonitor" */;
-			buildPhases = (
-				99B1F0032F19A10000B1CF01 /* Sources */,
-				99B1F0042F19A10000B1CF01 /* Frameworks */,
-				99B1F0052F19A10000B1CF01 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				99B1F0062F19A10000B1CF01 /* IntentiaMonitor */,
-			);
-			name = IntentiaMonitor;
-			packageProductDependencies = (
-			);
-			productName = IntentiaMonitor;
-			productReference = 99B1F0012F19A10000B1CF01 /* IntentiaMonitor.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -390,6 +390,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		99B1F0052F19A10000B1CF01 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		99C4FB272E9E05B1003F8E91 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -411,17 +418,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		99B1F0052F19A10000B1CF01 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		99A8F09E2F16938700A75CF9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-/* End PBXResourcesBuildPhase section */
-
-/* Begin PBXSourcesBuildPhase section */
-		99A8F09E2F16938700A75CF9 /* Sources */ = {
+		99B1F0032F19A10000B1CF01 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -449,13 +456,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		99B1F0032F19A10000B1CF01 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -463,6 +463,11 @@
 			isa = PBXTargetDependency;
 			target = 99A8F0A12F16938700A75CF9 /* IntentiaShield */;
 			targetProxy = 99A8F0AD2F16938700A75CF9 /* PBXContainerItemProxy */;
+		};
+		99B1F00E2F19A10000B1CF01 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 99B1F0072F19A10000B1CF01 /* IntentiaMonitor */;
+			targetProxy = 99B1F00F2F19A10000B1CF01 /* PBXContainerItemProxy */;
 		};
 		99C4FB382E9E05B2003F8E91 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -473,11 +478,6 @@
 			isa = PBXTargetDependency;
 			target = 99C4FB282E9E05B1003F8E91 /* focusmate */;
 			targetProxy = 99C4FB412E9E05B2003F8E91 /* PBXContainerItemProxy */;
-		};
-		99B1F00E2F19A10000B1CF01 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 99B1F0072F19A10000B1CF01 /* IntentiaMonitor */;
-			targetProxy = 99B1F00F2F19A10000B1CF01 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -533,6 +533,70 @@
 				);
 				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.monsoudzanaty.focusmate.IntentiaShield;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		99B1F00B2F19A10000B1CF01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = IntentiaMonitor/IntentiaMonitor.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 7;
+				DEVELOPMENT_TEAM = CNK57345QT;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = IntentiaMonitor/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = IntentiaMonitor;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.monsoudzanaty.focusmate.IntentiaMonitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		99B1F00C2F19A10000B1CF01 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = IntentiaMonitor/IntentiaMonitor.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 7;
+				DEVELOPMENT_TEAM = CNK57345QT;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = IntentiaMonitor/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = IntentiaMonitor;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.monsoudzanaty.focusmate.IntentiaMonitor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
@@ -697,6 +761,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.monsoudzanaty.focusmate;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SENTRY_DSN = "https://65ee8fbe8a0bf9d0529f470b0e3c6134@o4510916934828032.ingest.us.sentry.io/4510916936269824";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -736,6 +801,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.monsoudzanaty.focusmate;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SENTRY_DSN = "https://65ee8fbe8a0bf9d0529f470b0e3c6134@o4510916934828032.ingest.us.sentry.io/4510916936269824";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -829,70 +895,6 @@
 			};
 			name = Release;
 		};
-		99B1F00B2F19A10000B1CF01 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = IntentiaMonitor/IntentiaMonitor.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
-				DEVELOPMENT_TEAM = CNK57345QT;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = IntentiaMonitor/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = IntentiaMonitor;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.monsoudzanaty.focusmate.IntentiaMonitor;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Debug;
-		};
-		99B1F00C2F19A10000B1CF01 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = IntentiaMonitor/IntentiaMonitor.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
-				DEVELOPMENT_TEAM = CNK57345QT;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = IntentiaMonitor/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = IntentiaMonitor;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.monsoudzanaty.focusmate.IntentiaMonitor;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -901,6 +903,15 @@
 			buildConfigurations = (
 				99A8F0B12F16938700A75CF9 /* Debug */,
 				99A8F0B22F16938700A75CF9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		99B1F00D2F19A10000B1CF01 /* Build configuration list for PBXNativeTarget "IntentiaMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				99B1F00B2F19A10000B1CF01 /* Debug */,
+				99B1F00C2F19A10000B1CF01 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -937,15 +948,6 @@
 			buildConfigurations = (
 				99C4FB512E9E05B2003F8E91 /* Debug */,
 				99C4FB522E9E05B2003F8E91 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		99B1F00D2F19A10000B1CF01 /* Build configuration list for PBXNativeTarget "IntentiaMonitor" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				99B1F00B2F19A10000B1CF01 /* Debug */,
-				99B1F00C2F19A10000B1CF01 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

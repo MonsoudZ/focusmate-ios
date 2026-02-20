@@ -44,3 +44,5 @@ Thumbs.db
 # Backup files
 *.bak
 *.orig
+
+.sentryclirc
