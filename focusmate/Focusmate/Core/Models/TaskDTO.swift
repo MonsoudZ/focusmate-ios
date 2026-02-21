@@ -407,8 +407,8 @@ struct SingleTaskResponse: Codable {
 //
 // TaskDTO is an entity — identity is the primary key.  Two DTOs with the
 // same `id` represent the same task.  Change detection (title edited,
-// completion toggled, etc.) is handled by the ViewModel's @Published
-// properties, not by DTO equality.
+// completion toggled, etc.) is handled by @Observable property access
+// tracking in the ViewModel, not by DTO equality.
 
 extension TaskDTO: Hashable {
   static func == (lhs: TaskDTO, rhs: TaskDTO) -> Bool {

@@ -30,17 +30,20 @@ struct TodayView: View {
 
   var body: some View {
     Group {
-      if self.viewModel.isLoading {
+      if self.viewModel.isLoading, self.viewModel.todayData == nil {
         ProgressView()
+      } else if let data = viewModel.todayData {
+        self.contentView(data)
       } else if let error = viewModel.error {
         TodayErrorView(error: error) {
           await self.viewModel.loadToday()
         }
-      } else if let data = viewModel.todayData {
-        self.contentView(data)
       } else {
         TodayEmptyView()
       }
+    }
+    .floatingErrorBanner(self.$viewModel.error) {
+      await self.viewModel.loadToday()
     }
     .navigationTitle("Today, \(Date().formatted(.dateTime.month(.abbreviated).day()))")
     .refreshable {
