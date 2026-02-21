@@ -26,7 +26,7 @@ struct OnboardingView: View {
           .tag(4)
       }
       .tabViewStyle(.page(indexDisplayMode: .never))
-      .animation(DS.Anim.smooth, value: self.currentPage)
+      .animateIfAllowed(DS.Anim.smooth, value: self.currentPage)
       .surfaceBackground()
 
       // Top bar: skip button + page dots
@@ -44,7 +44,7 @@ struct OnboardingView: View {
             Circle()
               .fill(index == self.currentPage ? DS.Colors.accent : Color(.systemGray4))
               .frame(width: 8, height: 8)
-              .animation(DS.Anim.quick, value: self.currentPage)
+              .animateIfAllowed(DS.Anim.quick, value: self.currentPage)
           }
         }
 

@@ -106,7 +106,7 @@ struct ErrorBannerModifier: ViewModifier {
       content
         .frame(maxHeight: .infinity)
     }
-    .animation(.easeInOut(duration: 0.3), value: self.error != nil)
+    .animateIfAllowed(.easeInOut(duration: 0.3), value: self.error != nil)
   }
 }
 
@@ -130,7 +130,7 @@ struct FloatingErrorBannerModifier: ViewModifier {
           .transition(.move(edge: .top).combined(with: .opacity))
         }
       }
-      .animation(.spring(response: 0.3, dampingFraction: 0.8), value: self.error != nil)
+      .animateIfAllowed(.spring(response: 0.3, dampingFraction: 0.8), value: self.error != nil)
   }
 }
 

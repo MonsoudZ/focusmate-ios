@@ -9,7 +9,7 @@ struct TaskDetailRescheduleHistoryCard: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       Button {
-        withAnimation { self.isExpanded.toggle() }
+        withMotionAnimation { self.isExpanded.toggle() }
       } label: {
         HStack {
           Image(systemName: "clock.arrow.circlepath")

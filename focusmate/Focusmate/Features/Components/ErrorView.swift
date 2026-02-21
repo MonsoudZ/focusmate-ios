@@ -162,7 +162,7 @@ private extension ErrorBanner {
 
   var closeButton: some View {
     Button {
-      withAnimation {
+      withMotionAnimation {
         self.isVisible = false
       }
       self.onDismiss()

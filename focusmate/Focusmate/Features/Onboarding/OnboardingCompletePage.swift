@@ -21,7 +21,7 @@ struct OnboardingCompletePage: View {
             .foregroundStyle(DS.Colors.success)
             .scaleEffect(self.showCheckmark ? 1.0 : 0.0)
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.6), value: self.showCheckmark)
+        .animateIfAllowed(.spring(response: 0.5, dampingFraction: 0.6), value: self.showCheckmark)
 
         VStack(spacing: DS.Spacing.sm) {
           Text("You're All Set")

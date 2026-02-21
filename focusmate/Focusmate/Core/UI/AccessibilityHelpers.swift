@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum Accessibility {
   // MARK: - Shared Formatters
@@ -151,12 +152,19 @@ extension View {
 // MARK: - Reduce Motion Support
 
 extension View {
-  @ViewBuilder
+  /// Applies `.animation()` only when Reduce Motion is OFF.
+  /// When Reduce Motion is ON, state changes still happen — just without animation.
   func animateIfAllowed(_ animation: Animation?, value: some Equatable) -> some View {
-    if UIAccessibility.isReduceMotionEnabled {
-      self
-    } else {
-      self.animation(animation, value: value)
-    }
+    self.animation(UIAccessibility.isReduceMotionEnabled ? nil : animation, value: value)
+  }
+}
+
+/// Reduce Motion-safe wrapper around `withAnimation`.
+/// Executes the body unconditionally; skips the animation when Reduce Motion is ON.
+func withMotionAnimation<Result>(_ animation: Animation? = .default, _ body: () throws -> Result) rethrows -> Result {
+  if UIAccessibility.isReduceMotionEnabled {
+    return try body()
+  } else {
+    return try withAnimation(animation, body)
   }
 }

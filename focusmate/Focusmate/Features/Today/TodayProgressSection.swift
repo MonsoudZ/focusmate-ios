@@ -56,7 +56,7 @@ struct TodayProgressSection: View {
           style: StrokeStyle(lineWidth: DS.Size.progressStroke, lineCap: .round)
         )
         .rotationEffect(.degrees(-90))
-        .animation(.easeInOut(duration: 0.5), value: self.progress)
+        .animateIfAllowed(.easeInOut(duration: 0.5), value: self.progress)
 
       if self.isAllComplete {
         Image(systemName: "checkmark")

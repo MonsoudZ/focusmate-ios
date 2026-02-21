@@ -56,7 +56,7 @@ struct ListDetailView: View {
           .transition(.move(edge: .bottom).combined(with: .opacity))
           .task {
             try? await Task.sleep(for: .seconds(2))
-            withAnimation {
+            withMotionAnimation {
               self.viewModel.nudgeMessage = nil
             }
           }
@@ -304,7 +304,7 @@ struct ListDetailView: View {
                 .font(.caption)
               Spacer()
               Button {
-                withAnimation {
+                withMotionAnimation {
                   self.viewModel.hideCompleted.toggle()
                 }
               } label: {

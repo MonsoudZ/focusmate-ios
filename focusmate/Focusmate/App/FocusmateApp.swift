@@ -101,7 +101,7 @@ struct RootView: View {
       } else if !self.hasCompletedOnboarding || (self.hasCheckedLists && !self.userHasLists) {
         OnboardingView {
           self.userHasLists = true // After onboarding, assume they created a list
-          withAnimation {
+          withMotionAnimation {
             self.hasCompletedOnboarding = true
           }
         }

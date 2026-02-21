@@ -166,7 +166,7 @@ struct ProgressRing: View {
           style: StrokeStyle(lineWidth: DS.Size.progressStroke, lineCap: .round)
         )
         .rotationEffect(.degrees(-90))
-        .animation(.easeOut(duration: 0.5), value: self.progress)
+        .animateIfAllowed(.easeOut(duration: 0.5), value: self.progress)
 
       if self.isComplete {
         Image(systemName: "checkmark")
@@ -281,7 +281,7 @@ struct ListColorPicker: View {
               .padding(-3)
           )
           .scaleEffect(self.selected == name ? 1.1 : 1.0)
-          .animation(DS.Anim.quick, value: self.selected)
+          .animateIfAllowed(DS.Anim.quick, value: self.selected)
           .onTapGesture {
             HapticManager.selection()
             self.selected = name

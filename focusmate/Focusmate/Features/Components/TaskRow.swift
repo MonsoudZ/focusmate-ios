@@ -156,7 +156,7 @@ struct TaskRow: View {
           isOverdue: self.isOverdue,
           isExpanded: self.isExpanded,
           onExpandToggle: {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withMotionAnimation(.easeInOut(duration: 0.2)) {
               self.isExpanded.toggle()
             }
             HapticManager.selection()

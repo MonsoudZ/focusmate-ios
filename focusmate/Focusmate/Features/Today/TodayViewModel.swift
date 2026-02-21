@@ -384,7 +384,7 @@ final class TodayViewModel {
   func nudgeTask(_ task: TaskDTO) async {
     let cooldown = NudgeCooldownManager.shared
     guard !cooldown.isOnCooldown(taskId: task.id) else {
-      withAnimation {
+      withMotionAnimation {
         self.nudgeMessage = "Already nudged recently"
       }
       return
@@ -394,18 +394,18 @@ final class TodayViewModel {
       try await self.taskService.nudgeTask(listId: task.list_id, taskId: task.id)
       cooldown.recordNudge(taskId: task.id)
       HapticManager.success()
-      withAnimation {
+      withMotionAnimation {
         self.nudgeMessage = "Nudge sent!"
       }
     } catch let error as FocusmateError where error.isRateLimited {
       cooldown.recordNudge(taskId: task.id)
-      withAnimation {
+      withMotionAnimation {
         self.nudgeMessage = "Already nudged recently"
       }
     } catch {
       Logger.error("Failed to nudge: \(error)", category: .api)
       HapticManager.error()
-      withAnimation {
+      withMotionAnimation {
         self.nudgeMessage = "Couldn't send nudge"
       }
     }

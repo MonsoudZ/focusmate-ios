@@ -42,7 +42,7 @@ struct QuickDatePill: View {
     }
     .buttonStyle(.plain)
     .scaleEffect(self.isSelected ? 1.02 : 1.0)
-    .animation(DS.Anim.quick, value: self.isSelected)
+    .animateIfAllowed(DS.Anim.quick, value: self.isSelected)
     .accessibilityLabel("\(self.title)\(self.isSelected ? ", selected" : "")")
     .accessibilityAddTraits(self.isSelected ? .isSelected : [])
   }
@@ -107,7 +107,7 @@ struct PriorityOption: View {
       }
     }
     .buttonStyle(.plain)
-    .animation(DS.Anim.quick, value: self.isSelected)
+    .animateIfAllowed(DS.Anim.quick, value: self.isSelected)
     .accessibilityLabel("\(self.priority.label) priority\(self.isSelected ? ", selected" : "")")
     .accessibilityAddTraits(self.isSelected ? .isSelected : [])
   }
@@ -122,7 +122,7 @@ struct StarredRow: View {
   var body: some View {
     Button {
       HapticManager.selection()
-      withAnimation(DS.Anim.quick) {
+      withMotionAnimation(DS.Anim.quick) {
         self.isStarred.toggle()
       }
     } label: {
@@ -131,7 +131,7 @@ struct StarredRow: View {
           .scaledFont(size: 22, relativeTo: .title2)
           .foregroundStyle(self.isStarred ? .yellow : .secondary)
           .scaleEffect(self.isStarred ? 1.2 : 1.0)
-          .animation(.spring(duration: 0.3, bounce: 0.5), value: self.isStarred)
+          .animateIfAllowed(.spring(duration: 0.3, bounce: 0.5), value: self.isStarred)
 
         Text("Starred")
           .font(DS.Typography.body)
@@ -183,7 +183,7 @@ struct TaskColorPicker: View {
           .scaleEffect(self.selected == nil ? 1.1 : 1.0)
       }
       .buttonStyle(.plain)
-      .animation(DS.Anim.quick, value: self.selected)
+      .animateIfAllowed(DS.Anim.quick, value: self.selected)
       .accessibilityLabel("No color\(self.selected == nil ? ", selected" : "")")
 
       ForEach(DS.Colors.listColorOrder, id: \.self) { name in
@@ -208,7 +208,7 @@ struct TaskColorPicker: View {
             .scaleEffect(self.selected == name ? 1.1 : 1.0)
         }
         .buttonStyle(.plain)
-        .animation(DS.Anim.quick, value: self.selected)
+        .animateIfAllowed(DS.Anim.quick, value: self.selected)
         .accessibilityLabel("\(name) color\(self.selected == name ? ", selected" : "")")
       }
     }

@@ -72,7 +72,7 @@ struct IntentiaPrimaryButtonStyle: ButtonStyle {
       )
       .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
       .opacity(configuration.isPressed ? 0.85 : 1.0)
-      .animation(DS.Anim.quick, value: configuration.isPressed)
+      .animateIfAllowed(DS.Anim.quick, value: configuration.isPressed)
   }
 }
 
@@ -93,7 +93,7 @@ struct IntentiaSecondaryButtonStyle: ButtonStyle {
       .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
       .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
       .opacity(configuration.isPressed ? 0.75 : 1.0)
-      .animation(DS.Anim.quick, value: configuration.isPressed)
+      .animateIfAllowed(DS.Anim.quick, value: configuration.isPressed)
   }
 }
 
@@ -103,6 +103,6 @@ struct IntentiaCardButtonStyle: ButtonStyle {
     configuration.label
       .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
       .opacity(configuration.isPressed ? 0.85 : 1.0)
-      .animation(DS.Anim.quick, value: configuration.isPressed)
+      .animateIfAllowed(DS.Anim.quick, value: configuration.isPressed)
   }
 }

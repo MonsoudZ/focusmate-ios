@@ -59,7 +59,7 @@ struct MiniProgressRing: View {
           style: StrokeStyle(lineWidth: 4, lineCap: .round)
         )
         .rotationEffect(.degrees(-90))
-        .animation(.easeOut(duration: 0.3), value: self.progress)
+        .animateIfAllowed(.easeOut(duration: 0.3), value: self.progress)
 
       if self.progress >= 1.0 {
         Image(systemName: "checkmark")

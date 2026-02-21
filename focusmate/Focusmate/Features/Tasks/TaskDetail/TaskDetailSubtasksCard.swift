@@ -16,7 +16,7 @@ struct TaskDetailSubtasksCard: View {
     VStack(alignment: .leading, spacing: 0) {
       // Header
       Button {
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withMotionAnimation(.easeInOut(duration: 0.2)) {
           self.isExpanded.toggle()
         }
       } label: {

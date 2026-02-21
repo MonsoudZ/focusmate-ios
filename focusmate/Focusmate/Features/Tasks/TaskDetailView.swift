@@ -171,7 +171,7 @@ struct TaskDetailView: View {
           showNudgeSent: self.vm.showNudgeSent,
           showCopied: self.vm.showCopied
         )
-        .animation(.spring(duration: 0.3), value: self.vm.showNudgeSent || self.vm.showCopied)
+        .animateIfAllowed(.spring(duration: 0.3), value: self.vm.showNudgeSent || self.vm.showCopied)
       }
       .floatingErrorBanner(self.$vm.error)
       .task {

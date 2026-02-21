@@ -91,7 +91,7 @@ struct RescheduleSheet: View {
 
       Section {
         Button {
-          withAnimation { self.step = .selectReason }
+          withMotionAnimation { self.step = .selectReason }
         } label: {
           HStack {
             Spacer()
@@ -152,7 +152,7 @@ struct RescheduleSheet: View {
 
       HStack(spacing: DS.Spacing.md) {
         Button {
-          withAnimation { self.step = .selectDate }
+          withMotionAnimation { self.step = .selectDate }
         } label: {
           Text("Back")
             .frame(maxWidth: .infinity)
