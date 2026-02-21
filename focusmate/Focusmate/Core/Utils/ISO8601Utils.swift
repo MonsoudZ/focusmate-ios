@@ -18,13 +18,13 @@ import Foundation
 /// a non-standard ISO8601 variant, you'd add the new formatter here rather than
 /// locally — slightly less encapsulation in exchange for zero duplication.
 enum ISO8601Utils {
-  static let formatter: ISO8601DateFormatter = {
+  nonisolated(unsafe) static let formatter: ISO8601DateFormatter = {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     return f
   }()
 
-  static let formatterNoFrac = ISO8601DateFormatter()
+  nonisolated(unsafe) static let formatterNoFrac = ISO8601DateFormatter()
 
   /// Parse an ISO8601 string, trying fractional seconds first then without.
   static func parseDate(_ string: String) -> Date? {

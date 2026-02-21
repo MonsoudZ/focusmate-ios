@@ -31,9 +31,8 @@ final class ErrorHandler {
     sentryContext["error_code"] = focusmateError.code
     sentryContext["is_retryable"] = focusmateError.isRetryable
 
-    let sentryService = SentryService.shared
     Task { @MainActor in
-      sentryService.captureError(error, context: sentryContext)
+      SentryService.shared.captureError(error, context: sentryContext)
     }
 
     return focusmateError

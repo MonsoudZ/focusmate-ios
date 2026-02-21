@@ -194,10 +194,12 @@ final class AppRouter {
 
 // MARK: - Environment Key
 
+@MainActor
 private struct AppRouterKey: EnvironmentKey {
   static let defaultValue: AppRouter = .shared
 }
 
+@MainActor
 extension EnvironmentValues {
   var router: AppRouter {
     get { self[AppRouterKey.self] }

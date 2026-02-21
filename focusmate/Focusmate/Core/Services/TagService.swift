@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class TagService {
   private let apiClient: APIClient
 

@@ -1,6 +1,7 @@
 import Foundation
 
-final class FriendService: Sendable {
+@MainActor
+final class FriendService {
   let apiClient: APIClient
 
   init(apiClient: APIClient) {

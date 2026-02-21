@@ -1,5 +1,5 @@
 import DeviceActivity
 
 extension DeviceActivityName {
-  static let gracePeriod = DeviceActivityName("com.focusmate.gracePeriod")
+  nonisolated(unsafe) static let gracePeriod = DeviceActivityName("com.focusmate.gracePeriod")
 }

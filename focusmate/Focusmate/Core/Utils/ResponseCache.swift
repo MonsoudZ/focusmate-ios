@@ -69,7 +69,7 @@ actor ResponseCache {
   /// first writer's changes.
   ///
   /// If the key is missing or expired, the transform is not called.
-  func mutate<T>(_ key: String, transform: (inout T) -> Void) {
+  func mutate<T>(_ key: String, transform: @Sendable (inout T) -> Void) {
     guard let entry = store[key] else { return }
 
     if Date() >= entry.expiration {

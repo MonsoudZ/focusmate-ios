@@ -18,7 +18,7 @@ protocol NetworkingProtocol {
 private actor TokenRefreshCoordinator {
   private var refreshTask: Task<Void, Error>?
 
-  func refreshIfNeeded(using refresher: @escaping () async throws -> Void) async throws {
+  func refreshIfNeeded(using refresher: @Sendable @escaping () async throws -> Void) async throws {
     if let existing = refreshTask {
       try await existing.value
       return
@@ -37,11 +37,10 @@ private actor TokenRefreshCoordinator {
   }
 }
 
-final class InternalNetworking: NetworkingProtocol {
+final class InternalNetworking: NetworkingProtocol, @unchecked Sendable {
   private let tokenProvider: () -> String?
   private let refreshTokenProvider: (() -> String?)?
   private let onTokenRefreshed: ((String, String?) async -> Void)?
-  private let sentryService = SentryService.shared
   private let certificatePinning: CertificatePinning
   private let refreshCoordinator = TokenRefreshCoordinator()
 
@@ -160,7 +159,7 @@ final class InternalNetworking: NetworkingProtocol {
 
     let (data, http) = try await executeRequest(req)
 
-    await self.sentryService.addAPIBreadcrumb(method: method, endpoint: path, statusCode: http.statusCode)
+    await SentryService.shared.addAPIBreadcrumb(method: method, endpoint: path, statusCode: http.statusCode)
 
     let errorResponse = self.parseErrorResponse(data: data, statusCode: http.statusCode)
 
@@ -327,7 +326,7 @@ final class InternalNetworking: NetworkingProtocol {
       return nil
     }
 
-    await self.sentryService.addBreadcrumb(
+    await SentryService.shared.addBreadcrumb(
       message: "Token refresh triggered by 401",
       category: "auth",
       level: .warning,
@@ -336,7 +335,7 @@ final class InternalNetworking: NetworkingProtocol {
 
     do {
       try await self.attemptTokenRefresh()
-      await self.sentryService.addBreadcrumb(
+      await SentryService.shared.addBreadcrumb(
         message: "Token refresh succeeded, retrying request",
         category: "auth",
         level: .info,
@@ -345,7 +344,7 @@ final class InternalNetworking: NetworkingProtocol {
       Logger.info("Token refreshed, retrying \(method) \(path)", category: .api)
       return try await retry()
     } catch {
-      await self.sentryService.addBreadcrumb(
+      await SentryService.shared.addBreadcrumb(
         message: "Token refresh failed",
         category: "auth",
         level: .error,
@@ -370,7 +369,7 @@ final class InternalNetworking: NetworkingProtocol {
 
       guard let refreshToken = refreshTokenProvider() else {
         // Breadcrumb 4: No refresh token available — explains why refresh couldn't be attempted
-        await self.sentryService.addBreadcrumb(
+        await SentryService.shared.addBreadcrumb(
           message: "No refresh token available",
           category: "auth",
           level: .warning
@@ -391,7 +390,7 @@ final class InternalNetworking: NetworkingProtocol {
       guard let http = resp as? HTTPURLResponse, (200 ... 299).contains(http.statusCode) else {
         // Breadcrumb 5: Refresh endpoint returned non-2xx — the refresh call itself failed
         let statusCode = (resp as? HTTPURLResponse)?.statusCode
-        await self.sentryService.addBreadcrumb(
+        await SentryService.shared.addBreadcrumb(
           message: "Refresh endpoint returned non-2xx",
           category: "auth",
           level: .error,

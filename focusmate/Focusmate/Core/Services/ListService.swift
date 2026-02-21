@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class ListService {
   private let apiClient: APIClient
   private let cache = ResponseCache.shared

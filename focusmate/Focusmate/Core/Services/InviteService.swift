@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class InviteService {
   private let apiClient: APIClient
 

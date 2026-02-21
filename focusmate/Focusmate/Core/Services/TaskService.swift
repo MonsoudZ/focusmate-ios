@@ -10,6 +10,7 @@ import Foundation
 /// on success rather than waiting for a round-trip confirmation. This provides
 /// snappier UI updates at the cost of potential consistency issues if the operation
 /// fails after notification.
+@MainActor
 final class TaskService {
   let apiClient: APIClient
   private let sideEffects: TaskSideEffectHandling
