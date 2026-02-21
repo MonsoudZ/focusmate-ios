@@ -269,8 +269,10 @@ final class InternalNetworking: NetworkingProtocol {
   ///
   /// Returns whether this is a public endpoint (used by 401 handling downstream).
   private func applyAuth(to request: inout URLRequest, path: String, attemptRefresh: Bool) async -> Bool {
-    let publicEndpoints = ["auth/apple", "auth/sign_in", "auth/sign_up", "auth/refresh", "auth/password"]
-    let isPublicEndpoint = publicEndpoints.contains { path.hasSuffix($0) }
+    let publicEndpoints: Set<String> = [
+      API.Auth.apple, API.Auth.signIn, API.Auth.signUp, API.Auth.refresh, API.Auth.password,
+    ]
+    let isPublicEndpoint = publicEndpoints.contains(path)
 
     guard !isPublicEndpoint, let jwt = tokenProvider() else {
       return isPublicEndpoint
