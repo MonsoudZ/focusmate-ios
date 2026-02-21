@@ -140,7 +140,7 @@ final class InternalNetworking: NetworkingProtocol {
     idempotencyKey: String?,
     attemptRefresh: Bool
   ) async throws -> T {
-    let url = self.buildURL(path: path, queryParameters: queryParameters)
+    let url = try self.buildURL(path: path, queryParameters: queryParameters)
 
     var req = URLRequest(url: url)
     req.httpMethod = method
@@ -240,24 +240,20 @@ final class InternalNetworking: NetworkingProtocol {
   // MARK: - Shared Request Helpers
 
   /// Builds a URL from a path, appending query parameters if present.
-  private func buildURL(path: String, queryParameters: [String: String]) -> URL {
-    var url = API.path(path)
+  /// Throws if query parameters were requested but could not be attached,
+  /// preventing silent data mismatches from parameterless requests.
+  private func buildURL(path: String, queryParameters: [String: String]) throws -> URL {
+    let url = API.path(path)
     guard !queryParameters.isEmpty else { return url }
 
-    if var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
-      components.queryItems = queryParameters.map { URLQueryItem(name: $0.key, value: $0.value) }
-      if let newURL = components.url {
-        url = newURL
-      } else {
-        Logger.warning(
-          "Failed to construct URL with query parameters for \(path), using URL without params",
-          category: .api
-        )
-      }
-    } else {
-      Logger.warning("Failed to create URLComponents for \(path), query parameters will be ignored", category: .api)
+    guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+      throw APIError.badURL
     }
-    return url
+    components.queryItems = queryParameters.map { URLQueryItem(name: $0.key, value: $0.value) }
+    guard let newURL = components.url else {
+      throw APIError.badURL
+    }
+    return newURL
   }
 
   /// Applies the Authorization header and performs proactive token refresh if needed.
