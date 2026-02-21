@@ -1,7 +1,7 @@
 @testable import focusmate
 import Foundation
 
-final class MockNetworking: NetworkingProtocol {
+final class MockNetworking: NetworkingProtocol, @unchecked Sendable {
   // MARK: - Call Recording
 
   struct Call {

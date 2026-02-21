@@ -1,4 +1,5 @@
 @testable import focusmate
+import Synchronization
 import XCTest
 
 final class MutationQueueTests: XCTestCase {
@@ -34,15 +35,15 @@ final class MutationQueueTests: XCTestCase {
   // MARK: - Flush Success
 
   func testFlushExecutesAllOperationsInOrder() async {
-    var executionOrder: [Int] = []
+    let executionOrder = Mutex<[Int]>([])
 
-    await sut.enqueue(description: "op-1") { executionOrder.append(1) }
-    await self.sut.enqueue(description: "op-2") { executionOrder.append(2) }
-    await self.sut.enqueue(description: "op-3") { executionOrder.append(3) }
+    await sut.enqueue(description: "op-1") { executionOrder.withLock { $0.append(1) } }
+    await self.sut.enqueue(description: "op-2") { executionOrder.withLock { $0.append(2) } }
+    await self.sut.enqueue(description: "op-3") { executionOrder.withLock { $0.append(3) } }
 
     await self.sut.flush()
 
-    XCTAssertEqual(executionOrder, [1, 2, 3])
+    XCTAssertEqual(executionOrder.withLock { $0 }, [1, 2, 3])
     let count = await sut.pendingCount
     XCTAssertEqual(count, 0)
   }
@@ -67,50 +68,50 @@ final class MutationQueueTests: XCTestCase {
   // MARK: - Flush Offline Stop
 
   func testFlushStopsOnOfflineError() async {
-    var executed: [String] = []
+    let executed = Mutex<[String]>([])
 
-    await sut.enqueue(description: "op-1") { executed.append("op-1") }
+    await sut.enqueue(description: "op-1") { executed.withLock { $0.append("op-1") } }
     await self.sut.enqueue(description: "op-2-offline") {
-      executed.append("op-2")
+      executed.withLock { $0.append("op-2") }
       throw APIError.noInternetConnection
     }
-    await self.sut.enqueue(description: "op-3") { executed.append("op-3") }
+    await self.sut.enqueue(description: "op-3") { executed.withLock { $0.append("op-3") } }
 
     await self.sut.flush()
 
     // op-1 succeeded, op-2 threw offline, op-3 never reached
-    XCTAssertEqual(executed, ["op-1", "op-2"])
+    XCTAssertEqual(executed.withLock { $0 }, ["op-1", "op-2"])
     // op-1 removed (succeeded), op-2 and op-3 remain
     let count = await sut.pendingCount
     XCTAssertEqual(count, 2)
   }
 
   func testFlushStopsOnNetworkConnectionLostError() async {
-    var executed: [String] = []
+    let executed = Mutex<[String]>([])
     let urlError = URLError(.networkConnectionLost)
 
-    await sut.enqueue(description: "op-1") { executed.append("op-1") }
+    await sut.enqueue(description: "op-1") { executed.withLock { $0.append("op-1") } }
     await self.sut.enqueue(description: "op-2-lost") {
-      executed.append("op-2")
+      executed.withLock { $0.append("op-2") }
       throw APIError.network(urlError)
     }
-    await self.sut.enqueue(description: "op-3") { executed.append("op-3") }
+    await self.sut.enqueue(description: "op-3") { executed.withLock { $0.append("op-3") } }
 
     await self.sut.flush()
 
-    XCTAssertEqual(executed, ["op-1", "op-2"])
+    XCTAssertEqual(executed.withLock { $0 }, ["op-1", "op-2"])
     let count = await sut.pendingCount
     XCTAssertEqual(count, 2)
   }
 
   func testFlushPreservesMutationsAfterOfflineStop() async {
     // Enqueue 3 mutations, second goes offline on first attempt
-    var op2CallCount = 0
+    let op2CallCount = Mutex(0)
 
     await sut.enqueue(description: "op-1") {}
     await self.sut.enqueue(description: "op-2-flaky") {
-      op2CallCount += 1
-      if op2CallCount == 1 { throw APIError.noInternetConnection }
+      let count = op2CallCount.withLock { $0 += 1; return $0 }
+      if count == 1 { throw APIError.noInternetConnection }
     }
     await self.sut.enqueue(description: "op-3") {}
 
@@ -130,56 +131,56 @@ final class MutationQueueTests: XCTestCase {
   // MARK: - Retry and Drop
 
   func testNonOfflineFailureIncrementsRetryCount() async {
-    var callCount = 0
+    let callCount = Mutex(0)
 
     await sut.enqueue(description: "flaky") {
-      callCount += 1
+      callCount.withLock { $0 += 1 }
       throw APIError.serverError(500, "Internal Server Error", nil)
     }
 
     // First flush: retry count becomes 1
     await self.sut.flush()
-    XCTAssertEqual(callCount, 1)
+    XCTAssertEqual(callCount.withLock { $0 }, 1)
     let countAfter1 = await sut.pendingCount
     XCTAssertEqual(countAfter1, 1, "Should keep mutation after 1 failure")
 
     // Second flush: retry count becomes 2
     await self.sut.flush()
-    XCTAssertEqual(callCount, 2)
+    XCTAssertEqual(callCount.withLock { $0 }, 2)
     let countAfter2 = await sut.pendingCount
     XCTAssertEqual(countAfter2, 1, "Should keep mutation after 2 failures")
 
     // Third flush: retry count reaches maxRetries (3), mutation dropped
     await self.sut.flush()
-    XCTAssertEqual(callCount, 3)
+    XCTAssertEqual(callCount.withLock { $0 }, 3)
     let countAfter3 = await sut.pendingCount
     XCTAssertEqual(countAfter3, 0, "Should drop mutation after 3 failures")
   }
 
   func testMixedSuccessAndFailureFlush() async {
-    var executed: [String] = []
+    let executed = Mutex<[String]>([])
 
-    await sut.enqueue(description: "success-1") { executed.append("success-1") }
+    await sut.enqueue(description: "success-1") { executed.withLock { $0.append("success-1") } }
     await self.sut.enqueue(description: "always-fails") {
-      executed.append("fail")
+      executed.withLock { $0.append("fail") }
       throw APIError.badStatus(400, "Bad Request", nil)
     }
-    await self.sut.enqueue(description: "success-2") { executed.append("success-2") }
+    await self.sut.enqueue(description: "success-2") { executed.withLock { $0.append("success-2") } }
 
     await self.sut.flush()
 
     // All three execute (non-offline errors don't stop the flush)
-    XCTAssertEqual(executed, ["success-1", "fail", "success-2"])
+    XCTAssertEqual(executed.withLock { $0 }, ["success-1", "fail", "success-2"])
     // success-1 and success-2 removed, always-fails retained (1 retry)
     let count = await sut.pendingCount
     XCTAssertEqual(count, 1)
   }
 
   func testDroppedMutationDoesNotBlockOthers() async {
-    var failCallCount = 0
+    let failCallCount = Mutex(0)
 
     await sut.enqueue(description: "fail-then-drop") {
-      failCallCount += 1
+      failCallCount.withLock { $0 += 1 }
       throw APIError.badStatus(422, "Unprocessable", nil)
     }
     await self.sut.enqueue(description: "always-succeeds") {}
@@ -189,7 +190,7 @@ final class MutationQueueTests: XCTestCase {
       await self.sut.flush()
     }
 
-    XCTAssertEqual(failCallCount, 3)
+    XCTAssertEqual(failCallCount.withLock { $0 }, 3)
     let count = await sut.pendingCount
     XCTAssertEqual(count, 0, "Both mutations should be gone after 3 flushes")
   }
@@ -197,20 +198,20 @@ final class MutationQueueTests: XCTestCase {
   // MARK: - Re-entrancy Guard
 
   func testFlushIsNoOpWhenCalledRecursivelyDuringFlush() async {
-    var executionOrder: [Int] = []
+    let executionOrder = Mutex<[Int]>([])
 
     // First mutation calls flush() re-entrantly — the nested call should hit
     // the `isFlushing` guard and return immediately (no deadlock, no double-exec).
     await sut.enqueue(description: "op-1-reentrant") { [sut] in
-      executionOrder.append(1)
+      executionOrder.withLock { $0.append(1) }
       await sut!.flush() // re-entrant: isFlushing == true → early return
     }
-    await self.sut.enqueue(description: "op-2") { executionOrder.append(2) }
+    await self.sut.enqueue(description: "op-2") { executionOrder.withLock { $0.append(2) } }
 
     await self.sut.flush()
 
     // The outer flush runs both mutations sequentially. The nested flush() is a no-op.
-    XCTAssertEqual(executionOrder, [1, 2])
+    XCTAssertEqual(executionOrder.withLock { $0 }, [1, 2])
     let count = await sut.pendingCount
     XCTAssertEqual(count, 0, "Queue should be empty — outer flush processed both mutations")
   }
@@ -232,12 +233,12 @@ final class MutationQueueTests: XCTestCase {
   }
 
   func testClearAllPreventsFlushFromExecuting() async {
-    var executed = false
+    let executed = Mutex(false)
 
-    await sut.enqueue(description: "should-not-run") { executed = true }
+    await sut.enqueue(description: "should-not-run") { executed.withLock { $0 = true } }
     await self.sut.clearAll()
     await self.sut.flush()
 
-    XCTAssertFalse(executed)
+    XCTAssertFalse(executed.withLock { $0 })
   }
 }

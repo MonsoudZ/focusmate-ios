@@ -1,6 +1,6 @@
 import Foundation
 
-final class APIClient {
+final class APIClient: @unchecked Sendable {
   private let networking: NetworkingProtocol
   private let tokenProvider: () -> String?
 

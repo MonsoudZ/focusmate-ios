@@ -7,13 +7,13 @@ final class MockURLProtocol: URLProtocol {
     let body: Data
   }
 
-  static var stub: Stub?
-  static var error: Error?
+  nonisolated(unsafe) static var stub: Stub?
+  nonisolated(unsafe) static var error: Error?
 
   /// Per-request routing: when set, takes priority over the static `stub`/`error`.
   /// Return `(stub, nil)` for a successful stub, `(nil, error)` for an error,
   /// or `(nil, nil)` to fall back to the static properties.
-  static var requestHandler: ((URLRequest) -> (Stub?, Error?))?
+  nonisolated(unsafe) static var requestHandler: ((URLRequest) -> (Stub?, Error?))?
 
   override class func canInit(with request: URLRequest) -> Bool {
     true

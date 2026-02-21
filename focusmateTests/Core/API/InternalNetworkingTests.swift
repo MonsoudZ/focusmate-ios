@@ -2,6 +2,7 @@ import Combine
 @testable import focusmate
 import XCTest
 
+@MainActor
 final class InternalNetworkingTests: XCTestCase {
   override func setUp() async throws {
     try await super.setUp()
@@ -32,10 +33,8 @@ final class InternalNetworkingTests: XCTestCase {
     let networking = self.makeNetworking(token: "jwt-123")
 
     let exp = expectation(description: "unauthorized event")
-    let cancellable = await MainActor.run {
-      AuthEventBus.shared.publisher.sink { event in
-        if event == .unauthorized { exp.fulfill() }
-      }
+    let cancellable = AuthEventBus.shared.publisher.sink { event in
+      if event == .unauthorized { exp.fulfill() }
     }
     defer { cancellable.cancel() }
 

@@ -1,6 +1,7 @@
 @testable import focusmate
 import XCTest
 
+@MainActor
 final class TaskServiceTests: XCTestCase {
   private var mock: MockNetworking!
   private var service: TaskService!

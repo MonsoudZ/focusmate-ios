@@ -1,6 +1,7 @@
 @testable import focusmate
 import XCTest
 
+@MainActor
 final class AuthStoreTests: XCTestCase {
   // MARK: - Fakes
 
@@ -77,18 +78,15 @@ final class AuthStoreTests: XCTestCase {
     let keychain = FakeKeychain()
     keychain.token = "jwt-123"
 
-    let store = await MainActor.run {
-      AuthStore(
-        keychain: keychain,
-        networking: nil,
-        autoValidateOnInit: false,
-        eventBus: AuthEventBus(),
-        escalationService: EscalationService(screenTimeService: MockScreenTimeService())
-      )
-    }
+    let store = AuthStore(
+      keychain: keychain,
+      networking: nil,
+      autoValidateOnInit: false,
+      eventBus: AuthEventBus(),
+      escalationService: EscalationService(screenTimeService: MockScreenTimeService())
+    )
 
-    let jwt = await MainActor.run { store.jwt }
-    XCTAssertEqual(jwt, "jwt-123")
+    XCTAssertEqual(store.jwt, "jwt-123")
   }
 
   func testValidateSessionSuccessSetsCurrentUserAndKeepsJwt() async {
@@ -106,24 +104,19 @@ final class AuthStoreTests: XCTestCase {
 
     let networking = MockNetworking(mode: .successUser(user))
 
-    let store = await MainActor.run {
-      AuthStore(
-        keychain: keychain,
-        networking: networking,
-        autoValidateOnInit: false,
-        eventBus: AuthEventBus(),
-        escalationService: EscalationService(screenTimeService: MockScreenTimeService())
-      )
-    }
+    let store = AuthStore(
+      keychain: keychain,
+      networking: networking,
+      autoValidateOnInit: false,
+      eventBus: AuthEventBus(),
+      escalationService: EscalationService(screenTimeService: MockScreenTimeService())
+    )
 
-    await MainActor.run { store.jwt = "jwt-123" }
+    store.jwt = "jwt-123"
     await store.validateSession()
 
-    let currentUser = await MainActor.run { store.currentUser }
-    let jwt = await MainActor.run { store.jwt }
-
-    XCTAssertEqual(currentUser, user)
-    XCTAssertEqual(jwt, "jwt-123")
+    XCTAssertEqual(store.currentUser, user)
+    XCTAssertEqual(store.jwt, "jwt-123")
     XCTAssertEqual(keychain.token, "jwt-123") // still there
   }
 
@@ -133,35 +126,28 @@ final class AuthStoreTests: XCTestCase {
 
     let networking = MockNetworking(mode: .failure(APIError.unauthorized(nil)))
 
-    let store = await MainActor.run {
-      AuthStore(
-        keychain: keychain,
-        networking: networking,
-        autoValidateOnInit: false,
-        eventBus: AuthEventBus(),
-        escalationService: EscalationService(screenTimeService: MockScreenTimeService())
-      )
-    }
+    let store = AuthStore(
+      keychain: keychain,
+      networking: networking,
+      autoValidateOnInit: false,
+      eventBus: AuthEventBus(),
+      escalationService: EscalationService(screenTimeService: MockScreenTimeService())
+    )
 
-    await MainActor.run {
-      store.jwt = "jwt-123"
-      store.currentUser = UserDTO(
-        id: 1,
-        email: "test@example.com",
-        name: "Test User",
-        role: "user",
-        timezone: "America/New_York",
-        hasPassword: true
-      )
-    }
+    store.jwt = "jwt-123"
+    store.currentUser = UserDTO(
+      id: 1,
+      email: "test@example.com",
+      name: "Test User",
+      role: "user",
+      timezone: "America/New_York",
+      hasPassword: true
+    )
 
     await store.validateSession()
 
-    let jwt = await MainActor.run { store.jwt }
-    let currentUser = await MainActor.run { store.currentUser }
-
-    XCTAssertNil(jwt)
-    XCTAssertNil(currentUser)
+    XCTAssertNil(store.jwt)
+    XCTAssertNil(store.currentUser)
     XCTAssertNil(keychain.token)
   }
 }
