@@ -3,9 +3,6 @@ import Foundation
 // MARK: - Invite DTO
 
 struct InviteDTO: Codable, Identifiable, Hashable {
-  static func == (lhs: InviteDTO, rhs: InviteDTO) -> Bool { lhs.id == rhs.id }
-  func hash(into hasher: inout Hasher) { hasher.combine(self.id) }
-
   let id: Int
   let code: String
   let invite_url: String
