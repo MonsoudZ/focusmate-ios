@@ -23,7 +23,7 @@ struct TaskDetailHeaderCard: View {
           self.onComplete()
         } label: {
           Image(systemName: self.task.isCompleted ? DS.Icon.circleChecked : DS.Icon.circle)
-            .font(.system(size: 28))
+            .scaledFont(size: 28, relativeTo: .title)
             .foregroundStyle(self.task.isCompleted ? DS.Colors.success : .secondary)
         }
         .disabled(!self.canEdit)
@@ -51,7 +51,7 @@ struct TaskDetailHeaderCard: View {
         if self.task.isStarred {
           Image(systemName: DS.Icon.starFilled)
             .foregroundStyle(.yellow)
-            .font(.system(size: 20))
+            .scaledFont(size: 20, relativeTo: .title3)
         }
       }
 

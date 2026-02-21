@@ -27,7 +27,7 @@ struct EmptyState: View {
   var body: some View {
     VStack(spacing: DS.Spacing.xl) {
       Image(systemName: self.icon)
-        .font(.system(size: 64))
+        .scaledFont(size: 64, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.accent)
 
       VStack(spacing: DS.Spacing.sm) {

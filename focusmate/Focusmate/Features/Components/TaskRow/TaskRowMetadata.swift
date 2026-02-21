@@ -22,7 +22,7 @@ struct TaskRowMetadata: View {
       // Recurring
       if self.task.isRecurring || self.task.isRecurringInstance {
         Image(systemName: "repeat")
-          .font(.system(size: 11))
+          .scaledFont(size: 11, relativeTo: .caption2)
           .foregroundStyle(.secondary)
       }
 
@@ -43,9 +43,9 @@ struct TaskRowMetadata: View {
   private func dueDateView(_ dueDate: Date) -> some View {
     HStack(spacing: 4) {
       Image(systemName: self.isOverdue ? "clock.badge.exclamationmark.fill" : "clock")
-        .font(.system(size: 11))
+        .scaledFont(size: 11, relativeTo: .caption2)
       Text(DueDateFormatter.compact(dueDate, isAnytime: self.task.isAnytime))
-        .font(.system(size: 12))
+        .scaledFont(size: 12, relativeTo: .caption)
     }
     .foregroundStyle(self.isOverdue ? DS.Colors.error : .secondary)
   }
@@ -56,11 +56,11 @@ struct TaskRowMetadata: View {
     } label: {
       HStack(spacing: 3) {
         Image(systemName: "checklist")
-          .font(.system(size: 11))
+          .scaledFont(size: 11, relativeTo: .caption2)
         Text(self.task.subtaskProgress)
-          .font(.system(size: 12, weight: .medium))
+          .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
         Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
-          .font(.system(size: 9, weight: .semibold))
+          .scaledFont(size: 9, weight: .semibold, relativeTo: .caption2)
       }
       .foregroundStyle(DS.Colors.accent)
     }
@@ -72,9 +72,9 @@ struct TaskRowMetadata: View {
   private var hiddenIndicator: some View {
     HStack(spacing: 3) {
       Image(systemName: "eye.slash")
-        .font(.system(size: 11))
+        .scaledFont(size: 11, relativeTo: .caption2)
       Text("Hidden")
-        .font(.system(size: 12))
+        .scaledFont(size: 12, relativeTo: .caption)
     }
     .foregroundStyle(.secondary)
   }

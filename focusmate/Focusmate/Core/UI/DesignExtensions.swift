@@ -45,6 +45,37 @@ extension UIColor {
   }
 }
 
+// MARK: - Scaled Font
+
+extension View {
+  /// Dynamic Type-safe replacement for `.font(.system(size:))`.
+  /// The base size scales proportionally with the user's text size preference.
+  func scaledFont(
+    size: CGFloat,
+    weight: Font.Weight = .regular,
+    design: Font.Design = .default,
+    relativeTo textStyle: Font.TextStyle = .body
+  ) -> some View {
+    modifier(ScaledFontModifier(baseSize: size, weight: weight, design: design, relativeTo: textStyle))
+  }
+}
+
+private struct ScaledFontModifier: ViewModifier {
+  @ScaledMetric private var scaledSize: CGFloat
+  let weight: Font.Weight
+  let design: Font.Design
+
+  init(baseSize: CGFloat, weight: Font.Weight, design: Font.Design, relativeTo textStyle: Font.TextStyle) {
+    _scaledSize = ScaledMetric(wrappedValue: baseSize, relativeTo: textStyle)
+    self.weight = weight
+    self.design = design
+  }
+
+  func body(content: Content) -> some View {
+    content.font(.system(size: scaledSize, weight: weight, design: design))
+  }
+}
+
 // MARK: - View Modifiers
 
 extension View {

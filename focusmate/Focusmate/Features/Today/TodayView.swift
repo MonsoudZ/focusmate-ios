@@ -220,7 +220,7 @@ struct TodayView: View {
                 }
               } label: {
                 Image(systemName: self.viewModel.hideCompleted ? "eye.slash" : "eye")
-                  .font(.system(size: 16))
+                  .scaledFont(size: 16, relativeTo: .callout)
                   .foregroundStyle(DS.Colors.accent)
               }
               .buttonStyle(.plain)

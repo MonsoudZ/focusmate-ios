@@ -41,7 +41,7 @@ struct ForgotPasswordView: View {
       Spacer(minLength: DS.Spacing.xxxl)
 
       Image(systemName: "lock.rotation")
-        .font(.system(size: DS.Size.iconJumbo, weight: .light))
+        .scaledFont(size: DS.Size.iconJumbo, weight: .light, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.accent)
 
       VStack(spacing: DS.Spacing.sm) {
@@ -89,7 +89,7 @@ struct ForgotPasswordView: View {
       Spacer(minLength: DS.Spacing.xxxl)
 
       Image(systemName: "envelope.circle.fill")
-        .font(.system(size: DS.Size.iconJumbo, weight: .light))
+        .scaledFont(size: DS.Size.iconJumbo, weight: .light, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.success)
 
       VStack(spacing: DS.Spacing.sm) {

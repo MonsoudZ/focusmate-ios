@@ -17,7 +17,7 @@ struct OnboardingCompletePage: View {
             .scaleEffect(self.showCheckmark ? 1.0 : 0.5)
 
           Image(systemName: "checkmark")
-            .font(.system(size: 50, weight: .bold))
+            .scaledFont(size: 50, weight: .bold, relativeTo: .largeTitle)
             .foregroundStyle(DS.Colors.success)
             .scaleEffect(self.showCheckmark ? 1.0 : 0.0)
         }

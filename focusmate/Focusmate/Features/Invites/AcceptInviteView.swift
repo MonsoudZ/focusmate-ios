@@ -62,7 +62,7 @@ struct AcceptInviteView: View {
 
       // Icon
       Image(systemName: "envelope.open.fill")
-        .font(.system(size: 60))
+        .scaledFont(size: 60, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.accent)
 
       // Invitation text
@@ -78,7 +78,7 @@ struct AcceptInviteView: View {
         }
 
         Text(preview.listName)
-          .font(.system(size: 24, weight: .bold, design: .rounded))
+          .scaledFont(size: 24, weight: .bold, design: .rounded, relativeTo: .title)
           .multilineTextAlignment(.center)
 
         Text("You'll be able to \(preview.roleDisplayName) tasks in this list")
@@ -134,7 +134,7 @@ struct AcceptInviteView: View {
       Spacer()
 
       Image(systemName: "checkmark.circle.fill")
-        .font(.system(size: 80))
+        .scaledFont(size: 80, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.success)
 
       VStack(spacing: DS.Spacing.sm) {
@@ -143,7 +143,7 @@ struct AcceptInviteView: View {
           .foregroundStyle(.secondary)
 
         Text(list.name)
-          .font(.system(size: 24, weight: .bold, design: .rounded))
+          .scaledFont(size: 24, weight: .bold, design: .rounded, relativeTo: .title)
       }
 
       Spacer()
@@ -165,7 +165,7 @@ struct AcceptInviteView: View {
       Spacer()
 
       Image(systemName: "exclamationmark.triangle.fill")
-        .font(.system(size: 60))
+        .scaledFont(size: 60, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.error)
 
       VStack(spacing: DS.Spacing.sm) {

@@ -145,7 +145,7 @@ struct FloatingErrorBanner: View {
   var body: some View {
     HStack(spacing: DS.Spacing.sm) {
       Image(systemName: "exclamationmark.triangle.fill")
-        .font(.system(size: 20))
+        .scaledFont(size: 20, relativeTo: .title3)
         .foregroundStyle(.white)
 
       VStack(alignment: .leading, spacing: 2) {
@@ -175,7 +175,7 @@ struct FloatingErrorBanner: View {
               .scaleEffect(0.8)
           } else {
             Image(systemName: "arrow.clockwise")
-              .font(.system(size: 14, weight: .semibold))
+              .scaledFont(size: 14, weight: .semibold, relativeTo: .footnote)
               .foregroundStyle(.white)
           }
         }
@@ -189,7 +189,7 @@ struct FloatingErrorBanner: View {
         self.onDismiss()
       } label: {
         Image(systemName: "xmark")
-          .font(.system(size: 12, weight: .semibold))
+          .scaledFont(size: 12, weight: .semibold, relativeTo: .caption)
           .foregroundStyle(.white.opacity(0.8))
       }
       .frame(width: 28, height: 28)

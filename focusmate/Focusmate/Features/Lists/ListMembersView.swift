@@ -194,7 +194,7 @@ struct MemberRowView: View {
           HStack(spacing: DS.Spacing.xxs) {
             RoleBadge(role: self.membership.role, isEditor: self.membership.isEditor)
             Image(systemName: "chevron.up.chevron.down")
-              .font(.system(size: 10))
+              .scaledFont(size: 10, relativeTo: .caption2)
               .foregroundStyle(.tertiary)
           }
         }

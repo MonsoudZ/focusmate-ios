@@ -229,7 +229,7 @@ struct OnboardingPermissionsPage: View {
             // Header
             VStack(spacing: DS.Spacing.md) {
               Image(systemName: "apps.iphone")
-                .font(.system(size: 50))
+                .scaledFont(size: 50, relativeTo: .largeTitle)
                 .foregroundStyle(DS.Colors.accent)
 
               Text("Choose Apps to Block")
@@ -326,7 +326,7 @@ struct OnboardingPermissionsPage: View {
     private func recommendationRow(title: String, icon: String, examples: String) -> some View {
       HStack(spacing: DS.Spacing.md) {
         Image(systemName: icon)
-          .font(.system(size: 24))
+          .scaledFont(size: 24, relativeTo: .title)
           .foregroundStyle(DS.Colors.accent)
           .frame(width: 40)
 
@@ -359,7 +359,7 @@ struct OnboardingPermissionsPage: View {
         VStack(spacing: DS.Spacing.xl) {
           Spacer()
           Image(systemName: "apps.iphone")
-            .font(.system(size: 50))
+            .scaledFont(size: 50, relativeTo: .largeTitle)
             .foregroundStyle(.secondary)
           Text("App selection is not available on Simulator.")
             .font(DS.Typography.subheadline)

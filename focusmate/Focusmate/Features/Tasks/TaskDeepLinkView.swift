@@ -87,7 +87,7 @@ struct TaskDeepLinkView: View {
     NavigationStack {
       VStack(spacing: DS.Spacing.lg) {
         Image(systemName: "exclamationmark.triangle")
-          .font(.system(size: 48))
+          .scaledFont(size: 48, relativeTo: .largeTitle)
           .foregroundStyle(.secondary)
 
         Text("Unable to load task")

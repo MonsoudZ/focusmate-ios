@@ -17,7 +17,7 @@ struct TemplateCardView: View {
           .fill(self.templateColor.opacity(DS.Opacity.tintBackground))
 
         Image(systemName: self.template.icon)
-          .font(.system(size: 18, weight: .medium))
+          .scaledFont(size: 18, weight: .medium, relativeTo: .body)
           .foregroundStyle(self.templateColor)
       }
       .frame(width: 44, height: 44)

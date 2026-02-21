@@ -14,12 +14,12 @@ struct EnterInviteCodeView: View {
         Spacer()
 
         Image(systemName: "link.badge.plus")
-          .font(.system(size: 60))
+          .scaledFont(size: 60, relativeTo: .largeTitle)
           .foregroundStyle(DS.Colors.accent)
 
         VStack(spacing: DS.Spacing.sm) {
           Text("Join a Shared List")
-            .font(.system(size: 24, weight: .bold, design: .rounded))
+            .scaledFont(size: 24, weight: .bold, design: .rounded, relativeTo: .title)
 
           Text("Enter the invite code you received")
             .font(DS.Typography.body)

@@ -81,7 +81,7 @@ struct SubtaskRow: View {
         .frame(width: DS.Size.checkboxSmall, height: DS.Size.checkboxSmall)
     } else {
       Image(systemName: self.subtask.isCompleted ? DS.Icon.circleChecked : DS.Icon.circle)
-        .font(.system(size: DS.Size.checkboxSmall))
+        .scaledFont(size: DS.Size.checkboxSmall, relativeTo: .callout)
         .foregroundStyle(self.subtask.isCompleted ? DS.Colors.success : .secondary)
     }
   }
@@ -94,7 +94,7 @@ struct SubtaskRow: View {
           .frame(width: 28, height: 28)
       } else {
         Image(systemName: "xmark.circle.fill")
-          .font(.system(size: DS.Size.iconSmall))
+          .scaledFont(size: DS.Size.iconSmall, relativeTo: .footnote)
           .foregroundStyle(Color(.tertiaryLabel))
           .frame(width: 28, height: 28)
           .contentShape(Rectangle())

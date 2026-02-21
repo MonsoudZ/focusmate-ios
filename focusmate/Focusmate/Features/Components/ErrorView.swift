@@ -23,7 +23,7 @@ struct ErrorView: View {
 private extension ErrorView {
   var errorIcon: some View {
     Image(systemName: iconName)
-      .font(.system(size: 64))
+      .scaledFont(size: 64, relativeTo: .largeTitle)
       .foregroundStyle(DS.Colors.error)
   }
 

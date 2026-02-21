@@ -37,7 +37,7 @@ struct TaskRowActions: View {
   private var starButton: some View {
     if self.task.isStarred {
       Image(systemName: "star.fill")
-        .font(.system(size: 14))
+        .scaledFont(size: 14, relativeTo: .footnote)
         .foregroundStyle(.yellow)
         .accessibilityLabel("Starred")
     } else if self.showStar, self.canEdit {
@@ -46,7 +46,7 @@ struct TaskRowActions: View {
         Task { await self.onStar() }
       } label: {
         Image(systemName: "star")
-          .font(.system(size: 14))
+          .scaledFont(size: 14, relativeTo: .footnote)
           .foregroundStyle(Color(.quaternaryLabel))
       }
       .buttonStyle(.plain)
@@ -66,7 +66,7 @@ struct TaskRowActions: View {
           .frame(width: 24, height: 24)
       } else {
         Image(systemName: "hand.point.right.fill")
-          .font(.system(size: 14))
+          .scaledFont(size: 14, relativeTo: .footnote)
           .foregroundStyle(DS.Colors.accent)
       }
     }
@@ -115,7 +115,7 @@ struct TaskRowCheckbox: View {
 
   private var checkboxIcon: some View {
     Image(systemName: self.task.isCompleted ? "checkmark.circle.fill" : "circle")
-      .font(.system(size: 22, weight: .light))
+      .scaledFont(size: 22, weight: .light, relativeTo: .title2)
       .foregroundStyle(self.checkboxColor)
       .accessibilityLabel(self.task.isCompleted ? "Completed" : "Not completed")
   }
@@ -142,19 +142,19 @@ struct TaskRowTitle: View {
       // Priority indicator
       if let icon = task.taskPriority.icon {
         Image(systemName: icon)
-          .font(.system(size: 12))
+          .scaledFont(size: 12, relativeTo: .caption)
           .foregroundStyle(self.task.taskPriority.color)
       }
 
       Text(self.task.title)
-        .font(.system(size: 16, weight: self.task.isCompleted ? .regular : .medium))
+        .scaledFont(size: 16, weight: self.task.isCompleted ? .regular : .medium, relativeTo: .callout)
         .strikethrough(self.task.isCompleted)
         .foregroundStyle(self.titleColor)
         .lineLimit(2)
 
       if !self.canEdit {
         Image(systemName: "lock.fill")
-          .font(.system(size: 10))
+          .scaledFont(size: 10, relativeTo: .caption2)
           .foregroundStyle(.tertiary)
       }
     }

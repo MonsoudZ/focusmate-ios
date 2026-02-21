@@ -23,7 +23,7 @@ struct OverdueReasonSheet: View {
         // Header
         VStack(spacing: DS.Spacing.sm) {
           Image(systemName: "clock.badge.exclamationmark.fill")
-            .font(.system(size: 50))
+            .scaledFont(size: 50, relativeTo: .largeTitle)
             .foregroundStyle(DS.Colors.warning)
 
           Text("Why was this task late?")

@@ -117,7 +117,7 @@ struct RescheduleSheet: View {
     VStack(spacing: DS.Spacing.lg) {
       VStack(spacing: DS.Spacing.sm) {
         Image(systemName: "calendar.badge.clock")
-          .font(.system(size: 50))
+          .scaledFont(size: 50, relativeTo: .largeTitle)
           .foregroundStyle(DS.Colors.accent)
 
         Text("Why are you rescheduling?")

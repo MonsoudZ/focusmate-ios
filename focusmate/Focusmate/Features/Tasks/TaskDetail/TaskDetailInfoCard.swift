@@ -63,7 +63,7 @@ struct MiniProgressRing: View {
 
       if self.progress >= 1.0 {
         Image(systemName: "checkmark")
-          .font(.system(size: 10, weight: .bold))
+          .scaledFont(size: 10, weight: .bold, relativeTo: .caption2)
           .foregroundStyle(DS.Colors.success)
       }
     }

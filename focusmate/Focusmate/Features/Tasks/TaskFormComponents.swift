@@ -87,11 +87,11 @@ struct PriorityOption: View {
 
           if let icon = priority.icon {
             Image(systemName: icon)
-              .font(.system(size: 18))
+              .scaledFont(size: 18, relativeTo: .body)
               .foregroundStyle(self.priority.color)
           } else {
             Image(systemName: "minus")
-              .font(.system(size: 18))
+              .scaledFont(size: 18, relativeTo: .body)
               .foregroundStyle(.secondary)
           }
         }
@@ -128,7 +128,7 @@ struct StarredRow: View {
     } label: {
       HStack {
         Image(systemName: self.isStarred ? DS.Icon.starFilled : DS.Icon.star)
-          .font(.system(size: 22))
+          .scaledFont(size: 22, relativeTo: .title2)
           .foregroundStyle(self.isStarred ? .yellow : .secondary)
           .scaleEffect(self.isStarred ? 1.2 : 1.0)
           .animation(.spring(duration: 0.3, bounce: 0.5), value: self.isStarred)

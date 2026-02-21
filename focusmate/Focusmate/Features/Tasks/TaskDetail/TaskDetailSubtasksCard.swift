@@ -81,7 +81,7 @@ struct TaskDetailSubtasksCard: View {
           } label: {
             HStack(spacing: DS.Spacing.sm) {
               Image(systemName: "plus.circle")
-                .font(.system(size: DS.Size.iconMedium))
+                .scaledFont(size: DS.Size.iconMedium, relativeTo: .title3)
               Text("Add subtask")
                 .font(DS.Typography.caption)
               Spacer()

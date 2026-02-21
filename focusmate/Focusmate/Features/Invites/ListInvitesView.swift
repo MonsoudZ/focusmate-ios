@@ -300,11 +300,11 @@ struct ShareInviteSheet: View {
         Spacer()
 
         Image(systemName: "link.circle.fill")
-          .font(.system(size: 60))
+          .scaledFont(size: 60, relativeTo: .largeTitle)
           .foregroundStyle(DS.Colors.accent)
 
         Text("Invite Link Created")
-          .font(.system(size: 24, weight: .bold, design: .rounded))
+          .scaledFont(size: 24, weight: .bold, design: .rounded, relativeTo: .title)
 
         // Link preview
         Text(self.invite.invite_url)

@@ -9,7 +9,7 @@ struct OnboardingWelcomePage: View {
 
       VStack(spacing: DS.Spacing.xl) {
         Image(systemName: "checkmark.seal.fill")
-          .font(.system(size: DS.Size.logo))
+          .scaledFont(size: DS.Size.logo, relativeTo: .largeTitle)
           .foregroundStyle(DS.Colors.accent)
 
         VStack(spacing: DS.Spacing.md) {

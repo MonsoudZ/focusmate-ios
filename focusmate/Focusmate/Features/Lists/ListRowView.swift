@@ -25,7 +25,7 @@ struct ListRowView: View {
 
           if let listType = list.list_type, listType != "tasks" {
             Text(listType == "habit_tracker" ? "Habit" : listType.capitalized)
-              .font(.system(size: 10, weight: .medium))
+              .scaledFont(size: 10, weight: .medium, relativeTo: .caption2)
               .foregroundStyle(DS.Colors.accent)
               .padding(.horizontal, 6)
               .padding(.vertical, 2)
@@ -35,7 +35,7 @@ struct ListRowView: View {
 
           if self.hasMembers {
             Image(systemName: "person.2.fill")
-              .font(.system(size: 10))
+              .scaledFont(size: 10, relativeTo: .caption2)
               .foregroundStyle(.secondary)
           }
 
@@ -111,7 +111,7 @@ struct ListRowView: View {
 
         if self.list.progress >= 1.0 {
           Image(systemName: "checkmark")
-            .font(.system(size: 12, weight: .bold))
+            .scaledFont(size: 12, weight: .bold, relativeTo: .caption)
             .foregroundStyle(self.list.listColor)
         }
       }
@@ -127,9 +127,9 @@ struct ListRowView: View {
   private var overdueBadge: some View {
     HStack(spacing: 2) {
       Image(systemName: "exclamationmark.triangle.fill")
-        .font(.system(size: 10))
+        .scaledFont(size: 10, relativeTo: .caption2)
       Text("\(self.list.overdue_tasks_count ?? 0)")
-        .font(.system(size: 11, weight: .medium))
+        .scaledFont(size: 11, weight: .medium, relativeTo: .caption2)
     }
     .foregroundStyle(.white)
     .padding(.horizontal, 6)
@@ -179,7 +179,7 @@ struct ListRowView: View {
 
       if let members = list.members, members.count > 3 {
         Text("+\(members.count - 3)")
-          .font(.system(size: 10, weight: .medium))
+          .scaledFont(size: 10, weight: .medium, relativeTo: .caption2)
           .foregroundStyle(.secondary)
           .frame(width: 24, height: 24)
           .background(Color(.systemGray5))

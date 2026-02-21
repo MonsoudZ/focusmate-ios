@@ -53,7 +53,7 @@ struct TaskDetailQuickActions: View {
         ShareLink(item: shareURL) {
           VStack(spacing: DS.Spacing.xs) {
             Image(systemName: "square.and.arrow.up")
-              .font(.system(size: 20))
+              .scaledFont(size: 20, relativeTo: .title3)
               .foregroundStyle(DS.Colors.accent)
             Text("Share")
               .font(.caption2)
@@ -102,7 +102,7 @@ private struct QuickActionButton: View {
     Button(action: self.action) {
       VStack(spacing: DS.Spacing.xs) {
         Image(systemName: self.icon)
-          .font(.system(size: 20))
+          .scaledFont(size: 20, relativeTo: .title3)
           .foregroundStyle(self.iconColor)
         Text(self.label)
           .font(.caption2)

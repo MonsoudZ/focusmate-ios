@@ -13,7 +13,7 @@ struct TodayAllClearView: View {
   var body: some View {
     VStack(spacing: DS.Spacing.md) {
       Image(systemName: DS.Icon.checkSeal)
-        .font(.system(size: 64))
+        .scaledFont(size: 64, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.success)
       Text("All Clear!")
         .font(DS.Typography.title2)
@@ -32,7 +32,7 @@ struct TodayNothingDueView: View {
   var body: some View {
     VStack(spacing: DS.Spacing.md) {
       Image(systemName: DS.Icon.calendar)
-        .font(.system(size: 64))
+        .scaledFont(size: 64, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.accent)
       Text("Nothing Due Today")
         .font(DS.Typography.title2)
@@ -50,7 +50,7 @@ struct TodayEmptyView: View {
   var body: some View {
     VStack(spacing: DS.Spacing.md) {
       Image(systemName: DS.Icon.emptyTray)
-        .font(.system(size: 64))
+        .scaledFont(size: 64, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.accent)
       Text("No tasks yet")
         .font(DS.Typography.title2)
@@ -70,7 +70,7 @@ struct TodayErrorView: View {
   var body: some View {
     VStack(spacing: DS.Spacing.md) {
       Image(systemName: DS.Icon.overdue)
-        .font(.system(size: 64))
+        .scaledFont(size: 64, relativeTo: .largeTitle)
         .foregroundStyle(DS.Colors.error)
       Text("Something went wrong")
         .font(DS.Typography.title2)
