@@ -117,8 +117,11 @@ final class ListDetailViewModel {
     self.isOwner || self.isEditor
   }
 
+  /// True when the list has multiple members — controls nudge/hide visibility.
+  /// A list with a role but only one member (or nil members) is structurally
+  /// collaborative but has nobody to nudge or hide tasks from.
   var isSharedList: Bool {
-    self.list.role != nil
+    (self.list.members?.count ?? 0) > 1
   }
 
   var roleLabel: String {

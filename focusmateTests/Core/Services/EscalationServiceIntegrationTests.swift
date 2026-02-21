@@ -12,21 +12,22 @@ final class EscalationServiceIntegrationTests: XCTestCase {
     private var sut: EscalationService!
     private var mockScreenTime: MockScreenTimeService!
 
-    private let gracePeriodStartKey = "Escalation_GracePeriodStart"
-    private let overdueTaskIdsKey = "Escalation_OverdueTaskIds"
+    private let gracePeriodStartKey = SharedDefaults.gracePeriodStartTimeKey
+    private let overdueTaskIdsKey = SharedDefaults.overdueTaskIdsKey
+    private var store: UserDefaults { SharedDefaults.store }
 
     override func setUp() {
         super.setUp()
-        UserDefaults.standard.removeObject(forKey: gracePeriodStartKey)
-        UserDefaults.standard.removeObject(forKey: overdueTaskIdsKey)
+        store.removeObject(forKey: gracePeriodStartKey)
+        store.removeObject(forKey: overdueTaskIdsKey)
         mockScreenTime = MockScreenTimeService()
         sut = EscalationService(screenTimeService: mockScreenTime)
     }
 
     override func tearDown() {
         sut.resetAll()
-        UserDefaults.standard.removeObject(forKey: gracePeriodStartKey)
-        UserDefaults.standard.removeObject(forKey: overdueTaskIdsKey)
+        store.removeObject(forKey: gracePeriodStartKey)
+        store.removeObject(forKey: overdueTaskIdsKey)
         super.tearDown()
     }
 
@@ -165,20 +166,20 @@ final class EscalationServiceIntegrationTests: XCTestCase {
         sut.taskBecameOverdue(task2)
 
         // Verify persistence write
-        let persistedIds = UserDefaults.standard.array(forKey: overdueTaskIdsKey) as? [Int]
+        let persistedIds = store.array(forKey: overdueTaskIdsKey) as? [Int]
         XCTAssertNotNil(persistedIds, "Overdue task IDs should be persisted")
         XCTAssertTrue(persistedIds?.contains(42) ?? false)
         XCTAssertTrue(persistedIds?.contains(99) ?? false)
 
         // Verify grace period start was persisted
-        let gracePeriodStart = UserDefaults.standard.object(forKey: gracePeriodStartKey) as? Date
+        let gracePeriodStart = store.object(forKey: gracePeriodStartKey) as? Date
         XCTAssertNotNil(gracePeriodStart, "Grace period start should be persisted")
 
         // Verify resetAll clears persisted state
         sut.resetAll()
-        let clearedIds = UserDefaults.standard.array(forKey: overdueTaskIdsKey) as? [Int]
+        let clearedIds = store.array(forKey: overdueTaskIdsKey) as? [Int]
         XCTAssertTrue(clearedIds?.isEmpty ?? true, "resetAll should clear persisted IDs")
-        XCTAssertNil(UserDefaults.standard.object(forKey: gracePeriodStartKey))
+        XCTAssertNil(store.object(forKey: gracePeriodStartKey))
     }
 
     func testResetAllClearsPersistedState() {
@@ -187,10 +188,10 @@ final class EscalationServiceIntegrationTests: XCTestCase {
 
         sut.resetAll()
 
-        // Verify UserDefaults are clean
-        let persistedIds = UserDefaults.standard.array(forKey: overdueTaskIdsKey) as? [Int]
+        // Verify shared store is clean
+        let persistedIds = store.array(forKey: overdueTaskIdsKey) as? [Int]
         XCTAssertTrue(persistedIds?.isEmpty ?? true)
-        XCTAssertNil(UserDefaults.standard.object(forKey: gracePeriodStartKey))
+        XCTAssertNil(store.object(forKey: gracePeriodStartKey))
     }
 
     // MARK: - Sign-Out Flow

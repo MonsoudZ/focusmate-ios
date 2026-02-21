@@ -132,7 +132,7 @@ struct ListDetailView: View {
 
   @ToolbarContentBuilder
   private var toolbarContent: some ToolbarContent {
-    if self.viewModel.isSharedList, !self.viewModel.isOwner {
+    if self.viewModel.list.role != nil, !self.viewModel.isOwner {
       ToolbarItem(placement: .navigationBarLeading) {
         Label(self.viewModel.roleLabel, systemImage: self.viewModel.roleIcon)
           .font(.caption2)

@@ -93,13 +93,26 @@ final class ListDetailViewModelTests: XCTestCase {
   }
 
   func testIsSharedList() {
-    // Personal lists have role == nil — not shared
+    let twoMembers = [
+      ListMemberDTO(id: 1, name: "Me", email: "me@test.com", role: "owner"),
+      ListMemberDTO(id: 2, name: "Friend", email: "f@test.com", role: "editor"),
+    ]
+
+    // Personal lists (no role, no members) — not shared
     let personalList = TestFactories.makeSampleList(role: nil)
     XCTAssertFalse(self.makeViewModel(list: personalList).isSharedList)
 
-    // Shared lists always have an explicit role — owner, editor, or viewer
-    let sharedAsOwner = TestFactories.makeSampleList(role: "owner")
-    let sharedAsEditor = TestFactories.makeSampleList(role: "editor")
+    // Collaborative list with only one member — not shared (nobody to nudge)
+    let soloShared = TestFactories.makeSampleList(role: "owner", members: [twoMembers[0]])
+    XCTAssertFalse(self.makeViewModel(list: soloShared).isSharedList)
+
+    // Collaborative list with nil members (not yet fetched) — not shared
+    let nilMembers = TestFactories.makeSampleList(role: "owner", members: nil)
+    XCTAssertFalse(self.makeViewModel(list: nilMembers).isSharedList)
+
+    // Multiple members — shared
+    let sharedAsOwner = TestFactories.makeSampleList(role: "owner", members: twoMembers)
+    let sharedAsEditor = TestFactories.makeSampleList(role: "editor", members: twoMembers)
     XCTAssertTrue(self.makeViewModel(list: sharedAsOwner).isSharedList)
     XCTAssertTrue(self.makeViewModel(list: sharedAsEditor).isSharedList)
   }
