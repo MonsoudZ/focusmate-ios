@@ -1,6 +1,9 @@
 import Foundation
 
-struct MembershipDTO: Codable, Identifiable {
+struct MembershipDTO: Codable, Identifiable, Hashable {
+  static func == (lhs: MembershipDTO, rhs: MembershipDTO) -> Bool { lhs.id == rhs.id }
+  func hash(into hasher: inout Hasher) { hasher.combine(self.id) }
+
   let id: Int
   let user: MemberUser
   let role: String
@@ -16,7 +19,7 @@ struct MembershipDTO: Codable, Identifiable {
   }
 }
 
-struct MemberUser: Codable {
+struct MemberUser: Codable, Hashable {
   let id: Int
   let email: String?
   let name: String?
