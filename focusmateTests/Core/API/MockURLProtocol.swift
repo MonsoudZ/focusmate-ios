@@ -10,6 +10,11 @@ final class MockURLProtocol: URLProtocol {
   static var stub: Stub?
   static var error: Error?
 
+  /// Per-request routing: when set, takes priority over the static `stub`/`error`.
+  /// Return `(stub, nil)` for a successful stub, `(nil, error)` for an error,
+  /// or `(nil, nil)` to fall back to the static properties.
+  static var requestHandler: ((URLRequest) -> (Stub?, Error?))?
+
   override class func canInit(with request: URLRequest) -> Bool {
     true
   }
@@ -19,6 +24,20 @@ final class MockURLProtocol: URLProtocol {
   }
 
   override func startLoading() {
+    // Per-request routing takes priority
+    if let handler = Self.requestHandler {
+      let (handlerStub, handlerError) = handler(request)
+      if let handlerError {
+        client?.urlProtocol(self, didFailWithError: handlerError)
+        return
+      }
+      if let handlerStub {
+        deliverStub(handlerStub)
+        return
+      }
+      // (nil, nil) → fall through to static stub/error
+    }
+
     if let error = Self.error {
       client?.urlProtocol(self, didFailWithError: error)
       return
@@ -26,12 +45,14 @@ final class MockURLProtocol: URLProtocol {
 
     let stub = Self.stub ?? Stub(statusCode: 200, headers: [:], body: Data())
 
-    // Use request URL or a valid fallback - precondition since this is test infrastructure
+    deliverStub(stub)
+  }
+
+  private func deliverStub(_ stub: Stub) {
     guard let url = request.url else {
       preconditionFailure("MockURLProtocol received request without URL")
     }
 
-    // HTTPURLResponse init can fail if URL scheme is invalid, but we control the URLs in tests
     guard let response = HTTPURLResponse(
       url: url,
       statusCode: stub.statusCode,

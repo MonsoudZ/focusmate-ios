@@ -194,6 +194,27 @@ final class MutationQueueTests: XCTestCase {
     XCTAssertEqual(count, 0, "Both mutations should be gone after 3 flushes")
   }
 
+  // MARK: - Re-entrancy Guard
+
+  func testFlushIsNoOpWhenCalledRecursivelyDuringFlush() async {
+    var executionOrder: [Int] = []
+
+    // First mutation calls flush() re-entrantly — the nested call should hit
+    // the `isFlushing` guard and return immediately (no deadlock, no double-exec).
+    await sut.enqueue(description: "op-1-reentrant") { [sut] in
+      executionOrder.append(1)
+      await sut!.flush() // re-entrant: isFlushing == true → early return
+    }
+    await self.sut.enqueue(description: "op-2") { executionOrder.append(2) }
+
+    await self.sut.flush()
+
+    // The outer flush runs both mutations sequentially. The nested flush() is a no-op.
+    XCTAssertEqual(executionOrder, [1, 2])
+    let count = await sut.pendingCount
+    XCTAssertEqual(count, 0, "Queue should be empty — outer flush processed both mutations")
+  }
+
   // MARK: - clearAll
 
   func testClearAllRemovesAllPending() async {

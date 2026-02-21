@@ -93,6 +93,24 @@ final class InternalNetworking: NetworkingProtocol {
     self.certificatePinning = certificatePinning
   }
 
+  #if DEBUG
+    /// Full DI initializer for testing the token refresh path.
+    /// Accepts all five dependencies including refresh callbacks.
+    init(
+      tokenProvider: @escaping () -> String?,
+      refreshTokenProvider: (() -> String?)?,
+      onTokenRefreshed: ((String, String?) async -> Void)?,
+      session: URLSession,
+      certificatePinning: CertificatePinning = CertificatePinningConfig.createPinning()
+    ) {
+      self.tokenProvider = tokenProvider
+      self.refreshTokenProvider = refreshTokenProvider
+      self.onTokenRefreshed = onTokenRefreshed
+      self.injectedSession = session
+      self.certificatePinning = certificatePinning
+    }
+  #endif
+
   // MARK: - Requests (public)
 
   func request<T: Decodable>(
