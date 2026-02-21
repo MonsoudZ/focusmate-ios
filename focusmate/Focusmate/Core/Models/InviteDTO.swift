@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Invite DTO
 
-struct InviteDTO: Codable, Identifiable, Hashable {
+struct InviteDTO: Codable, Identifiable, Hashable, Sendable {
   let id: Int
   let code: String
   let invite_url: String
@@ -42,7 +42,7 @@ struct InviteDTO: Codable, Identifiable, Hashable {
 
 // MARK: - Invite Preview (for unauthenticated preview)
 
-struct InvitePreviewDTO: Codable {
+struct InvitePreviewDTO: Codable, Hashable, Sendable {
   let code: String
   let role: String
   let list: InviteListInfo
@@ -51,13 +51,13 @@ struct InvitePreviewDTO: Codable {
   let expired: Bool
   let exhausted: Bool
 
-  struct InviteListInfo: Codable {
+  struct InviteListInfo: Codable, Hashable, Sendable {
     let id: Int
     let name: String
     let color: String?
   }
 
-  struct InviterInfo: Codable {
+  struct InviterInfo: Codable, Hashable, Sendable {
     let name: String
   }
 
@@ -80,29 +80,29 @@ struct InvitePreviewDTO: Codable {
 
 // MARK: - Request/Response Types
 
-struct CreateInviteRequest: Encodable {
+struct CreateInviteRequest: Encodable, Sendable {
   let invite: InviteParams
 
-  struct InviteParams: Encodable {
+  struct InviteParams: Encodable, Sendable {
     let role: String
     let expires_at: String?
     let max_uses: Int?
   }
 }
 
-struct InviteResponse: Codable {
+struct InviteResponse: Codable, Sendable {
   let invite: InviteDTO
 }
 
-struct InvitesResponse: Codable {
+struct InvitesResponse: Codable, Sendable {
   let invites: [InviteDTO]
 }
 
-struct InvitePreviewResponse: Codable {
+struct InvitePreviewResponse: Codable, Sendable {
   let invite: InvitePreviewDTO
 }
 
-struct AcceptInviteResponse: Codable {
+struct AcceptInviteResponse: Codable, Sendable {
   let list: ListDTO
   let membership: MembershipDTO
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct FriendDTO: Codable, Identifiable, Hashable {
+struct FriendDTO: Codable, Identifiable, Hashable, Sendable {
   let id: Int
   let name: String?
   let email: String?
@@ -10,6 +10,6 @@ struct FriendDTO: Codable, Identifiable, Hashable {
   }
 }
 
-struct FriendsResponse: Codable {
+struct FriendsResponse: Codable, Sendable {
   let friends: [FriendDTO]
 }

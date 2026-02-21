@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-struct TagDTO: Codable, Identifiable, Hashable {
+struct TagDTO: Codable, Identifiable, Hashable, Sendable {
   let id: Int
   let name: String
   let color: String?
@@ -13,6 +13,6 @@ struct TagDTO: Codable, Identifiable, Hashable {
   }
 }
 
-struct TagsResponse: Codable {
+struct TagsResponse: Codable, Sendable {
   let tags: [TagDTO]
 }

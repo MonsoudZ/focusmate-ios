@@ -1,6 +1,6 @@
 import Foundation
 
-struct TodayResponse: Codable {
+struct TodayResponse: Codable, Sendable {
   var overdue: [TaskDTO]
   let has_more_overdue: Bool?
   var due_today: [TaskDTO]
@@ -9,7 +9,7 @@ struct TodayResponse: Codable {
   let streak: StreakInfo?
 }
 
-struct TodayStats: Codable {
+struct TodayStats: Codable, Sendable {
   let overdue_count: Int?
   let due_today_count: Int?
   let completed_today_count: Int?
@@ -28,7 +28,7 @@ struct TodayStats: Codable {
   }
 }
 
-struct StreakInfo: Codable {
+struct StreakInfo: Codable, Sendable {
   let current: Int
   let longest: Int
 }

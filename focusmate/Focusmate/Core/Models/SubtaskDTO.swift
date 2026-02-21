@@ -1,6 +1,6 @@
 import Foundation
 
-struct SubtaskDTO: Codable, Identifiable, Hashable {
+struct SubtaskDTO: Codable, Identifiable, Hashable, Sendable {
   let id: Int
   let parent_task_id: Int?
   let title: String
@@ -16,6 +16,6 @@ struct SubtaskDTO: Codable, Identifiable, Hashable {
   }
 }
 
-struct SubtaskResponse: Codable {
+struct SubtaskResponse: Codable, Sendable {
   let subtask: SubtaskDTO
 }

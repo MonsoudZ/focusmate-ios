@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-struct TaskCreatorDTO: Codable, Identifiable, Hashable {
+struct TaskCreatorDTO: Codable, Hashable, Sendable {
   let id: Int
   let email: String?
   let name: String?
@@ -12,7 +12,7 @@ struct TaskCreatorDTO: Codable, Identifiable, Hashable {
   }
 }
 
-struct TaskDTO: Codable, Identifiable {
+struct TaskDTO: Codable, Identifiable, Sendable {
   let id: Int
   let list_id: Int
   let list_name: String?
@@ -393,12 +393,12 @@ struct TaskDTO: Codable, Identifiable {
   }
 }
 
-struct TasksResponse: Codable {
+struct TasksResponse: Codable, Sendable {
   let tasks: [TaskDTO]
   let tombstones: [String]?
 }
 
-struct SingleTaskResponse: Codable {
+struct SingleTaskResponse: Codable, Sendable {
   let task: TaskDTO
 }
 

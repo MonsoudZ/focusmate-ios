@@ -1,6 +1,6 @@
 import Foundation
 
-struct MembershipDTO: Codable, Identifiable, Hashable {
+struct MembershipDTO: Codable, Identifiable, Hashable, Sendable {
   let id: Int
   let user: MemberUser
   let role: String
@@ -16,33 +16,33 @@ struct MembershipDTO: Codable, Identifiable, Hashable {
   }
 }
 
-struct MemberUser: Codable, Hashable {
+struct MemberUser: Codable, Hashable, Sendable {
   let id: Int
   let email: String?
   let name: String?
 }
 
-struct MembershipsResponse: Codable {
+struct MembershipsResponse: Codable, Sendable {
   let memberships: [MembershipDTO]
 }
 
-struct CreateMembershipRequest: Codable {
+struct CreateMembershipRequest: Encodable, Sendable {
   let membership: MembershipParams
 }
 
-struct MembershipParams: Codable {
+struct MembershipParams: Encodable, Sendable {
   let user_identifier: String
   let role: String
 }
 
-struct MembershipResponse: Codable {
+struct MembershipResponse: Codable, Sendable {
   let membership: MembershipDTO
 }
 
-struct UpdateMembershipRequest: Codable {
+struct UpdateMembershipRequest: Encodable, Sendable {
   let membership: UpdateMembershipParams
 }
 
-struct UpdateMembershipParams: Codable {
+struct UpdateMembershipParams: Encodable, Sendable {
   let role: String
 }

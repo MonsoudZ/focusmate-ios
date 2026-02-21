@@ -1,12 +1,12 @@
 import Foundation
 import SwiftUI
 
-struct ListOwnerDTO: Codable, Hashable {
+struct ListOwnerDTO: Codable, Hashable, Sendable {
   let id: Int
   let name: String?
 }
 
-struct ListDTO: Codable, Identifiable, Hashable {
+struct ListDTO: Codable, Identifiable, Hashable, Sendable {
   let id: Int
   let name: String
   let description: String?
@@ -40,7 +40,7 @@ struct ListDTO: Codable, Identifiable, Hashable {
   }
 }
 
-struct ListMemberDTO: Codable, Identifiable, Hashable {
+struct ListMemberDTO: Codable, Identifiable, Hashable, Sendable {
   let id: Int
   let name: String?
   let email: String?
@@ -51,11 +51,11 @@ struct ListMemberDTO: Codable, Identifiable, Hashable {
   }
 }
 
-struct ListResponse: Codable {
+struct ListResponse: Codable, Sendable {
   let list: ListDTO
 }
 
-struct ListsResponse: Codable {
+struct ListsResponse: Codable, Sendable {
   let lists: [ListDTO]
   let tombstones: [String]?
 }

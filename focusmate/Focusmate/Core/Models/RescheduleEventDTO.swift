@@ -1,11 +1,11 @@
 import Foundation
 
-struct RescheduledByDTO: Codable, Hashable {
+struct RescheduledByDTO: Codable, Hashable, Sendable {
   let id: Int
   let name: String?
 }
 
-struct RescheduleEventDTO: Codable, Identifiable, Hashable {
+struct RescheduleEventDTO: Codable, Identifiable, Hashable, Sendable {
   let id: Int
   let task_id: Int?
   let original_due_at: String?

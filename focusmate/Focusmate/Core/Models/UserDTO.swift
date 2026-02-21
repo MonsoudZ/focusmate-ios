@@ -1,6 +1,6 @@
 import Foundation
 
-struct UserDTO: Codable, Identifiable, Hashable {
+struct UserDTO: Codable, Identifiable, Hashable, Sendable {
   let id: Int
   let email: String
   let name: String?
